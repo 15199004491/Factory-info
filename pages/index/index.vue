@@ -1,8 +1,10 @@
 <template>
 	<view class="content">
-		<image class="logo" src="/static/logo.png"></image>
-		<view class="text-area">
-			<text class="title">{{title}}</text>
+		<view class="header">
+			<text class="title">首页</text>
+		</view>
+		<view class="section">
+			<u-button type="primary">欢迎使用</u-button>
 		</view>
 	</view>
 </template>
@@ -10,43 +12,29 @@
 <script>
 	export default {
 		data() {
-			return {
-				title: 'Hello'
-			}
-		},
-		onLoad() {
-
-		},
-		methods: {
-
+			return {}
 		}
 	}
 </script>
 
 <style>
 	.content {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
+		padding: 40rpx;
+		min-height: 100vh;
+		background-color: #f8f8f8;
 	}
 
-	.logo {
-		height: 200rpx;
-		width: 200rpx;
-		margin-top: 200rpx;
-		margin-left: auto;
-		margin-right: auto;
-		margin-bottom: 50rpx;
-	}
-
-	.text-area {
-		display: flex;
-		justify-content: center;
+	.header {
+		margin-bottom: 40rpx;
 	}
 
 	.title {
-		font-size: 36rpx;
-		color: #8f8f94;
+		font-size: 48rpx;
+		font-weight: bold;
+		color: #333;
+	}
+
+	.section {
+		margin-top: 20rpx;
 	}
 </style>
