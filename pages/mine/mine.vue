@@ -1,15 +1,9 @@
 <template>
 	<view class="content">
-		<view class="user-info">
-			<view class="avatar">
-				<u-icon name="account" size="60" color="#fff"></u-icon>
-			</view>
-			<text class="username">未登录</text>
-		</view>
 		<view class="menu-list">
-			<view class="menu-item" v-for="(item, index) in menuList" :key="index">
+			<view class="menu-item" v-for="(item, index) in menuList" :key="index" @tap="onMenuTap(index)">
 				<text class="menu-text">{{ item }}</text>
-				<u-icon name="arrow-right" size="14" color="#999"></u-icon>
+				<text class="menu-arrow">›</text>
 			</view>
 		</view>
 	</view>
@@ -19,7 +13,22 @@
 	export default {
 		data() {
 			return {
-				menuList: ['我的订单', '收藏夹', '设置', '关于我们']
+				menuList: ['加工厂', '去发布', '已发布', '联系我们']
+			}
+		},
+		methods: {
+			onMenuTap(index) {
+				const item = this.menuList[index]
+				if (item === '加工厂') {
+					uni.navigateTo({
+						url: '/pages/factory/manage'
+					})
+				} else {
+					uni.showToast({
+						title: item + ' 即将上线',
+						icon: 'none'
+					})
+				}
 			}
 		}
 	}
@@ -27,42 +36,16 @@
 
 <style>
 	.content {
-		padding: 40rpx;
+		padding: 24rpx;
 		min-height: 100vh;
 		background-color: #f8f8f8;
-	}
-
-	.user-info {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		padding: 60rpx 0;
-		background-color: #fff;
-		border-radius: 16rpx;
-		margin-bottom: 30rpx;
-	}
-
-	.avatar {
-		width: 120rpx;
-		height: 120rpx;
-		border-radius: 50%;
-		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin-bottom: 20rpx;
-	}
-
-	.username {
-		font-size: 32rpx;
-		color: #333;
-		font-weight: 500;
 	}
 
 	.menu-list {
 		background-color: #fff;
 		border-radius: 16rpx;
 		overflow: hidden;
+		margin-top: 24rpx;
 	}
 
 	.menu-item {
@@ -80,5 +63,11 @@
 	.menu-text {
 		font-size: 30rpx;
 		color: #333;
+	}
+
+	.menu-arrow {
+		font-size: 40rpx;
+		color: #ccc;
+		font-weight: 300;
 	}
 </style>

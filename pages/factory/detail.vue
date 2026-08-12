@@ -13,16 +13,24 @@
 		</view>
 
 		<view class="module-card">
-			<view class="section-title">
+			<view class="section-title section-title-between">
 				<text class="title-text">基本信息</text>
+				<view class="visitor-pill">
+					<text class="visitor-label">今日访客</text>
+					<text class="visitor-num">{{ todayVisitors }}</text>
+					<text class="visitor-label">人</text>
+				</view>
 			</view>
 			<view class="info-card">
 				<view class="address-row" @tap="openLocation">
 					<view class="address-info">
 						<text class="address-text">{{ factory.address }}</text>
+						<view class="copy-btn" @tap.stop="copyAddress">
+							<text class="copy-icon">📋</text>
+						</view>
 					</view>
 					<view class="map-btn">
-						<text class="map-btn-text">地图</text>
+						<text class="map-icon">📍</text>
 					</view>
 				</view>
 				<view class="remark-row" v-if="factory.remark">
@@ -39,8 +47,14 @@
 			<view class="category-list">
 				<view class="category-item" v-for="(cat, idx) in categories" :key="idx">
 					<view class="cat-header">
-						<text class="cat-name">{{ cat.name }}</text>
-						<text class="cat-price">{{ cat.price }}</text>
+						<view class="cat-name-wrap">
+							<text class="cat-name">{{ cat.name }}</text>
+							<text class="cat-status-tag" :class="cat.status">{{ cat.status === 'active' ? '收购中' : '暂停收购' }}</text>
+						</view>
+						<view class="cat-price">
+							<text class="cat-price-num">{{ getPriceNum(cat.price) }}</text>
+							<text class="cat-price-unit">{{ getPriceUnit(cat.price) }}</text>
+						</view>
 					</view>
 					<view class="cat-footer">
 						<text class="cat-update-time">更新于 {{ formatDate(cat.updateTime) }}</text>
@@ -54,11 +68,11 @@
 		</view>
 
 		<view class="bottom-bar">
-			<view class="action-btn share-btn" @tap="onShare">
-				<text class="btn-label">分享</text>
-			</view>
 			<view class="action-btn qrcode-btn" @tap="onShowQRCode">
 				<text class="btn-label">二维码</text>
+			</view>
+			<view class="action-btn share-btn" @tap="onShare">
+				<text class="btn-label">分享</text>
 			</view>
 		</view>
 
@@ -79,6 +93,7 @@
 		data() {
 			return {
 				showQRCode: false,
+				todayVisitors: 1999,
 				factory: {
 					name: '红旗粮食综合加工厂',
 					address: '山东省济南市历城区农业产业园88号',
@@ -92,13 +107,15 @@
 						name: '小麦',
 						price: '2.85元/斤',
 						updateTime: '2026-08-11 09:30',
-						remark: '要求水分≤14%，无霉变'
+						remark: '要求水分≤14%，无霉变',
+						status: 'active'
 					},
 					{
 						name: '玉米',
 						price: '2.60元/斤',
 						updateTime: '2026-08-10 14:20',
-						remark: '要求颗粒饱满，杂质少'
+						remark: '要求颗粒饱满，杂质少',
+						status: 'paused'
 					}
 				]
 			}
@@ -111,6 +128,7 @@
 				})
 			}
 			uni.hideShareMenu()
+			this.loadTodayVisitors()
 		},
 		onShareAppMessage() {
 			return {
@@ -119,6 +137,36 @@
 			}
 		},
 		methods: {
+			loadTodayVisitors() {
+				const today = this.getTodayKey()
+				const factoryKey = this.factory.name || 'default'
+				const storageKey = `visitors_${factoryKey}`
+				const record = uni.getStorageSync(storageKey)
+				let count = 1999
+				if (record && record.date === today) {
+					count = record.count + 1
+				}
+				uni.setStorageSync(storageKey, {
+					date: today,
+					count: count
+				})
+				this.todayVisitors = count
+			},
+			getTodayKey() {
+				const now = new Date()
+				const y = now.getFullYear()
+				const m = String(now.getMonth() + 1).padStart(2, '0')
+				const d = String(now.getDate()).padStart(2, '0')
+				return `${y}-${m}-${d}`
+			},
+			getPriceNum(priceStr) {
+				const match = priceStr.match(/[\d.]+/)
+				return match ? match[0] : priceStr
+			},
+			getPriceUnit(priceStr) {
+				const match = priceStr.match(/[^\d.]+/)
+				return match ? match[0] : ''
+			},
 			formatDate(dateStr) {
 				const date = new Date(dateStr.replace(/-/g, '/'))
 				const now = new Date()
@@ -150,6 +198,17 @@
 					name: this.factory.name,
 					address: this.factory.address,
 					scale: 16
+				})
+			},
+			copyAddress() {
+				uni.setClipboardData({
+					data: this.factory.address,
+					success: () => {
+						uni.showToast({
+							title: '地址已复制',
+							icon: 'success'
+						})
+					}
 				})
 			},
 			onShare() {
@@ -250,7 +309,19 @@
 
 	.address-info {
 		flex: 1;
+		display: flex;
+		align-items: center;
 		margin-right: 20rpx;
+	}
+
+	.copy-btn {
+		display: flex;
+		align-items: center;
+		margin-left: 12rpx;
+	}
+
+	.copy-icon {
+		font-size: 28rpx;
 	}
 
 	.address-text {
@@ -261,14 +332,13 @@
 
 	.map-btn {
 		flex-shrink: 0;
-		background-color: #3c9cff;
-		padding: 12rpx 28rpx;
-		border-radius: 24rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
-	.map-btn-text {
-		font-size: 24rpx;
-		color: #fff;
+	.map-icon {
+		font-size: 36rpx;
 	}
 
 	.remark-row {
@@ -290,6 +360,36 @@
 
 	.section-title {
 		padding: 24rpx;
+	}
+
+	.section-title-between {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.visitor-pill {
+		display: inline-flex;
+		align-items: center;
+		background-color: #f5f7fa;
+		padding: 6rpx 20rpx;
+		border-radius: 20rpx;
+	}
+
+	.visitor-label {
+		font-size: 24rpx;
+		color: #999;
+	}
+
+	.visitor-num {
+		font-size: 26rpx;
+		font-weight: 600;
+		color: #3c9cff;
+		margin-left: 8rpx;
+	}
+
+	.visitor-pill .visitor-label:last-child {
+		margin-left: 4rpx;
 	}
 
 	.title-text {
@@ -317,6 +417,28 @@
 		justify-content: space-between;
 	}
 
+	.cat-name-wrap {
+		display: flex;
+		align-items: center;
+	}
+
+	.cat-status-tag {
+		font-size: 20rpx;
+		padding: 4rpx 12rpx;
+		border-radius: 8rpx;
+		margin-left: 12rpx;
+	}
+
+	.cat-status-tag.active {
+		background-color: #e8f5e9;
+		color: #4caf50;
+	}
+
+	.cat-status-tag.paused {
+		background-color: #ffebee;
+		color: #f44336;
+	}
+
 	.cat-name {
 		font-size: 30rpx;
 		font-weight: 600;
@@ -324,9 +446,21 @@
 	}
 
 	.cat-price {
-		font-size: 32rpx;
-		font-weight: 600;
+		display: flex;
+		align-items: baseline;
+	}
+
+	.cat-price-num {
+		font-size: 38rpx;
+		font-weight: 700;
 		color: #ff5722;
+	}
+
+	.cat-price-unit {
+		font-size: 18rpx;
+		font-weight: 700;
+		color: #ff5722;
+		margin-left: 4rpx;
 	}
 
 	.cat-footer {
@@ -378,11 +512,11 @@
 	}
 
 	.share-btn {
-		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
+		background: linear-gradient(135deg, #ff9800, #ffb74d);
 	}
 
 	.qrcode-btn {
-		background: linear-gradient(135deg, #ff9800, #ffb74d);
+		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
 	}
 
 	.btn-icon-wrap {

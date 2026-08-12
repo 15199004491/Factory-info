@@ -26,6 +26,24 @@
 			}
 		},
 		{
+			"path": "pages/factory/register",
+			"style": {
+				"navigationBarTitleText": "加工厂入驻"
+			}
+		},
+		{
+			"path": "pages/factory/manage",
+			"style": {
+				"navigationBarTitleText": "加工厂管理"
+			}
+		},
+		{
+			"path": "pages/factory/price",
+			"style": {
+				"navigationBarTitleText": "发布价格"
+			}
+		},
+		{
 			"path": "pages/mine/mine",
 			"style": {
 				"navigationBarTitleText": "我的"

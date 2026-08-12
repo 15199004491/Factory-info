@@ -54,7 +54,15 @@
         "setting" : {
             "urlCheck" : false
         },
-        "usingComponents" : true
+        "usingComponents" : true,
+        "permission" : {
+            "scope.userLocation" : {
+                "desc" : "用于选择加工厂地址位置"
+            }
+        },
+        "requiredPrivateInfos" : [
+            "chooseLocation"
+        ]
     },
     "mp-alipay" : {
         "usingComponents" : true
