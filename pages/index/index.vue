@@ -8,12 +8,16 @@
 				<text class="entry-label">新房</text>
 			</view>
 
+			<view class="entry-divider"></view>
+
 			<view class="entry-card" @tap="onEntryTap('second')">
 				<view class="entry-icon second-icon">
 					<text class="icon-text">房</text>
 				</view>
 				<text class="entry-label">二手房</text>
 			</view>
+
+			<view class="entry-divider"></view>
 
 			<view class="entry-card" @tap="onEntryTap('rent')">
 				<view class="entry-icon rent-icon">
@@ -130,32 +134,37 @@
 
 	.module-entry {
 		display: flex;
-		justify-content: space-between;
-		padding: 30rpx 30rpx 40rpx;
-		background: linear-gradient(180deg, #4a90e2 0%, #357abd 100%);
+		align-items: center;
+		margin: 30rpx 30rpx 0;
+		padding: 30rpx 0;
+		background-color: #ffffff;
+		border-radius: 20rpx;
+		box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
 	}
 
 	.entry-card {
+		flex: 1;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		width: 200rpx;
-		height: 180rpx;
-		background-color: #ffffff;
-		border-radius: 20rpx;
-		box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
-		position: relative;
-		transition: transform 0.2s;
+		padding: 20rpx 0;
+		transition: opacity 0.2s ease;
 	}
 
 	.entry-card:active {
-		transform: scale(0.95);
+		opacity: 0.7;
+	}
+
+	.entry-divider {
+		width: 1rpx;
+		height: 60rpx;
+		background-color: #f2f2f2;
 	}
 
 	.entry-icon {
-		width: 90rpx;
-		height: 90rpx;
+		width: 88rpx;
+		height: 88rpx;
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
@@ -164,26 +173,37 @@
 	}
 
 	.new-icon {
-		background: linear-gradient(135deg, #ff9a56 0%, #ff6b6b 100%);
+		background-color: #ffe8e0;
 	}
 
 	.second-icon {
-		background: linear-gradient(135deg, #56ccf2 0%, #2f80ed 100%);
+		background-color: #e0edff;
 	}
 
 	.rent-icon {
-		background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+		background-color: #dff5ea;
 	}
 
 	.icon-text {
-		font-size: 40rpx;
-		color: #ffffff;
+		font-size: 38rpx;
 		font-weight: bold;
 	}
 
+	.new-icon .icon-text {
+		color: #ff6b6b;
+	}
+
+	.second-icon .icon-text {
+		color: #2f80ed;
+	}
+
+	.rent-icon .icon-text {
+		color: #10b981;
+	}
+
 	.entry-label {
-		font-size: 28rpx;
-		color: #333333;
+		font-size: 26rpx;
+		color: #555555;
 		font-weight: 500;
 	}
 
