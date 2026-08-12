@@ -6,11 +6,18 @@
 				<text class="menu-arrow">›</text>
 			</view>
 		</view>
+
+		<tab-bar :currentIndex="2"></tab-bar>
 	</view>
 </template>
 
 <script>
+	import tabBar from '@/components/tab-bar/tab-bar.vue'
+
 	export default {
+		components: {
+			tabBar
+		},
 		data() {
 			return {
 				menuList: ['加工厂', '去发布', '已发布', '联系我们']
@@ -22,6 +29,30 @@
 				if (item === '加工厂') {
 					uni.navigateTo({
 						url: '/pages/factory/manage'
+					})
+				} else if (item === '去发布') {
+					uni.showActionSheet({
+						itemList: ['二手房', '租房', '新房'],
+						success: function(res) {
+							if (res.tapIndex === 0) {
+								uni.navigateTo({
+									url: '/pages/publish/second'
+								})
+							} else if (res.tapIndex === 1) {
+								uni.navigateTo({
+									url: '/pages/publish/rent'
+								})
+							} else if (res.tapIndex === 2) {
+								uni.showToast({
+									title: '暂未开通',
+									icon: 'none'
+								})
+							}
+						}
+					})
+				} else if (item === '已发布') {
+					uni.navigateTo({
+						url: '/pages/mine/published'
 					})
 				} else {
 					uni.showToast({
@@ -37,6 +68,7 @@
 <style>
 	.content {
 		padding: 24rpx;
+		padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 		min-height: 100vh;
 		background-color: #f8f8f8;
 	}

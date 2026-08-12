@@ -38,7 +38,6 @@
 						<text class="verified-tag" v-if="item.verified">已认证</text>
 						<text class="factory-name">{{ item.name }}</text>
 					</view>
-					<text class="status-tag" :class="item.status === 'open' ? 'status-open' : 'status-pause'">{{ item.status === 'open' ? '收购中' : '暂停收购' }}</text>
 				</view>
 				<view class="item-bottom">
 					<view class="category-text">{{ item.categories.join(' / ') }}</view>
@@ -50,17 +49,21 @@
 		<view class="empty" v-if="factoryList.length === 0">
 			<text class="empty-text">暂无数据</text>
 		</view>
+
+		<tab-bar :currentIndex="1"></tab-bar>
 	</view>
 </template>
 
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import uInput from 'uview-plus/components/u-input/u-input.vue'
+	import tabBar from '@/components/tab-bar/tab-bar.vue'
 
 	export default {
 		components: {
 			uIcon,
-			uInput
+			uInput,
+			tabBar
 		},
 		onShareAppMessage() {
 			return {
@@ -85,70 +88,60 @@
 				factoryList: [
 					{
 						name: '红旗粮食综合加工厂',
-						status: 'open',
 						verified: true,
 						categories: ['辣椒', '棉花', '核桃'],
 						date: '2026-08-11 09:30'
 					},
 					{
 						name: '丰收',
-						status: 'open',
 						verified: true,
 						categories: ['小麦', '玉米'],
 						date: '2026-08-10 14:20'
 					},
 					{
 						name: '山东济南金穗粮油加工有限公司',
-						status: 'pause',
 						verified: false,
 						categories: ['水稻'],
 						date: '2026-08-11 08:45'
 					},
 					{
 						name: '绿源果蔬收购点',
-						status: 'open',
 						verified: true,
 						categories: ['苹果', '梨', '桃子', '杏子', '李子'],
 						date: '2026-08-10 16:10'
 					},
 					{
 						name: '康达',
-						status: 'pause',
 						verified: false,
 						categories: ['枸杞', '红枣'],
 						date: '2026-08-11 11:30'
 					},
 					{
 						name: '聚源棉花',
-						status: 'open',
 						verified: true,
 						categories: ['棉花', '皮棉', '棉籽'],
 						date: '2026-08-10 10:00'
 					},
 					{
 						name: '顺昌辣椒收购站',
-						status: 'open',
 						verified: true,
 						categories: ['朝天椒'],
 						date: '2026-08-11 15:20'
 					},
 					{
 						name: '青林果业农产品购销合作联合社',
-						status: 'pause',
 						verified: false,
 						categories: ['核桃', '薄皮核桃', '核桃仁', '山核桃', '核桃油'],
 						date: '2026-08-10 09:15'
 					},
 					{
 						name: '五谷杂粮收购中心',
-						status: 'open',
 						verified: true,
 						categories: ['小米', '绿豆', '红豆'],
 						date: '2026-08-11 13:25'
 					},
 					{
 						name: '恒信',
-						status: 'open',
 						verified: true,
 						categories: ['菜籽', '花生'],
 						date: '2026-08-10 17:00'
@@ -225,7 +218,7 @@
 	.page {
 		min-height: 100vh;
 		background-color: #f5f5f5;
-		padding-bottom: 40rpx;
+		padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 	}
 
 	.search-bar {
@@ -371,23 +364,6 @@
 		border-radius: 6rpx;
 		flex-shrink: 0;
 		margin-right: 8rpx;
-	}
-
-	.status-tag {
-		font-size: 20rpx;
-		padding: 4rpx 12rpx;
-		border-radius: 6rpx;
-		flex-shrink: 0;
-	}
-
-	.status-open {
-		color: #52c41a;
-		background-color: rgba(82, 196, 26, 0.1);
-	}
-
-	.status-pause {
-		color: #ff6b35;
-		background-color: rgba(255, 107, 53, 0.1);
 	}
 
 	.factory-name {

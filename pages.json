@@ -14,6 +14,60 @@
 			}
 		},
 		{
+			"path": "pages/second/list",
+			"style": {
+				"navigationBarTitleText": "二手房"
+			}
+		},
+		{
+			"path": "pages/second/detail",
+			"style": {
+				"navigationBarTitleText": "房源详情"
+			}
+		},
+		{
+			"path": "pages/second/map",
+			"style": {
+				"navigationBarTitleText": "位置地图"
+			}
+		},
+		{
+			"path": "pages/rent/list",
+			"style": {
+				"navigationBarTitleText": "租房"
+			}
+		},
+		{
+			"path": "pages/rent/detail",
+			"style": {
+				"navigationBarTitleText": "租房详情"
+			}
+		},
+		{
+			"path": "pages/publish/publish",
+			"style": {
+				"navigationBarTitleText": "发布房源"
+			}
+		},
+		{
+			"path": "pages/publish/second",
+			"style": {
+				"navigationBarTitleText": "发布二手房"
+			}
+		},
+		{
+			"path": "pages/publish/rent",
+			"style": {
+				"navigationBarTitleText": "发布租房"
+			}
+		},
+		{
+			"path": "pages/mine/published",
+			"style": {
+				"navigationBarTitleText": "已发布"
+			}
+		},
+		{
 			"path": "pages/factory/factory",
 			"style": {
 				"navigationBarTitleText": "加工厂"
@@ -57,6 +111,7 @@
 		"backgroundColor": "#F8F8F8"
 	},
 	"tabBar": {
+		"custom": true,
 		"color": "#999999",
 		"selectedColor": "#3c9cff",
 		"backgroundColor": "#ffffff",
