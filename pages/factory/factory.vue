@@ -36,6 +36,7 @@
 				<view class="item-top">
 					<view class="name-wrap">
 						<text class="verified-tag" v-if="item.verified">已认证</text>
+						<text class="unverified-tag" v-else>未认证</text>
 						<text class="factory-name">{{ item.name }}</text>
 					</view>
 				</view>
@@ -359,7 +360,18 @@
 	.verified-tag {
 		font-size: 20rpx;
 		color: #fff;
-		background: linear-gradient(135deg, #ffb347, #ff8c00);
+		background: linear-gradient(135deg, #3c9cff, #1890ff);
+		padding: 4rpx 12rpx;
+		border-radius: 6rpx;
+		flex-shrink: 0;
+		margin-right: 8rpx;
+	}
+
+	.unverified-tag {
+		font-size: 20rpx;
+		color: #ff8c00;
+		background-color: rgba(255, 140, 0, 0.1);
+		border: 1rpx solid rgba(255, 140, 0, 0.3);
 		padding: 4rpx 12rpx;
 		border-radius: 6rpx;
 		flex-shrink: 0;

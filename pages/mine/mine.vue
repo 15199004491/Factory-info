@@ -1,5 +1,30 @@
 <template>
 	<view class="content">
+		<view class="user-card">
+			<block v-if="isLogin && userInfo">
+				<image class="user-avatar" :src="userInfo.avatarUrl" mode="aspectFill" :lazy-load="true" @tap="onPreviewAvatar"></image>
+				<view class="user-info">
+					<text class="user-nickname">{{ userInfo.nickName }}</text>
+					<text class="user-desc">欢迎回来，祝您使用愉快</text>
+				</view>
+				<!-- <view class="logout-btn" @tap="onLogout">
+					<text class="logout-text">退出</text>
+				</view> -->
+			</block>
+			<block v-else>
+				<view class="user-avatar default-avatar">
+					<u-icon name="account" :size="50" color="#fff"></u-icon>
+				</view>
+				<view class="user-info">
+					<text class="user-nickname">未登录</text>
+					<text class="user-desc">欢迎登录生活信息平台</text>
+				</view>
+				<view class="login-btn" @tap="onWechatLogin">
+					<text class="login-btn-text">微信登录</text>
+				</view>
+			</block>
+		</view>
+
 		<view class="menu-list">
 			<view class="menu-item" v-for="(item, index) in menuList" :key="index" @tap="onMenuTap(index)">
 				<text class="menu-text">{{ item }}</text>
@@ -13,17 +38,118 @@
 
 <script>
 	import tabBar from '@/components/tab-bar/tab-bar.vue'
+	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 
 	export default {
 		components: {
-			tabBar
+			tabBar,
+			uIcon
 		},
 		data() {
 			return {
-				menuList: ['加工厂', '去发布', '已发布', '联系我们']
+				menuList: ['加工厂', '去发布', '已发布', '联系我们'],
+				isLogin: false,
+				userInfo: null
 			}
 		},
+		onShow() {
+			this.checkLoginStatus()
+		},
 		methods: {
+			checkLoginStatus() {
+				const userInfo = uni.getStorageSync('userInfo')
+				const token = uni.getStorageSync('token')
+				if (userInfo && token) {
+					this.isLogin = true
+					this.userInfo = userInfo
+				} else {
+					this.isLogin = false
+					this.userInfo = null
+				}
+			},
+			onWechatLogin() {
+				uni.showLoading({
+					title: '登录中...',
+					mask: true
+				})
+
+				uni.login({
+					provider: 'weixin',
+					success: (loginRes) => {
+						const code = loginRes.code
+						console.log('微信登录 code:', code)
+
+						uni.getUserProfile({
+							desc: '用于完善用户资料',
+							success: (profileRes) => {
+								const userInfo = {
+									nickName: profileRes.userInfo.nickName,
+									avatarUrl: profileRes.userInfo.avatarUrl,
+									gender: profileRes.userInfo.gender,
+									country: profileRes.userInfo.country,
+									province: profileRes.userInfo.province,
+									city: profileRes.userInfo.city,
+									loginCode: code
+								}
+
+								const mockToken = 'mock_token_' + Date.now()
+
+								uni.setStorageSync('userInfo', userInfo)
+								uni.setStorageSync('token', mockToken)
+
+								this.userInfo = userInfo
+								this.isLogin = true
+
+								uni.hideLoading()
+								uni.showToast({
+									title: '登录成功',
+									icon: 'success'
+								})
+							},
+							fail: () => {
+								uni.hideLoading()
+								uni.showToast({
+									title: '获取用户信息失败',
+									icon: 'none'
+								})
+							}
+						})
+					},
+					fail: () => {
+						uni.hideLoading()
+						uni.showToast({
+							title: '微信登录失败',
+							icon: 'none'
+						})
+					}
+				})
+			},
+			onLogout() {
+				uni.showModal({
+					title: '提示',
+					content: '确定要退出登录吗？',
+					success: (res) => {
+						if (res.confirm) {
+							uni.removeStorageSync('userInfo')
+							uni.removeStorageSync('token')
+							this.isLogin = false
+							this.userInfo = null
+							uni.showToast({
+								title: '已退出登录',
+								icon: 'none'
+							})
+						}
+					}
+				})
+			},
+			onPreviewAvatar() {
+				if (this.userInfo && this.userInfo.avatarUrl) {
+					uni.previewImage({
+						urls: [this.userInfo.avatarUrl],
+						current: this.userInfo.avatarUrl
+					})
+				}
+			},
 			onMenuTap(index) {
 				const item = this.menuList[index]
 				if (item === '加工厂') {
@@ -31,6 +157,19 @@
 						url: '/pages/factory/manage'
 					})
 				} else if (item === '去发布') {
+					if (!this.isLogin) {
+						uni.showModal({
+							title: '提示',
+							content: '请先登录后再进行发布',
+							confirmText: '去登录',
+							success: (res) => {
+								if (res.confirm) {
+									this.onWechatLogin()
+								}
+							}
+						})
+						return
+					}
 					uni.showActionSheet({
 						itemList: ['二手房', '租房', '新房'],
 						success: function(res) {
@@ -51,6 +190,19 @@
 						}
 					})
 				} else if (item === '已发布') {
+					if (!this.isLogin) {
+						uni.showModal({
+							title: '提示',
+							content: '请先登录后查看',
+							confirmText: '去登录',
+							success: (res) => {
+								if (res.confirm) {
+									this.onWechatLogin()
+								}
+							}
+						})
+						return
+					}
 					uni.navigateTo({
 						url: '/pages/mine/published'
 					})
@@ -101,5 +253,81 @@
 		font-size: 40rpx;
 		color: #ccc;
 		font-weight: 300;
+	}
+
+	.user-card {
+		background: linear-gradient(135deg, #3c9cff 0%, #56ccf2 100%);
+		border-radius: 20rpx;
+		padding: 40rpx 30rpx;
+		display: flex;
+		align-items: center;
+		box-shadow: 0 8rpx 24rpx rgba(60, 156, 255, 0.25);
+	}
+
+	.user-avatar {
+		width: 120rpx;
+		height: 120rpx;
+		border-radius: 50%;
+		border: 4rpx solid rgba(255, 255, 255, 0.6);
+		flex-shrink: 0;
+		background-color: rgba(255, 255, 255, 0.3);
+	}
+
+	.default-avatar {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.user-info {
+		flex: 1;
+		margin-left: 24rpx;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+	}
+
+	.user-nickname {
+		font-size: 36rpx;
+		font-weight: 600;
+		color: #fff;
+		margin-bottom: 8rpx;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.user-desc {
+		font-size: 24rpx;
+		color: rgba(255, 255, 255, 0.85);
+	}
+
+	.login-btn {
+		flex-shrink: 0;
+		padding: 12rpx 24rpx;
+		background-color: rgba(255, 255, 255, 0.2);
+		border-radius: 999rpx;
+		border: 1rpx solid rgba(255, 255, 255, 0.4);
+		display: flex;
+		align-items: center;
+	}
+
+	.login-btn-text {
+		font-size: 24rpx;
+		color: #fff;
+		margin-left: 8rpx;
+	}
+
+	.logout-btn {
+		flex-shrink: 0;
+		padding: 12rpx 24rpx;
+		background-color: rgba(255, 255, 255, 0.2);
+		border-radius: 999rpx;
+		border: 1rpx solid rgba(255, 255, 255, 0.4);
+	}
+
+	.logout-text {
+		font-size: 24rpx;
+		color: #fff;
 	}
 </style>

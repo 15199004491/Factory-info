@@ -24,25 +24,6 @@
 			</view>
 		</view>
 
-		<view class="form-section">
-			<view class="section-title">
-				<text class="title-text">营业资质</text>
-			</view>
-			<view class="form-card">
-				<view class="form-item upload-item">
-					<text class="form-label">营业执照</text>
-					<view class="upload-area" @tap="onChooseLicense">
-						<image v-if="form.licenseImage" class="upload-preview" :src="form.licenseImage" mode="aspectFill" @click.stop="onPreviewLicense" />
-						<view v-else class="upload-placeholder">
-							<text class="upload-icon">+</text>
-							<text class="upload-text">点击上传营业执照</text>
-							<text class="upload-tip">请上传清晰完整的营业执照原件照片</text>
-						</view>
-					</view>
-				</view>
-			</view>
-		</view>
-
 		<view class="submit-area">
 			<view class="submit-btn" @tap="onSubmit">
 				<text class="submit-text">{{ isEdit ? '保存修改' : '提交入驻申请' }}</text>
@@ -52,8 +33,6 @@
 </template>
 
 <script>
-	import { chooseAndUpload } from '@/utils/upload.js'
-
 	export default {
 		data() {
 			return {
@@ -63,8 +42,7 @@
 					phone: '',
 					address: '',
 					latitude: 0,
-					longitude: 0,
-					licenseImage: ''
+					longitude: 0
 				}
 			}
 		},
@@ -83,16 +61,14 @@
 						phone: '13888888888',
 						address: '山东省济南市历城区农业产业园88号',
 						latitude: 36.6512,
-						longitude: 117.1201,
-						licenseImage: ''
+						longitude: 117.1201
 					},
 					'丰收粮油加工厂': {
 						name: '丰收粮油加工厂',
 						phone: '13999999999',
 						address: '山东省济南市章丘区工业大道66号',
 						latitude: 36.7200,
-						longitude: 117.1800,
-						licenseImage: ''
+						longitude: 117.1800
 					}
 				}
 				const data = mockData[name]
@@ -129,22 +105,6 @@
 					}
 				})
 			},
-			async onChooseLicense() {
-				try {
-					const result = await chooseAndUpload(1)
-					this.form.licenseImage = result.url
-					uni.showToast({ title: '上传成功', icon: 'success' })
-				} catch (err) {
-					console.error('Upload failed:', err)
-				}
-			},
-			onPreviewLicense() {
-				if (!this.form.licenseImage) return
-				uni.previewImage({
-					urls: [this.form.licenseImage],
-					current: this.form.licenseImage
-				})
-			},
 			onSubmit() {
 				if (!this.form.name.trim()) {
 					uni.showToast({ title: '请输入加工厂名称', icon: 'none' })
@@ -156,10 +116,6 @@
 				}
 				if (!this.form.address) {
 					uni.showToast({ title: '请选择加工厂地址', icon: 'none' })
-					return
-				}
-				if (!this.form.licenseImage) {
-					uni.showToast({ title: '请上传营业执照', icon: 'none' })
 					return
 				}
 				if (this.isEdit) {
@@ -275,54 +231,6 @@
 	.location-placeholder {
 		font-size: 28rpx;
 		color: #bbb;
-	}
-
-	.upload-item {
-		border-bottom: none;
-	}
-
-	.upload-area {
-		width: 100%;
-		min-height: 360rpx;
-		background-color: #f8f8f8;
-		border-radius: 12rpx;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		overflow: hidden;
-	}
-
-	.upload-preview {
-		width: 100%;
-		height: 400rpx;
-		display: block;
-	}
-
-	.upload-placeholder {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 48rpx;
-	}
-
-	.upload-icon {
-		font-size: 80rpx;
-		color: #ccc;
-		line-height: 1;
-	}
-
-	.upload-text {
-		font-size: 28rpx;
-		color: #333;
-		margin-top: 16rpx;
-	}
-
-	.upload-tip {
-		font-size: 24rpx;
-		color: #999;
-		margin-top: 12rpx;
-		text-align: center;
 	}
 
 	.submit-area {

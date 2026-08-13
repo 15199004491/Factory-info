@@ -12,7 +12,7 @@
 			</view>
 		</view>
 
-		<view class="module-card">
+		<view class="module-card" :class="{ 'verified-card': factory.verified }">
 			<view class="section-title section-title-between">
 				<text class="title-text">基本信息</text>
 				<view class="visitor-pill">
@@ -21,13 +21,25 @@
 					<text class="visitor-label">人</text>
 				</view>
 			</view>
+			<view class="unverified-tip" v-if="!factory.verified">
+				<view class="tip-bar"></view>
+				<view class="tip-body">
+					<view class="tip-title-row">
+						<text class="tip-icon-s">!</text>
+						<text class="tip-title">这家加工厂未进行平台认证</text>
+					</view>
+					<text class="tip-desc">信息由企业自行发布，交易前建议核实确认</text>
+				</view>
+			</view>
+			<view class="section-factory-name">
+				<text class="factory-title">{{ factory.name }}</text>
+				<text class="verified-tag" v-if="factory.verified">已认证</text>
+				<text class="unverified-tag" v-else>未认证</text>
+			</view>
 			<view class="info-card">
 				<view class="address-row" @tap="openLocation">
 					<view class="address-info">
 						<text class="address-text">{{ factory.address }}</text>
-						<view class="copy-btn" @tap.stop="copyAddress">
-							<text class="copy-icon">📋</text>
-						</view>
 					</view>
 					<view class="map-btn">
 						<text class="map-icon">📍</text>
@@ -96,6 +108,7 @@
 				todayVisitors: 1999,
 				factory: {
 					name: '红旗粮食综合加工厂',
+					verified: false,
 					address: '山东省济南市历城区农业产业园88号',
 					remark: '主要收购粮食作物，可上门收购，量大从优',
 					notice: '即日起至8月31日，小麦收购价格上调5%，欢迎广大农户前来出售！',
@@ -200,17 +213,6 @@
 					scale: 16
 				})
 			},
-			copyAddress() {
-				uni.setClipboardData({
-					data: this.factory.address,
-					success: () => {
-						uni.showToast({
-							title: '地址已复制',
-							icon: 'success'
-						})
-					}
-				})
-			},
 			onShare() {
 				// #ifdef MP-WEIXIN
 				uni.showShareMenu({
@@ -297,8 +299,72 @@
 		overflow: hidden;
 	}
 
+	.verified-card {
+		border: 2rpx solid rgba(60, 156, 255, 0.3);
+		background: linear-gradient(180deg, #f0f7ff 0%, #ffffff 40%);
+		box-shadow: 0 4rpx 20rpx rgba(60, 156, 255, 0.12);
+	}
+
+	.verified-card .title-text {
+		color: #1890ff;
+	}
+
 	.info-card {
 		padding: 0 24rpx 24rpx;
+	}
+
+	.unverified-tip {
+		display: flex;
+		align-items: stretch;
+		margin: 0 24rpx 20rpx;
+		background-color: #fdf6ec;
+		border-radius: 12rpx;
+		overflow: hidden;
+	}
+
+	.tip-bar {
+		width: 6rpx;
+		flex-shrink: 0;
+		background: linear-gradient(180deg, #faad14, #d48806);
+	}
+
+	.tip-body {
+		flex: 1;
+		padding: 18rpx 20rpx;
+	}
+
+	.tip-title-row {
+		display: flex;
+		align-items: center;
+		margin-bottom: 6rpx;
+	}
+
+	.tip-icon-s {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 32rpx;
+		height: 32rpx;
+		background-color: #faad14;
+		color: #fff;
+		font-size: 22rpx;
+		font-weight: 700;
+		border-radius: 50%;
+		margin-right: 12rpx;
+	}
+
+	.tip-title {
+		font-size: 26rpx;
+		font-weight: 600;
+		color: #874d00;
+		line-height: 1.4;
+	}
+
+	.tip-desc {
+		display: block;
+		font-size: 24rpx;
+		color: #a06a1a;
+		line-height: 1.5;
 	}
 
 	.address-row {
@@ -312,16 +378,6 @@
 		display: flex;
 		align-items: center;
 		margin-right: 20rpx;
-	}
-
-	.copy-btn {
-		display: flex;
-		align-items: center;
-		margin-left: 12rpx;
-	}
-
-	.copy-icon {
-		font-size: 28rpx;
 	}
 
 	.address-text {
@@ -374,6 +430,7 @@
 		background-color: #f5f7fa;
 		padding: 6rpx 20rpx;
 		border-radius: 20rpx;
+		flex-shrink: 0;
 	}
 
 	.visitor-label {
@@ -396,6 +453,48 @@
 		font-size: 30rpx;
 		font-weight: 600;
 		color: #333;
+	}
+
+	.factory-title-wrap {
+		display: flex;
+		align-items: center;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.section-factory-name {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		padding: 0 24rpx 16rpx;
+	}
+
+	.factory-title {
+		font-size: 28rpx;
+		color: #333;
+		line-height: 1.5;
+		word-break: break-all;
+	}
+
+	.verified-tag {
+		font-size: 20rpx;
+		color: #fff;
+		background: linear-gradient(135deg, #3c9cff, #1890ff);
+		padding: 4rpx 12rpx;
+		border-radius: 6rpx;
+		flex-shrink: 0;
+		margin-left: 12rpx;
+	}
+
+	.unverified-tag {
+		font-size: 20rpx;
+		color: #ff8c00;
+		background-color: rgba(255, 140, 0, 0.1);
+		border: 1rpx solid rgba(255, 140, 0, 0.3);
+		padding: 4rpx 12rpx;
+		border-radius: 6rpx;
+		flex-shrink: 0;
+		margin-left: 12rpx;
 	}
 
 	.category-list {

@@ -13,8 +13,8 @@
 					<text class="info-address">{{ item.address }}</text>
 				</view>
 				<view class="item-actions">
-					<view class="action-btn" @tap.stop="onEdit(item)">
-						<text class="action-text">编辑</text>
+					<view class="action-btn btn-certify" @tap.stop="onCertify(item)">
+						<text class="action-text">认证</text>
 					</view>
 					<view class="action-btn btn-price" @tap.stop="onPublishPrice(item)">
 						<text class="action-text">发布信息</text>
@@ -96,9 +96,9 @@
 					url: '/pages/factory/register'
 				})
 			},
-			onEdit(item) {
+			onCertify(item) {
 				uni.navigateTo({
-					url: '/pages/factory/register?edit=1&name=' + encodeURIComponent(item.name)
+					url: '/pages/factory/certify?name=' + encodeURIComponent(item.name)
 				})
 			},
 			onPublishPrice(item) {
