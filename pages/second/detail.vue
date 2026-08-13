@@ -74,6 +74,7 @@
 
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
+	import { secondHouseApi } from '@/utils/request.js'
 
 	export default {
 		components: {
@@ -82,7 +83,7 @@
 		data() {
 			return {
 				houseId: 0,
-				visitors: 328,
+				visitors: 0,
 				house: {
 					id: 0,
 					title: '',
@@ -123,133 +124,27 @@
 			}
 		},
 		methods: {
-			loadHouseDetail() {
-				var key = 'published_second'
-				var list = uni.getStorageSync(key) || []
-				var published = list.find(function(item) {
-					return item.id === this.houseId
-				}.bind(this))
-				if (published) {
+			async loadHouseDetail() {
+				try {
+					const data = await secondHouseApi.getDetail(this.houseId)
 					this.house = {
-						id: published.id,
-						title: published.title,
-						desc: (published.area ? published.area + ' · ' : '') + (published.houseType ? published.houseType : ''),
-						price: published.price,
-						image: published.images && published.images.length ? published.images[0] : '',
-						houseType: published.houseType || '',
-						area: published.area || '',
-						floor: published.floor || '',
-						phone: published.phone || '',
-						community: published.community || '',
-						region: published.region || '',
-						latitude: published.latitude || 0,
-						longitude: published.longitude || 0,
-						description: published.description || ''
+						id: data.id,
+						title: data.title,
+						desc: `${data.area || ''}㎡ · ${data.house_type || ''}`,
+						price: data.price,
+						image: Array.isArray(data.images) && data.images.length ? data.images[0] : '',
+						houseType: data.house_type || '',
+						area: (data.area || '') + '㎡',
+						floor: data.floor || '',
+						phone: data.phone || '',
+						community: data.community || '',
+						region: data.region || '',
+						latitude: data.latitude || 0,
+						longitude: data.longitude || 0,
+						description: data.description || ''
 					}
-					return
-				}
-
-				var detailMap = {
-					1: {
-						id: 1,
-						title: '阳光花园 3室2厅',
-						desc: '120㎡ · 南北通透',
-						price: '128',
-						image: 'https://img.alicdn.com/imgextra/i3/6000000002334/O1CN01w2M5v81FmR5KjP1z_!!600000000472-0-yinhe.jpg',
-						houseType: '3室2厅1卫',
-						area: '120㎡',
-						floor: '中层/6层',
-						phone: '13800138001',
-						community: '阳光花园',
-						region: '兵团 农一师',
-						latitude: 41.167,
-						longitude: 80.261,
-						description: '本房源位于阳光花园核心区域，交通便利，周边配套完善。房屋南北通透，采光极佳。小区环境优美，绿化率高，适合居住。'
-					},
-					2: {
-						id: 2,
-						title: '翠湖天地 2室1厅',
-						desc: '89㎡ · 湖景房 · 电梯房',
-						price: '95',
-						image: 'https://img.alicdn.com/imgextra/i2/6000000002334/O1CN01w2M5v91FmR5KjP2z_!!600000000472-0-yinhe.jpg',
-						houseType: '2室1厅1卫',
-						area: '89㎡',
-						floor: '高层/18层',
-						phone: '13800138002',
-						community: '翠湖天地',
-						region: '地方 乌鲁木齐市',
-						latitude: 43.8256,
-						longitude: 87.6168,
-						description: '翠湖天地湖景房源，视野开阔，可赏湖景。电梯公寓，出行便利。周边有多个商圈，购物方便。'
-					},
-					3: {
-						id: 3,
-						title: '金色家园 4室2厅',
-						desc: '160㎡ · 复式结构 · 带露台',
-						price: '186',
-						image: 'https://img.alicdn.com/imgextra/i4/6000000002334/O1CN01w2M5vA1FmR5KjP3z_!!600000000472-0-yinhe.jpg',
-						houseType: '4室2厅2卫',
-						area: '160㎡',
-						floor: '跃层/12层',
-						phone: '13800138003',
-						community: '金色家园',
-						region: '兵团 农八师',
-						latitude: 44.3018,
-						longitude: 86.0142,
-						description: '金色家园复式豪宅，带私家露台，视野极佳。小区配套完善，有健身房、游泳池等设施。'
-					},
-					4: {
-						id: 4,
-						title: '东方明珠 1室1厅',
-						desc: '55㎡ · 单身公寓 · 地铁口',
-						price: '58',
-						image: 'https://img.alicdn.com/imgextra/i1/6000000002334/O1CN01w2M5vB1FmR5KjP4z_!!600000000472-0-yinhe.jpg',
-						houseType: '1室1厅1卫',
-						area: '55㎡',
-						floor: '低层/6层',
-						phone: '13800138004',
-						community: '东方明珠',
-						region: '地方 乌鲁木齐市',
-						latitude: 43.8206,
-						longitude: 87.6128,
-						description: '东方明珠单身公寓，适合年轻人居住。紧邻地铁口，出行方便。周边生活设施齐全，超市、餐饮应有尽有。'
-					},
-					5: {
-						id: 5,
-						title: '绿地世纪城 3室2厅',
-						desc: '135㎡ · 学区房',
-						price: '156',
-						image: 'https://img.alicdn.com/imgextra/i3/6000000002334/O1CN01w2M5v81FmR5KjP1z_!!600000000472-0-yinhe.jpg',
-						houseType: '3室2厅2卫',
-						area: '135㎡',
-						floor: '中层/11层',
-						phone: '13800138005',
-						community: '绿地世纪城',
-						region: '地方 昌吉州',
-						latitude: 44.0194,
-						longitude: 87.3164,
-						description: '绿地世纪城学区房，对口重点学校，教育资源丰富。户型方正，南北通透。小区环境好，物业管理规范。'
-					},
-					6: {
-						id: 6,
-						title: '海景公寓 2室2厅',
-						desc: '98㎡ · 海景房 · 南北通透',
-						price: '112',
-						image: 'https://img.alicdn.com/imgextra/i2/6000000002334/O1CN01w2M5v91FmR5KjP2z_!!600000000472-0-yinhe.jpg',
-						houseType: '2室2厅1卫',
-						area: '98㎡',
-						floor: '高层/22层',
-						phone: '13800138006',
-						community: '海景公寓',
-						region: '地方 吐鲁番市',
-						latitude: 42.9513,
-						longitude: 89.1895,
-						description: '海景公寓高层海景房，视野无敌，可俯瞰整个海景。房屋南北通透，采光通风俱佳。周边有多个旅游景点，适合度假居住。'
-					}
-				}
-				if (detailMap[this.houseId]) {
-					this.house = detailMap[this.houseId]
-				}
+					this.visitors = data.visitors || 0
+				} catch (e) {}
 			},
 			onContact() {
 				if (this.house.phone) {

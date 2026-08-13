@@ -57,6 +57,7 @@
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import regionPicker from '@/components/region-picker/region-picker.vue'
+	import { secondHouseApi } from '@/utils/request.js'
 
 	export default {
 		components: {
@@ -68,69 +69,43 @@
 				keyword: '',
 				showRegionPicker: false,
 				currentRegion: '全部',
-				houseList: [
-					{
-						id: 1,
-						title: '阳光花园 3室2厅',
-						desc: '120㎡ · 南北通透 · 精装修',
-						price: '128万',
-						image: 'https://img.alicdn.com/imgextra/i3/6000000002334/O1CN01w2M5v81FmR5KjP1z_!!600000000472-0-yinhe.jpg'
-					},
-					{
-						id: 2,
-						title: '翠湖天地 2室1厅',
-						desc: '89㎡ · 湖景房 · 电梯房',
-						price: '95万',
-						image: 'https://img.alicdn.com/imgextra/i2/6000000002334/O1CN01w2M5v91FmR5KjP2z_!!600000000472-0-yinhe.jpg'
-					},
-					{
-						id: 3,
-						title: '金色家园 4室2厅',
-						desc: '160㎡ · 复式结构 · 带露台',
-						price: '186万',
-						image: 'https://img.alicdn.com/imgextra/i4/6000000002334/O1CN01w2M5vA1FmR5KjP3z_!!600000000472-0-yinhe.jpg'
-					},
-					{
-						id: 4,
-						title: '东方明珠 1室1厅',
-						desc: '55㎡ · 单身公寓 · 地铁口',
-						price: '58万',
-						image: 'https://img.alicdn.com/imgextra/i1/6000000002334/O1CN01w2M5vB1FmR5KjP4z_!!600000000472-0-yinhe.jpg'
-					},
-					{
-						id: 5,
-						title: '绿地世纪城 3室2厅',
-						desc: '135㎡ · 精装修 · 学区房',
-						price: '156万',
-						image: 'https://img.alicdn.com/imgextra/i3/6000000002334/O1CN01w2M5v81FmR5KjP1z_!!600000000472-0-yinhe.jpg'
-					},
-					{
-						id: 6,
-						title: '海景公寓 2室2厅',
-						desc: '98㎡ · 海景房 · 南北通透',
-						price: '112万',
-						image: 'https://img.alicdn.com/imgextra/i2/6000000002334/O1CN01w2M5v91FmR5KjP2z_!!600000000472-0-yinhe.jpg'
-					}
-				]
+				houseList: []
 			}
 		},
+		onLoad() {
+			this.loadList()
+		},
 		methods: {
+			async loadList() {
+				try {
+					const data = await secondHouseApi.getList({
+						keyword: this.keyword,
+						region: this.currentRegion === '全部' ? '' : this.currentRegion
+					})
+					this.houseList = (data || []).map(item => ({
+						id: item.id,
+						title: item.title,
+						desc: `${item.area || ''}㎡ · ${item.house_type || ''}`,
+						price: item.price + '万',
+						image: Array.isArray(item.images) && item.images.length ? item.images[0] : ''
+					}))
+				} catch (e) {
+					this.houseList = []
+				}
+			},
 			openRegionPicker() {
 				this.showRegionPicker = true
 			},
 			onRegionConfirm(label) {
 				this.currentRegion = label
 				this.showRegionPicker = false
-				this.onSearch()
+				this.loadList()
 			},
 			onRegionCancel() {
 				this.showRegionPicker = false
 			},
 			onSearch() {
-				uni.showToast({
-					title: '搜索中...',
-					icon: 'none'
-				})
+				this.loadList()
 			},
 			onHouseTap(item) {
 				uni.navigateTo({

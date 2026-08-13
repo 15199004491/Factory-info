@@ -89,6 +89,7 @@
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import regionPicker from '@/components/region-picker/region-picker.vue'
+	import { userApi } from '@/utils/request.js'
 
 	export default {
 		components: {
@@ -156,7 +157,7 @@
 			onRegionCancel() {
 				this.showRegionPicker = false
 			},
-			onSubmit() {
+			async onSubmit() {
 				if (!this.form.title) {
 					uni.showToast({ title: '请填写标题', icon: 'none' })
 					return
@@ -169,6 +170,23 @@
 					uni.showToast({ title: '请填写月租', icon: 'none' })
 					return
 				}
+
+				const msg = [
+					this.form.title,
+					this.form.community,
+					this.form.region,
+					this.form.houseType,
+					this.form.description
+				].filter(Boolean).join(' ')
+
+				try {
+					const result = await userApi.msgCheck(msg)
+					if (result.errcode !== 0) {
+						uni.showToast({ title: '内容包含敏感信息', icon: 'none' })
+						return
+					}
+				} catch (e) {}
+
 				var key = 'published_rent'
 				var list = uni.getStorageSync(key) || []
 				var item = {

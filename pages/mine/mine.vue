@@ -39,6 +39,7 @@
 <script>
 	import tabBar from '@/components/tab-bar/tab-bar.vue'
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
+	import { auth } from '@/utils/auth.js'
 
 	export default {
 		components: {
@@ -56,88 +57,42 @@
 			this.checkLoginStatus()
 		},
 		methods: {
-			checkLoginStatus() {
-				const userInfo = uni.getStorageSync('userInfo')
-				const token = uni.getStorageSync('token')
-				if (userInfo && token) {
+			async checkLoginStatus() {
+				const userData = await auth.getUserInfo()
+				if (userData) {
 					this.isLogin = true
-					this.userInfo = userInfo
+					this.userInfo = {
+						nickName: userData.nickname || userData.nickName || '用户',
+						avatarUrl: userData.avatar || userData.avatarUrl || '',
+						...userData
+					}
 				} else {
 					this.isLogin = false
 					this.userInfo = null
 				}
 			},
-			onWechatLogin() {
-				uni.showLoading({
-					title: '登录中...',
-					mask: true
-				})
-
-				uni.login({
-					provider: 'weixin',
-					success: (loginRes) => {
-						const code = loginRes.code
-						console.log('微信登录 code:', code)
-
-						uni.getUserProfile({
-							desc: '用于完善用户资料',
-							success: (profileRes) => {
-								const userInfo = {
-									nickName: profileRes.userInfo.nickName,
-									avatarUrl: profileRes.userInfo.avatarUrl,
-									gender: profileRes.userInfo.gender,
-									country: profileRes.userInfo.country,
-									province: profileRes.userInfo.province,
-									city: profileRes.userInfo.city,
-									loginCode: code
-								}
-
-								const mockToken = 'mock_token_' + Date.now()
-
-								uni.setStorageSync('userInfo', userInfo)
-								uni.setStorageSync('token', mockToken)
-
-								this.userInfo = userInfo
-								this.isLogin = true
-
-								uni.hideLoading()
-								uni.showToast({
-									title: '登录成功',
-									icon: 'success'
-								})
-							},
-							fail: () => {
-								uni.hideLoading()
-								uni.showToast({
-									title: '获取用户信息失败',
-									icon: 'none'
-								})
-							}
-						})
-					},
-					fail: () => {
-						uni.hideLoading()
-						uni.showToast({
-							title: '微信登录失败',
-							icon: 'none'
-						})
+			async onWechatLogin() {
+				try {
+					const userData = await auth.login()
+					this.isLogin = true
+					this.userInfo = {
+						nickName: userData.nickname || userData.nickName || '用户',
+						avatarUrl: userData.avatar || userData.avatarUrl || '',
+						...userData
 					}
-				})
+				} catch (e) {
+					console.error('登录失败', e)
+				}
 			},
-			onLogout() {
+			async onLogout() {
 				uni.showModal({
 					title: '提示',
 					content: '确定要退出登录吗？',
-					success: (res) => {
+					success: async (res) => {
 						if (res.confirm) {
-							uni.removeStorageSync('userInfo')
-							uni.removeStorageSync('token')
+							await auth.logout()
 							this.isLogin = false
 							this.userInfo = null
-							uni.showToast({
-								title: '已退出登录',
-								icon: 'none'
-							})
 						}
 					}
 				})

@@ -106,6 +106,7 @@
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import regionPicker from '@/components/region-picker/region-picker.vue'
+	import { secondHouseApi, userApi } from '@/utils/request.js'
 
 	export default {
 		components: {
@@ -145,36 +146,31 @@
 		},
 		onLoad(options) {
 			if (options && options.action === 'edit') {
-				var id = parseInt(options.id)
-				this.editingId = id
-				var list = uni.getStorageSync('published_second') || []
-				var item = null
-				for (var i = 0; i < list.length; i++) {
-					if (list[i].id === id) {
-						item = list[i]
-						break
-					}
-				}
-				if (item) {
-					this.form = {
-						title: item.title || '',
-						community: item.community || '',
-						region: item.region || '',
-						locationName: item.locationName || '',
-						latitude: item.latitude || null,
-						longitude: item.longitude || null,
-						houseType: item.houseType || '',
-						area: item.area || '',
-						floor: item.floor || '',
-						price: item.price || '',
-						phone: item.phone || '',
-						images: item.images || [],
-						description: item.description || ''
-					}
-				}
+				this.editingId = parseInt(options.id)
+				this.loadDetail()
 			}
 		},
 		methods: {
+			async loadDetail() {
+				try {
+					const data = await secondHouseApi.getDetail(this.editingId)
+					this.form = {
+						title: data.title || '',
+						community: data.community || '',
+						region: data.region || '',
+						locationName: data.location_name || '',
+						latitude: data.latitude || null,
+						longitude: data.longitude || null,
+						houseType: data.house_type || '',
+						area: data.area || '',
+						floor: data.floor || '',
+						price: data.price || '',
+						phone: data.phone || '',
+						images: Array.isArray(data.images) ? data.images : [],
+						description: data.description || ''
+					}
+				} catch (e) {}
+			},
 			openRegionPicker() {
 				this.showRegionPicker = true
 			},
@@ -221,7 +217,7 @@
 			removeImage(idx) {
 				this.form.images.splice(idx, 1)
 			},
-			onSubmit() {
+			async onSubmit() {
 				if (!this.form.title) {
 					uni.showToast({ title: '请填写标题', icon: 'none' })
 					return
@@ -232,10 +228,6 @@
 				}
 				if (!this.form.region) {
 					uni.showToast({ title: '请选择地区', icon: 'none' })
-					return
-				}
-				if (!this.form.locationName) {
-					uni.showToast({ title: '请选择地点', icon: 'none' })
 					return
 				}
 				if (!this.form.area) {
@@ -250,49 +242,52 @@
 					uni.showToast({ title: '请填写联系电话', icon: 'none' })
 					return
 				}
-				var key = 'published_second'
-				var list = uni.getStorageSync(key) || []
-				var item = {
-					id: Date.now(),
-					type: 'second',
+
+				const msg = [
+					this.form.title,
+					this.form.community,
+					this.form.region,
+					this.form.houseType,
+					this.form.description
+				].filter(Boolean).join(' ')
+
+				try {
+					const result = await userApi.msgCheck(msg)
+					if (result.errcode !== 0) {
+						uni.showToast({ title: '内容包含敏感信息', icon: 'none' })
+						return
+					}
+				} catch (e) {}
+
+				const postData = {
+					id: this.editingId || undefined,
 					title: this.form.title,
 					community: this.form.community,
 					region: this.form.region,
-					locationName: this.form.locationName,
+					location_name: this.form.locationName,
 					latitude: this.form.latitude,
 					longitude: this.form.longitude,
-					houseType: this.form.houseType,
+					house_type: this.form.houseType,
 					area: this.form.area,
 					floor: this.form.floor,
 					price: this.form.price,
 					phone: this.form.phone,
 					images: this.form.images,
-					description: this.form.description,
-					createTime: new Date().toLocaleString()
+					description: this.form.description
 				}
-				if (this.editingId) {
-					var idx = -1
-					for (var i = 0; i < list.length; i++) {
-						if (list[i].id === this.editingId) {
-							idx = i
-							break
-						}
+
+				try {
+					if (this.editingId) {
+						await secondHouseApi.edit(postData)
+						uni.showToast({ title: '修改成功', icon: 'success' })
+					} else {
+						await secondHouseApi.add(postData)
+						uni.showToast({ title: '发布成功', icon: 'success' })
 					}
-					if (idx > -1) {
-						item.id = this.editingId
-						item.createTime = list[idx].createTime
-						list.splice(idx, 1, item)
-					}
-					this.editingId = null
-					uni.showToast({ title: '修改成功', icon: 'success' })
-				} else {
-					list.unshift(item)
-					uni.showToast({ title: '发布成功', icon: 'success' })
-				}
-				uni.setStorageSync(key, list)
-				setTimeout(() => {
-					uni.navigateBack()
-				}, 1000)
+					setTimeout(() => {
+						uni.navigateBack()
+					}, 1000)
+				} catch (e) {}
 			}
 		}
 	}
