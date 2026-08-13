@@ -13,9 +13,9 @@
 					<text class="info-address">{{ item.address }}</text>
 				</view>
 				<view class="item-actions">
-					<view class="action-btn btn-certify" @tap.stop="onCertify(item)">
+					<!-- <view class="action-btn btn-certify" @tap.stop="onCertify(item)">
 						<text class="action-text">认证</text>
-					</view>
+					</view> -->
 					<view class="action-btn btn-price" @tap.stop="onPublishPrice(item)">
 						<text class="action-text">发布信息</text>
 					</view>

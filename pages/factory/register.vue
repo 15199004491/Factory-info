@@ -24,6 +24,30 @@
 			</view>
 		</view>
 
+		<view class="form-section">
+			<view class="section-title">
+				<text class="title-text">营业资质</text>
+			</view>
+			<view class="form-card">
+				<view class="form-item">
+					<text class="form-label">营业执照</text>
+					<view class="license-upload">
+						<view class="license-preview" v-if="form.license" @tap="onPreviewLicense">
+							<image class="license-image" :src="form.license" mode="aspectFill" />
+							<view class="license-remove" @tap="onRemoveLicense">
+								<text class="remove-icon">×</text>
+							</view>
+						</view>
+						<view class="license-add" v-else @tap="onChooseLicense">
+							<text class="add-icon">+</text>
+							<text class="add-text">上传营业执照</text>
+						</view>
+					</view>
+					<text class="upload-tip">请上传清晰的营业执照照片</text>
+				</view>
+			</view>
+		</view>
+
 		<view class="submit-area">
 			<view class="submit-btn" @tap="onSubmit">
 				<text class="submit-text">{{ isEdit ? '保存修改' : '提交入驻申请' }}</text>
@@ -42,7 +66,8 @@
 					phone: '',
 					address: '',
 					latitude: 0,
-					longitude: 0
+					longitude: 0,
+					license: ''
 				}
 			}
 		},
@@ -105,6 +130,35 @@
 					}
 				})
 			},
+			onChooseLicense() {
+				uni.chooseImage({
+					count: 1,
+					sizeType: ['compressed'],
+					sourceType: ['album', 'camera'],
+					success: (res) => {
+						this.form.license = res.tempFilePaths[0]
+					}
+				})
+			},
+			onPreviewLicense() {
+				if (this.form.license) {
+					uni.previewImage({
+						urls: [this.form.license],
+						current: this.form.license
+					})
+				}
+			},
+			onRemoveLicense() {
+				uni.showModal({
+					title: '提示',
+					content: '确定要删除营业执照吗？',
+					success: (res) => {
+						if (res.confirm) {
+							this.form.license = ''
+						}
+					}
+				})
+			},
 			onSubmit() {
 				if (!this.form.name.trim()) {
 					uni.showToast({ title: '请输入加工厂名称', icon: 'none' })
@@ -116,6 +170,10 @@
 				}
 				if (!this.form.address) {
 					uni.showToast({ title: '请选择加工厂地址', icon: 'none' })
+					return
+				}
+				if (!this.form.license) {
+					uni.showToast({ title: '请上传营业执照', icon: 'none' })
 					return
 				}
 				if (this.isEdit) {
@@ -231,6 +289,73 @@
 	.location-placeholder {
 		font-size: 28rpx;
 		color: #bbb;
+	}
+
+	.license-upload {
+		margin-top: 16rpx;
+	}
+
+	.license-preview {
+		position: relative;
+		width: 240rpx;
+		height: 160rpx;
+		border-radius: 12rpx;
+		overflow: hidden;
+	}
+
+	.license-image {
+		width: 100%;
+		height: 100%;
+	}
+
+	.license-remove {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 40rpx;
+		height: 40rpx;
+		background-color: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-bottom-left-radius: 12rpx;
+	}
+
+	.remove-icon {
+		color: #fff;
+		font-size: 28rpx;
+		line-height: 1;
+	}
+
+	.license-add {
+		width: 240rpx;
+		height: 160rpx;
+		border: 2rpx dashed #ccc;
+		border-radius: 12rpx;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		background-color: #fafafa;
+	}
+
+	.add-icon {
+		font-size: 48rpx;
+		color: #ccc;
+		line-height: 1;
+	}
+
+	.add-text {
+		font-size: 24rpx;
+		color: #999;
+		margin-top: 8rpx;
+	}
+
+	.upload-tip {
+		font-size: 24rpx;
+		color: #999;
+		margin-top: 12rpx;
+		display: block;
 	}
 
 	.submit-area {

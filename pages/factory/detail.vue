@@ -12,29 +12,32 @@
 			</view>
 		</view>
 
+		<!-- <view class="unverified-tip" v-if="!factory.verified">
+			<view class="tip-bar"></view>
+			<view class="tip-body">
+				<view class="tip-title-row">
+					<text class="tip-icon-s">!</text>
+					<text class="tip-title">这家加工厂未进行平台认证</text>
+				</view>
+				<text class="tip-desc">信息由企业自行发布，交易前建议核实确认</text>
+			</view>
+		</view> -->
+
 		<view class="module-card" :class="{ 'verified-card': factory.verified }">
 			<view class="section-title section-title-between">
-				<text class="title-text">基本信息</text>
+				<view class="title-left">
+					<text class="title-text">基本信息</text>
+					<text class="verified-tag" v-if="factory.verified">已认证</text>
+					<text class="unverified-tag" v-else>未认证</text>
+				</view>
 				<view class="visitor-pill">
 					<text class="visitor-label">今日访客</text>
 					<text class="visitor-num">{{ todayVisitors }}</text>
 					<text class="visitor-label">人</text>
 				</view>
 			</view>
-			<view class="unverified-tip" v-if="!factory.verified">
-				<view class="tip-bar"></view>
-				<view class="tip-body">
-					<view class="tip-title-row">
-						<text class="tip-icon-s">!</text>
-						<text class="tip-title">这家加工厂未进行平台认证</text>
-					</view>
-					<text class="tip-desc">信息由企业自行发布，交易前建议核实确认</text>
-				</view>
-			</view>
 			<view class="section-factory-name">
 				<text class="factory-title">{{ factory.name }}</text>
-				<text class="verified-tag" v-if="factory.verified">已认证</text>
-				<text class="unverified-tag" v-else>未认证</text>
 			</view>
 			<view class="info-card">
 				<view class="address-row" @tap="openLocation">
@@ -80,21 +83,52 @@
 		</view>
 
 		<view class="bottom-bar">
-			<view class="action-btn qrcode-btn" @tap="onShowQRCode">
-				<text class="btn-label">二维码</text>
+			<view class="action-btn poster-btn" @tap="onShowPoster">
+				<text class="btn-label">海报</text>
 			</view>
 			<view class="action-btn share-btn" @tap="onShare">
 				<text class="btn-label">分享</text>
 			</view>
 		</view>
 
-		<view class="qrcode-modal" v-if="showQRCode" @tap="showQRCode = false">
-			<view class="qrcode-content" @tap.stop>
-				<view class="qrcode-box">
-					<text class="qrcode-temp">二维码</text>
+		<view class="poster-modal" v-if="showPoster" @tap="showPoster = false">
+			<view class="poster-wrap" @tap.stop>
+				<view class="poster-card">
+					<view class="poster-header">
+						<view class="poster-factory-name">{{ factory.name }}</view>
+						<view class="poster-verified-badge" v-if="factory.verified">已认证</view>
+					</view>
+					<view class="poster-address">
+						<text class="poster-address-icon">📍</text>
+						<text class="poster-address-text">{{ factory.address }}</text>
+					</view>
+					<view class="poster-categories">
+						<view class="poster-cat-title">收购品类</view>
+						<view class="poster-cat-list">
+							<view class="poster-cat-item" v-for="(cat, idx) in categories" :key="idx">
+								<text class="poster-cat-name">{{ cat.name }}</text>
+							</view>
+						</view>
+					</view>
+					<view class="poster-bottom">
+						<view class="poster-qrcode">
+							<view class="poster-qr-box">
+								<text class="poster-qr-temp">二维码</text>
+							</view>
+							<text class="poster-qr-tip">微信扫一扫</text>
+						</view>
+						<view class="poster-slogan">
+							<text class="poster-slogan-main">扫码看最新收购价</text>
+							<text class="poster-slogan-sub">足不出户掌握行情</text>
+						</view>
+					</view>
 				</view>
-				<text class="qrcode-tip">扫一扫查看详情</text>
-				<text class="qrcode-close">点击关闭</text>
+				<view class="poster-actions">
+					<view class="poster-save-btn" @tap="onSavePoster">
+						<text class="poster-save-text">保存海报</text>
+					</view>
+					<text class="poster-close" @tap="showPoster = false">关闭</text>
+				</view>
 			</view>
 		</view>
 	</view>
@@ -104,11 +138,11 @@
 	export default {
 		data() {
 			return {
-				showQRCode: false,
+				showPoster: false,
 				todayVisitors: 1999,
 				factory: {
 					name: '红旗粮食综合加工厂',
-					verified: false,
+					verified: true,
 					address: '山东省济南市历城区农业产业园88号',
 					remark: '主要收购粮食作物，可上门收购，量大从优',
 					notice: '即日起至8月31日，小麦收购价格上调5%，欢迎广大农户前来出售！',
@@ -231,8 +265,14 @@
 				})
 				// #endif
 			},
-			onShowQRCode() {
-				this.showQRCode = true
+			onShowPoster() {
+				this.showPoster = true
+			},
+			onSavePoster() {
+				uni.showToast({
+					title: '海报已保存到相册',
+					icon: 'success'
+				})
 			}
 		}
 	}
@@ -316,7 +356,7 @@
 	.unverified-tip {
 		display: flex;
 		align-items: stretch;
-		margin: 0 24rpx 20rpx;
+		margin: 20rpx 24rpx;
 		background-color: #fdf6ec;
 		border-radius: 12rpx;
 		overflow: hidden;
@@ -614,7 +654,7 @@
 		background: linear-gradient(135deg, #ff9800, #ffb74d);
 	}
 
-	.qrcode-btn {
+	.poster-btn {
 		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
 	}
 
@@ -633,35 +673,135 @@
 		font-weight: 500;
 	}
 
-	.qrcode-modal {
+	.poster-modal {
 		position: fixed;
 		top: 0;
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background-color: rgba(0, 0, 0, 0.5);
+		background-color: rgba(0, 0, 0, 0.6);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		z-index: 999;
 	}
 
-	.qrcode-content {
+	.poster-wrap {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		padding: 40rpx;
-		background-color: #fff;
-		border-radius: 24rpx;
 	}
 
-	.qrcode-box {
-		width: 400rpx;
-		height: 400rpx;
+	.poster-card {
+		width: 500rpx;
+		background: linear-gradient(180deg, #fff 0%, #f5f9ff 100%);
+		border-radius: 24rpx;
+		padding: 48rpx 40rpx 40rpx;
+		box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.15);
+	}
+
+	.poster-header {
+		display: flex;
+		align-items: center;
+		margin-bottom: 16rpx;
+	}
+
+	.poster-factory-name {
+		font-size: 36rpx;
+		font-weight: 700;
+		color: #333;
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.poster-verified-badge {
+		font-size: 20rpx;
+		color: #fff;
+		background: linear-gradient(135deg, #3c9cff, #1890ff);
+		padding: 4rpx 12rpx;
+		border-radius: 6rpx;
+		margin-left: 12rpx;
+		flex-shrink: 0;
+	}
+
+	.poster-address {
+		display: flex;
+		align-items: flex-start;
+		margin-bottom: 28rpx;
+		padding-bottom: 24rpx;
+		border-bottom: 1rpx solid #eee;
+	}
+
+	.poster-address-icon {
+		font-size: 24rpx;
+		margin-right: 8rpx;
+		flex-shrink: 0;
+	}
+
+	.poster-address-text {
+		font-size: 24rpx;
+		color: #666;
+		line-height: 1.5;
+		flex: 1;
+	}
+
+	.poster-categories {
+		margin-bottom: 28rpx;
+	}
+
+	.poster-cat-title {
+		font-size: 26rpx;
+		font-weight: 600;
+		color: #333;
+		margin-bottom: 16rpx;
+	}
+
+	.poster-cat-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 16rpx;
+	}
+
+	.poster-cat-item {
+		display: flex;
+		align-items: center;
+		background-color: #f0f7ff;
+		padding: 12rpx 20rpx;
+		border-radius: 10rpx;
+	}
+
+	.poster-cat-name {
+		font-size: 24rpx;
+		color: #333;
+		font-weight: 500;
+	}
+
+	.poster-bottom {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding-top: 32rpx;
+		border-top: 1rpx solid #eee;
+	}
+
+	.poster-qrcode {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin-bottom: 24rpx;
+	}
+
+	.poster-qr-box {
+		width: 200rpx;
+		height: 200rpx;
 		background: repeating-linear-gradient(
 			45deg,
-			#000,
-			#000 4rpx,
+			#333,
+			#333 4rpx,
 			#fff 4rpx,
 			#fff 8rpx
 		);
@@ -672,23 +812,60 @@
 		justify-content: center;
 	}
 
-	.qrcode-temp {
-		font-size: 32rpx;
+	.poster-qr-temp {
+		font-size: 24rpx;
 		color: #333;
 		background-color: #fff;
-		padding: 16rpx 32rpx;
-		border-radius: 8rpx;
+		padding: 8rpx 16rpx;
+		border-radius: 6rpx;
 	}
 
-	.qrcode-tip {
-		font-size: 28rpx;
+	.poster-qr-tip {
+		font-size: 22rpx;
+		color: #666;
+		margin-top: 12rpx;
+	}
+
+	.poster-slogan {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.poster-slogan-main {
+		font-size: 32rpx;
+		font-weight: 700;
 		color: #333;
-		margin-top: 24rpx;
+		margin-bottom: 8rpx;
 	}
 
-	.qrcode-close {
+	.poster-slogan-sub {
 		font-size: 24rpx;
 		color: #999;
-		margin-top: 16rpx;
+	}
+
+	.poster-actions {
+		margin-top: 40rpx;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.poster-save-btn {
+		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
+		padding: 24rpx 80rpx;
+		border-radius: 999rpx;
+		margin-bottom: 20rpx;
+	}
+
+	.poster-save-text {
+		font-size: 30rpx;
+		color: #fff;
+		font-weight: 500;
+	}
+
+	.poster-close {
+		font-size: 26rpx;
+		color: rgba(255, 255, 255, 0.8);
 	}
 </style>

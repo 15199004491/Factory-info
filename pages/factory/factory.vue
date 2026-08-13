@@ -18,12 +18,23 @@
 			<view class="search-btn" @tap="onSearch">
 				<text class="search-btn-text">搜索</text>
 			</view>
-			<view class="dropdown-menu" v-if="showMenu">
-				<view class="dropdown-item" v-for="(opt, i) in distanceOptions[0]" :key="i" @tap="selectDistance(opt)">
-					<text>{{ opt.label }}</text>
-					<u-icon v-if="distanceRange === opt.label" name="checkmark" size="14" color="#3c9cff"></u-icon>
+		</view>
+
+		<view class="filter-mask" v-if="showMenu" @tap="toggleMenu"></view>
+		<view class="filter-sheet" :class="{ 'filter-sheet-show': showMenu }">
+			<view class="sheet-header">
+				<text class="sheet-title">选择地区</text>
+				<view class="sheet-confirm" @tap="confirmFilter">
+					<text class="sheet-confirm-text">确定</text>
 				</view>
 			</view>
+			<picker-view class="filter-picker" :value="pickerValue" @change="onPickerChange" indicator-style="height: 80rpx; border-top: 1rpx solid #eee; border-bottom: 1rpx solid #eee;">
+				<picker-view-column>
+					<view class="picker-item" v-for="(opt, i) in distanceOptions[0]" :key="i">
+						{{ opt.label }}
+					</view>
+				</picker-view-column>
+			</picker-view>
 		</view>
 
 		<view class="tip-bar">
@@ -36,7 +47,7 @@
 				<view class="item-top">
 					<view class="name-wrap">
 						<text class="verified-tag" v-if="item.verified">已认证</text>
-						<text class="unverified-tag" v-else>未认证</text>
+						<!-- <text class="unverified-tag" v-else>未认证</text> -->
 						<text class="factory-name">{{ item.name }}</text>
 					</view>
 				</view>
@@ -76,14 +87,15 @@
 			return {
 				keyword: '',
 				showMenu: false,
+				pickerValue: [0],
 				distanceRange: '全部',
 				distanceOptions: [
 					[
-						{ label: '全部', value: 'all' },
 						{ label: '5公里内', value: '5' },
 						{ label: '10公里内', value: '10' },
 						{ label: '20公里内', value: '20' },
-						{ label: '50公里内', value: '50' }
+						{ label: '50公里内', value: '50' },
+						{ label: '全部', value: 'all' }
 					]
 				],
 				factoryList: [
@@ -178,8 +190,15 @@
 			toggleMenu() {
 				this.showMenu = !this.showMenu
 			},
-			selectDistance(opt) {
-				this.distanceRange = opt.label
+			onPickerChange(e) {
+				this.pickerValue = e.detail.value
+			},
+			confirmFilter() {
+				const idx = this.pickerValue[0]
+				const opt = this.distanceOptions[0][idx]
+				if (opt) {
+					this.distanceRange = opt.label
+				}
 				this.showMenu = false
 			},
 			onSearch() {
@@ -266,34 +285,68 @@
 		font-weight: 500;
 	}
 
-	.dropdown-menu {
-		position: absolute;
-		top: 100%;
-		left: 24rpx;
+	.filter-mask {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.5);
+		z-index: 99;
+	}
+
+	.filter-sheet {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
 		background-color: #fff;
-		border-radius: 12rpx;
-		box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+		border-radius: 24rpx 24rpx 0 0;
 		z-index: 100;
-		min-width: 200rpx;
-		overflow: hidden;
+		transform: translateY(100%);
+		transition: transform 0.3s ease;
+		padding-bottom: env(safe-area-inset-bottom);
 	}
 
-	.dropdown-item {
+	.filter-sheet-show {
+		transform: translateY(0);
+	}
+
+	.sheet-header {
 		display: flex;
-		justify-content: space-between;
 		align-items: center;
-		padding: 24rpx 30rpx;
-		font-size: 26rpx;
+		justify-content: space-between;
+		padding: 30rpx 32rpx;
+		border-bottom: 1rpx solid #f0f0f0;
+	}
+
+	.sheet-title {
+		font-size: 32rpx;
+		font-weight: 600;
 		color: #333;
-		border-bottom: 1rpx solid #f5f5f5;
 	}
 
-	.dropdown-item:last-child {
-		border-bottom: none;
+	.sheet-confirm {
 	}
 
-	.dropdown-item:active {
-		background-color: #f9f9f9;
+	.sheet-confirm-text {
+		font-size: 32rpx;
+		font-weight: 500;
+		color: #3c9cff;
+	}
+
+	.filter-picker {
+		width: 100%;
+		height: 500rpx;
+	}
+
+	.picker-item {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 32rpx;
+		color: #333;
+		line-height: 80rpx;
 	}
 
 	.search-input-wrap {
