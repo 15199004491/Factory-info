@@ -7,9 +7,9 @@
 					<text class="user-nickname">{{ userInfo.nickName }}</text>
 					<text class="user-desc">欢迎回来，祝您使用愉快</text>
 				</view>
-				<!-- <view class="logout-btn" @tap="onLogout">
+				<view class="logout-btn" @tap="onLogout">
 					<text class="logout-text">退出</text>
-				</view> -->
+				</view>
 			</block>
 			<block v-else>
 				<view class="user-avatar default-avatar">
@@ -153,6 +153,19 @@
 			onMenuTap(index) {
 				const item = this.menuList[index]
 				if (item === '加工厂') {
+					if (!this.isLogin) {
+						uni.showModal({
+							title: '提示',
+							content: '请先登录后再进入加工厂管理',
+							confirmText: '去登录',
+							success: (res) => {
+								if (res.confirm) {
+									this.onWechatLogin()
+								}
+							}
+						})
+						return
+					}
 					uni.navigateTo({
 						url: '/pages/factory/manage'
 					})

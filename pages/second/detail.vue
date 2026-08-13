@@ -6,8 +6,14 @@
 
 		<view class="detail-section">
 			<view class="price-row">
-				<text class="detail-price">{{ house.price }}</text>
-				<text class="detail-unit">万</text>
+				<view class="price-left">
+					<text class="detail-price">{{ house.price }}</text>
+					<text class="detail-unit">万</text>
+				</view>
+				<view class="visitor-pill">
+					<text class="visitor-num">{{ visitors }}</text>
+					<text class="visitor-label">人看过</text>
+				</view>
 			</view>
 			<text class="detail-title">{{ house.title }}</text>
 			<text class="detail-desc">{{ house.desc }}</text>
@@ -25,18 +31,6 @@
 			<view class="info-item">
 				<text class="info-label">楼层</text>
 				<text class="info-value">{{ house.floor }}</text>
-			</view>
-			<view class="info-item">
-				<text class="info-label">朝向</text>
-				<text class="info-value">{{ house.orientation }}</text>
-			</view>
-			<view class="info-item">
-				<text class="info-label">装修</text>
-				<text class="info-value">{{ house.decoration }}</text>
-			</view>
-			<view class="info-item">
-				<text class="info-label">年代</text>
-				<text class="info-value">{{ house.year }}</text>
 			</view>
 		</view>
 
@@ -88,6 +82,7 @@
 		data() {
 			return {
 				houseId: 0,
+				visitors: 328,
 				house: {
 					id: 0,
 					title: '',
@@ -97,9 +92,7 @@
 					houseType: '',
 					area: '',
 					floor: '',
-					orientation: '',
-					decoration: '',
-					year: '',
+					phone: '',
 					community: '',
 					region: '',
 					latitude: 0,
@@ -131,24 +124,47 @@
 		},
 		methods: {
 			loadHouseDetail() {
+				var key = 'published_second'
+				var list = uni.getStorageSync(key) || []
+				var published = list.find(function(item) {
+					return item.id === this.houseId
+				}.bind(this))
+				if (published) {
+					this.house = {
+						id: published.id,
+						title: published.title,
+						desc: (published.area ? published.area + ' · ' : '') + (published.houseType ? published.houseType : ''),
+						price: published.price,
+						image: published.images && published.images.length ? published.images[0] : '',
+						houseType: published.houseType || '',
+						area: published.area || '',
+						floor: published.floor || '',
+						phone: published.phone || '',
+						community: published.community || '',
+						region: published.region || '',
+						latitude: published.latitude || 0,
+						longitude: published.longitude || 0,
+						description: published.description || ''
+					}
+					return
+				}
+
 				var detailMap = {
 					1: {
 						id: 1,
 						title: '阳光花园 3室2厅',
-						desc: '120㎡ · 南北通透 · 精装修',
+						desc: '120㎡ · 南北通透',
 						price: '128',
 						image: 'https://img.alicdn.com/imgextra/i3/6000000002334/O1CN01w2M5v81FmR5KjP1z_!!600000000472-0-yinhe.jpg',
 						houseType: '3室2厅1卫',
 						area: '120㎡',
 						floor: '中层/6层',
-						orientation: '南北',
-						decoration: '精装修',
-						year: '2015年',
+						phone: '13800138001',
 						community: '阳光花园',
 						region: '兵团 农一师',
 						latitude: 41.167,
 						longitude: 80.261,
-						description: '本房源位于阳光花园核心区域，交通便利，周边配套完善。房屋南北通透，采光极佳，精装修拎包入住。小区环境优美，绿化率高，适合居住。'
+						description: '本房源位于阳光花园核心区域，交通便利，周边配套完善。房屋南北通透，采光极佳。小区环境优美，绿化率高，适合居住。'
 					},
 					2: {
 						id: 2,
@@ -159,9 +175,7 @@
 						houseType: '2室1厅1卫',
 						area: '89㎡',
 						floor: '高层/18层',
-						orientation: '正南',
-						decoration: '简装',
-						year: '2018年',
+						phone: '13800138002',
 						community: '翠湖天地',
 						region: '地方 乌鲁木齐市',
 						latitude: 43.8256,
@@ -177,14 +191,12 @@
 						houseType: '4室2厅2卫',
 						area: '160㎡',
 						floor: '跃层/12层',
-						orientation: '南北',
-						decoration: '豪华装修',
-						year: '2016年',
+						phone: '13800138003',
 						community: '金色家园',
 						region: '兵团 农八师',
 						latitude: 44.3018,
 						longitude: 86.0142,
-						description: '金色家园复式豪宅，带私家露台，视野极佳。豪华装修，配置高端。小区配套完善，有健身房、游泳池等设施。'
+						description: '金色家园复式豪宅，带私家露台，视野极佳。小区配套完善，有健身房、游泳池等设施。'
 					},
 					4: {
 						id: 4,
@@ -195,9 +207,7 @@
 						houseType: '1室1厅1卫',
 						area: '55㎡',
 						floor: '低层/6层',
-						orientation: '南',
-						decoration: '普装',
-						year: '2012年',
+						phone: '13800138004',
 						community: '东方明珠',
 						region: '地方 乌鲁木齐市',
 						latitude: 43.8206,
@@ -207,20 +217,18 @@
 					5: {
 						id: 5,
 						title: '绿地世纪城 3室2厅',
-						desc: '135㎡ · 精装修 · 学区房',
+						desc: '135㎡ · 学区房',
 						price: '156',
 						image: 'https://img.alicdn.com/imgextra/i3/6000000002334/O1CN01w2M5v81FmR5KjP1z_!!600000000472-0-yinhe.jpg',
 						houseType: '3室2厅2卫',
 						area: '135㎡',
 						floor: '中层/11层',
-						orientation: '南北',
-						decoration: '精装修',
-						year: '2017年',
+						phone: '13800138005',
 						community: '绿地世纪城',
 						region: '地方 昌吉州',
 						latitude: 44.0194,
 						longitude: 87.3164,
-						description: '绿地世纪城学区房，对口重点学校，教育资源丰富。房屋精装修，户型方正，南北通透。小区环境好，物业管理规范。'
+						description: '绿地世纪城学区房，对口重点学校，教育资源丰富。户型方正，南北通透。小区环境好，物业管理规范。'
 					},
 					6: {
 						id: 6,
@@ -231,9 +239,7 @@
 						houseType: '2室2厅1卫',
 						area: '98㎡',
 						floor: '高层/22层',
-						orientation: '南北',
-						decoration: '精装修',
-						year: '2019年',
+						phone: '13800138006',
 						community: '海景公寓',
 						region: '地方 吐鲁番市',
 						latitude: 42.9513,
@@ -246,10 +252,16 @@
 				}
 			},
 			onContact() {
-				uni.showToast({
-					title: '正在联系房东...',
-					icon: 'none'
-				})
+				if (this.house.phone) {
+					uni.makePhoneCall({
+						phoneNumber: this.house.phone
+					})
+				} else {
+					uni.showToast({
+						title: '暂无联系电话',
+						icon: 'none'
+					})
+				}
 			},
 			onOpenMap() {
 				uni.navigateTo({
@@ -285,8 +297,31 @@
 
 	.price-row {
 		display: flex;
-		align-items: baseline;
+		align-items: center;
+		justify-content: space-between;
 		margin-bottom: 16rpx;
+	}
+
+	.price-left {
+		display: flex;
+		align-items: baseline;
+	}
+
+	.visitor-pill {
+		display: inline-flex;
+		align-items: center;
+		padding: 6rpx 0;
+	}
+
+	.visitor-num {
+		font-size: 24rpx;
+		color: #999;
+	}
+
+	.visitor-label {
+		font-size: 24rpx;
+		color: #999;
+		margin-left: 4rpx;
 	}
 
 	.detail-price {

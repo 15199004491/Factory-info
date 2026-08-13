@@ -3,7 +3,7 @@
 		<view class="form-list">
 			<view class="form-item">
 				<text class="form-label">标题</text>
-				<input class="form-input" v-model="form.title" maxlength="30" placeholder="例：阳光花园 3室2厅 精装修" placeholder-class="form-placeholder" />
+				<input class="form-input" v-model="form.title" maxlength="30" placeholder="例：阳光花园 3室2厅" placeholder-class="form-placeholder" />
 			</view>
 
 			<view class="form-item">
@@ -56,38 +56,13 @@
 			</view>
 
 			<view class="form-item">
-				<text class="form-label">朝向</text>
-				<picker class="form-picker" :range="orientationOptions" @change="onOrientationChange">
-					<view class="picker-value" :class="{ 'form-placeholder-text': !form.orientation }">
-						{{ form.orientation || '请选择朝向' }}
-						<u-icon name="arrow-down" size="14" color="#999"></u-icon>
-					</view>
-				</picker>
-			</view>
-
-			<view class="form-item">
-				<text class="form-label">装修</text>
-				<picker class="form-picker" :range="decorationOptions" @change="onDecorationChange">
-					<view class="picker-value" :class="{ 'form-placeholder-text': !form.decoration }">
-						{{ form.decoration || '请选择装修' }}
-						<u-icon name="arrow-down" size="14" color="#999"></u-icon>
-					</view>
-				</picker>
-			</view>
-
-			<view class="form-item">
-				<text class="form-label">年代</text>
-				<picker class="form-picker" :range="yearOptions" @change="onYearChange">
-					<view class="picker-value" :class="{ 'form-placeholder-text': !form.year }">
-						{{ form.year || '请选择年代' }}
-						<u-icon name="arrow-down" size="14" color="#999"></u-icon>
-					</view>
-				</picker>
-			</view>
-
-			<view class="form-item">
 				<text class="form-label">售价(万)</text>
 				<input class="form-input" v-model="form.price" type="number" maxlength="10" placeholder="例：128" placeholder-class="form-placeholder" />
+			</view>
+
+			<view class="form-item">
+				<text class="form-label">联系电话</text>
+				<input class="form-input" v-model="form.phone" type="number" maxlength="11" placeholder="请输入联系电话" placeholder-class="form-placeholder" />
 			</view>
 
 			<view class="form-item">
@@ -143,9 +118,6 @@
 				editingId: null,
 				houseTypeOptions: ['1室1厅', '1室2厅', '2室1厅', '2室2厅', '2室3厅', '3室1厅', '3室2厅', '3室3厅', '4室2厅', '4室3厅', '5室2厅', '5室3厅'],
 				floorOptions: [],
-				orientationOptions: ['东', '南', '西', '北', '东南', '西南', '东北', '西北', '南北', '东西'],
-				decorationOptions: ['毛坯', '简装', '精装', '豪装'],
-				yearOptions: [],
 				form: {
 					title: '',
 					community: '',
@@ -156,10 +128,8 @@
 					houseType: '',
 					area: '',
 					floor: '',
-					orientation: '',
-					decoration: '',
-					year: '',
 					price: '',
+					phone: '',
 					images: [],
 					description: ''
 				}
@@ -172,12 +142,6 @@
 				floors.push(i + '层')
 			}
 			this.floorOptions = floors
-			var years = []
-			var currentYear = new Date().getFullYear()
-			for (var y = currentYear; y >= 1990; y--) {
-				years.push(y + '年')
-			}
-			this.yearOptions = years
 		},
 		onLoad(options) {
 			if (options && options.action === 'edit') {
@@ -202,10 +166,8 @@
 						houseType: item.houseType || '',
 						area: item.area || '',
 						floor: item.floor || '',
-						orientation: item.orientation || '',
-						decoration: item.decoration || '',
-						year: item.year || '',
 						price: item.price || '',
+						phone: item.phone || '',
 						images: item.images || [],
 						description: item.description || ''
 					}
@@ -244,15 +206,6 @@
 			},
 			onFloorChange(e) {
 				this.form.floor = this.floorOptions[e.detail.value]
-			},
-			onOrientationChange(e) {
-				this.form.orientation = this.orientationOptions[e.detail.value]
-			},
-			onYearChange(e) {
-				this.form.year = this.yearOptions[e.detail.value]
-			},
-			onDecorationChange(e) {
-				this.form.decoration = this.decorationOptions[e.detail.value]
 			},
 			chooseImage() {
 				var self = this
@@ -293,6 +246,10 @@
 					uni.showToast({ title: '请填写售价', icon: 'none' })
 					return
 				}
+				if (!this.form.phone) {
+					uni.showToast({ title: '请填写联系电话', icon: 'none' })
+					return
+				}
 				var key = 'published_second'
 				var list = uni.getStorageSync(key) || []
 				var item = {
@@ -307,10 +264,8 @@
 					houseType: this.form.houseType,
 					area: this.form.area,
 					floor: this.form.floor,
-					orientation: this.form.orientation,
-					decoration: this.form.decoration,
-					year: this.form.year,
 					price: this.form.price,
+					phone: this.form.phone,
 					images: this.form.images,
 					description: this.form.description,
 					createTime: new Date().toLocaleString()
