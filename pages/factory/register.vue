@@ -58,7 +58,7 @@
 
 <script>
 	import { factoryApi, userApi } from '@/utils/request.js'
-	import { uploadImage } from '@/utils/upload.js'
+	import '@/utils/upload.js'
 
 	export default {
 		data() {
@@ -128,14 +128,11 @@
 					sourceType: ['album', 'camera'],
 					success: async (res) => {
 						const tempPath = res.tempFilePaths[0]
-						uni.showLoading({ title: '上传中...' })
-						try {
-							const result = await uploadImage(tempPath)
-							this.form.license = result.url
-						} catch (e) {
-							uni.showToast({ title: '上传失败', icon: 'none' })
-						} finally {
-							uni.hideLoading()
+						uni.showLoading({ title: '校验中...' })
+						const ok = await uni.checkImageSafe(tempPath)
+						uni.hideLoading()
+						if (ok) {
+							this.form.license = tempPath
 						}
 					}
 				})
@@ -187,18 +184,24 @@
 					}
 				} catch (e) {}
 
-				const postData = {
-					id: this.factoryId || undefined,
-					name: this.form.name,
-					phone: this.form.phone,
-					address: this.form.address,
-					latitude: this.form.latitude,
-					longitude: this.form.longitude,
-					license: this.form.license
-				}
-
 				try {
 					uni.showLoading({ title: '提交中...' })
+
+					let licenseUrl = this.form.license
+					if (licenseUrl && !licenseUrl.startsWith('http')) {
+						licenseUrl = await uni.uploadFactoryLicense(licenseUrl)
+					}
+
+					const postData = {
+						id: this.factoryId || undefined,
+						name: this.form.name,
+						phone: this.form.phone,
+						address: this.form.address,
+						latitude: this.form.latitude,
+						longitude: this.form.longitude,
+						license: licenseUrl
+					}
+
 					if (this.isEdit) {
 						await factoryApi.edit(postData)
 						uni.showToast({ title: '保存成功', icon: 'success' })

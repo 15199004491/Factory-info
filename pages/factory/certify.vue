@@ -103,6 +103,7 @@
 </template>
 
 <script>
+	import '@/utils/upload.js'
 	export default {
 		data() {
 			return {
@@ -128,9 +129,15 @@
 					count: 1,
 					sizeType: ['compressed'],
 					sourceType: ['album', 'camera'],
-					success: (res) => {
-						this.licenseImage = res.tempFilePaths[0]
-						uni.showToast({ title: '上传成功', icon: 'success' })
+					success: async (res) => {
+						const tempPath = res.tempFilePaths[0]
+						uni.showLoading({ title: '校验中...' })
+						const ok = await uni.checkImageSafe(tempPath)
+						uni.hideLoading()
+						if (ok) {
+							this.licenseImage = tempPath
+							uni.showToast({ title: '上传成功', icon: 'success' })
+						}
 					}
 				})
 			},

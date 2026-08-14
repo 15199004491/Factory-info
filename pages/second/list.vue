@@ -20,15 +20,15 @@
 			</view>
 		</view>
 
-		<view class="result-count" v-if="houseList.length > 0">
-			<text class="result-count-text">共找到 {{ houseList.length }} 套二手房</text>
+		<view class="result-count" v-if="total > 0">
+			<text class="result-count-text">共找到 {{ total }} 套二手房</text>
 		</view>
 
 		<view class="house-grid">
 			<view
 				class="house-card"
 				v-for="(item, index) in houseList"
-				:key="index"
+				:key="item.id || index"
 				@tap="onHouseTap(item)"
 			>
 				<view class="house-image-wrap">
@@ -42,12 +42,19 @@
 			</view>
 		</view>
 
-		<view class="empty" v-if="houseList.length === 0">
+		<view class="load-more" v-if="houseList.length > 0">
+			<text v-if="loading" class="load-more-text">加载中...</text>
+			<text v-else-if="noMore" class="load-more-text">没有更多数据了</text>
+			<text v-else class="load-more-text" @tap="loadMore">加载更多</text>
+		</view>
+
+		<view class="empty" v-if="!loading && houseList.length === 0">
 			<text class="empty-text">暂无符合条件的二手房源</text>
 		</view>
 
 		<region-picker
 			:visible="showRegionPicker"
+			:current="currentRegion"
 			@confirm="onRegionConfirm"
 			@cancel="onRegionCancel"
 		/>
@@ -69,28 +76,79 @@
 				keyword: '',
 				showRegionPicker: false,
 				currentRegion: '全部',
-				houseList: []
+				houseList: [],
+				page: 1,
+				limit: 20,
+				total: 0,
+				loading: false,
+				noMore: false
 			}
 		},
 		onLoad() {
 			this.loadList()
 		},
+		onReachBottom() {
+			if (!this.noMore && !this.loading && this.houseList.length > 0) {
+				this.loadMore()
+			}
+		},
 		methods: {
 			async loadList() {
+				this.loading = true
+				this.noMore = false
+				this.page = 1
 				try {
 					const data = await secondHouseApi.getList({
 						keyword: this.keyword,
-						region: this.currentRegion === '全部' ? '' : this.currentRegion
+						region: this.currentRegion === '全部' ? '' : this.currentRegion,
+						page: this.page,
+						limit: this.limit
 					})
-					this.houseList = (data || []).map(item => ({
-						id: item.id,
-						title: item.title,
-						desc: `${item.area || ''}㎡ · ${item.house_type || ''}`,
-						price: item.price + '万',
-						image: Array.isArray(item.images) && item.images.length ? item.images[0] : ''
-					}))
+					this.total = data.total || 0
+					this.houseList = this.formatList(data.list || [])
+					console.log('this.houseList--',this.houseList)
+					this.checkNoMore()
 				} catch (e) {
 					this.houseList = []
+					this.total = 0
+					this.noMore = true
+				} finally {
+					this.loading = false
+				}
+			},
+			async loadMore() {
+				if (this.loading || this.noMore) return
+				this.loading = true
+				try {
+					this.page++
+					const data = await secondHouseApi.getList({
+						keyword: this.keyword,
+						region: this.currentRegion === '全部' ? '' : this.currentRegion,
+						page: this.page,
+						limit: this.limit
+					})
+					this.total = data.total || this.total
+					this.houseList = this.houseList.concat(this.formatList(data.list || []))
+					
+					this.checkNoMore()
+				} catch (e) {
+					this.page--
+				} finally {
+					this.loading = false
+				}
+			},
+			formatList(list) {
+				return (list || []).map(item => ({
+					id: item.Id,
+					title: item.title,
+					desc: `${item.name || ''}· ${item.shape || ''}· ${item.acreage || ''}㎡ `,
+					price: item.price + '万',
+					image: Array.isArray(item.images) && item.images.length ? item.images[0] : ''
+				}))
+			},
+			checkNoMore() {
+				if (this.houseList.length >= this.total || this.houseList.length < this.limit) {
+					this.noMore = true
 				}
 			},
 			openRegionPicker() {
@@ -110,6 +168,7 @@
 			onHouseTap(item) {
 				uni.navigateTo({
 					url: '/pages/second/detail?id=' + item.id
+					
 				})
 			}
 		}
@@ -136,12 +195,16 @@
 		align-items: center;
 		flex-shrink: 0;
 		padding: 8rpx 0;
+		max-width: 60%;
 	}
 
 	.region-text {
 		font-size: 28rpx;
 		color: #333;
 		margin-right: 6rpx;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.search-input-wrap {
@@ -241,6 +304,18 @@
 		font-size: 32rpx;
 		font-weight: bold;
 		color: #ff6b35;
+	}
+
+	.load-more {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		padding: 24rpx 0 40rpx;
+	}
+
+	.load-more-text {
+		font-size: 26rpx;
+		color: #999;
 	}
 
 	.empty {

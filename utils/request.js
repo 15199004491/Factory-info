@@ -6,7 +6,7 @@ export function getOpenid() {
 	return info.openid || ''
 }
 
-function request(url, data = {}, method = 'GET') {
+export function request(url, data = {}, method = 'GET') {
     return new Promise((resolve, reject) => {
         const header = {}
         if (method !== 'GET') {
@@ -58,4 +58,5 @@ export const userApi = {
     update: (d) => request('/farm/Wxuser/ringUp', d, 'POST'),
     getPhone: (code) => request('/farm/Wxuser/getuserphonenumber', { code }, 'POST'),
     msgCheck: (msg) => request('/farm/Wxuser/msgSecCheck', { msg }, 'POST'),
+    imgSecCheck: (media) => request('/farm/Wxuser/imgSecCheck', media, 'POST'),
 };

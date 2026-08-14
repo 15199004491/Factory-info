@@ -130,13 +130,13 @@
 					this.house = {
 						id: data.id,
 						title: data.title,
-						desc: `${data.area || ''}㎡ · ${data.house_type || ''}`,
+						desc: `${data.acreage || ''}㎡ · ${data.house_type || ''}`,
 						price: data.price,
 						image: Array.isArray(data.images) && data.images.length ? data.images[0] : '',
 						houseType: data.house_type || '',
-						area: (data.area || '') + '㎡',
+						area: (data.acreage || '') + '㎡',
 						floor: data.floor || '',
-						phone: data.phone || '',
+						mobile: data.mobile || '',
 						community: data.community || '',
 						region: data.region || '',
 						latitude: data.latitude || 0,
@@ -147,9 +147,9 @@
 				} catch (e) {}
 			},
 			onContact() {
-				if (this.house.phone) {
+				if (this.house.mobile) {
 					uni.makePhoneCall({
-						phoneNumber: this.house.phone
+						phoneNumber: this.house.mobile
 					})
 				} else {
 					uni.showToast({
