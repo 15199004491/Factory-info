@@ -1,6 +1,11 @@
 // utils/api.js 或你现有的请求封装
 const BASE_URL = 'http://localhost/public/admin.php';
 
+export function getOpenid() {
+	const info = uni.getStorageSync('user_info') || {}
+	return info.openid || ''
+}
+
 function request(url, data = {}, method = 'GET') {
     return new Promise((resolve, reject) => {
         const header = {}
@@ -29,33 +34,28 @@ function request(url, data = {}, method = 'GET') {
 }
 
 export const secondHouseApi = {
-    // 列表
     getList: (params) => request('/farm/Secondhouse/houseList', params),
-    // 详情
     getDetail: (Id) => request('/farm/Secondhouse/houseDetail', { Id }),
-    // 新增
-    add: (data) => request('/farm/Secondhouse/addHouse', data, 'POST'),
-    // 编辑
-    edit: (data) => request('/farm/Secondhouse/addHouse', data, 'POST'),
+    addHouse: (data) => request('/farm/Secondhouse/addHouse', { ...data, open_id: getOpenid() }, 'POST'),
 };
 
 export const factoryApi = {
-    // 加工厂
-    getList:    (p) => request('/farm/Factory/factoryList', p),
-    getSelf:    (publisher) => request('/farm/Factory/factorySelf', { publisher }),
-    getDetail:  (Id) => request('/farm/Factory/factoryDetail', { Id }),
-    add:        (d) => request('/farm/Factory/addFactory', d, 'POST'),
-    remove:     (Id) => request('/farm/Factory/deleteFactory', { Id }, 'POST'),
-    verify:     (Id, verified, remark) => request('/farm/Factory/verifyFactory', { Id, verified, remark }, 'POST'),
-	publishFactory: (Id) => request('/farm/Factory/publishFactory', { Id }, 'POST'),
+    getList: (p) => request('/farm/Factory/factoryList', p),
+    getSelf: () => request('/farm/Factory/factorySelf', { open_id: getOpenid() }),
+    getDetail: (Id) => request('/farm/Factory/factoryDetail', { Id }),
+    addFactory: (d) => request('/farm/Factory/addFactory', { ...d, open_id: getOpenid() }, 'POST'),
+    edit: (d) => request('/farm/Factory/editFactory', d, 'POST'),
+    remove: (Id) => request('/farm/Factory/deleteFactory', { Id }, 'POST'),
+    verify: (Id, verified, remark) => request('/farm/Factory/verifyFactory', { Id, verified, remark }, 'POST'),
+    publishFactory: (Id) => request('/farm/Factory/publishFactory', { Id }, 'POST'),
 };
 
 export const userApi = {
-    login:    (d) => request('/farm/Wxuser/login', d, 'POST'),
-    logout:   (token) => request('/farm/Wxuser/logout', { token }, 'POST'),
-    refresh:  (token) => request('/farm/Wxuser/refreshToken', { token }, 'POST'),
-    getInfo:  (token) => request('/farm/Wxuser/getUserInfo', { token }),
-    update:   (d) => request('/farm/Wxuser/ringUp', d, 'POST'),
+    login: (d) => request('/farm/Wxuser/login', d, 'POST'),
+    logout: (token) => request('/farm/Wxuser/logout', { token }, 'POST'),
+    refresh: (token) => request('/farm/Wxuser/refreshToken', { token }, 'POST'),
+    getInfo: (token) => request('/farm/Wxuser/getUserInfo', { token }),
+    update: (d) => request('/farm/Wxuser/ringUp', d, 'POST'),
     getPhone: (code) => request('/farm/Wxuser/getuserphonenumber', { code }, 'POST'),
     msgCheck: (msg) => request('/farm/Wxuser/msgSecCheck', { msg }, 'POST'),
 };

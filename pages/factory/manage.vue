@@ -39,35 +39,38 @@
 </template>
 
 <script>
+	import { factoryApi } from '@/utils/request.js'
+
 	export default {
 		data() {
 			return {
-				factoryList: [
-					{
-						name: '红旗粮食综合加工厂',
-						address: '山东省济南市历城区农业产业园88号',
-						phone: '13888888888',
-						status: 'approved',
-						licenseImage: '',
-						latitude: 36.6512,
-						longitude: 117.1201,
-						createdAt: '2026-08-10 14:30'
-					},
-					{
-						name: '丰收粮油加工厂',
-						address: '山东省济南市章丘区工业大道66号',
-						phone: '13999999999',
-						status: 'pending',
-						licenseImage: '',
-						latitude: 36.7200,
-						longitude: 117.1800,
-						createdAt: '2026-08-11 09:15'
-					}
-				]
+				factoryList: []
 			}
 		},
+		onShow() {
+			this.loadList()
+		},
 		methods: {
+			async loadList() {
+				try {
+					const data = await factoryApi.getSelf()
+					this.factoryList = (data || []).map(item => ({
+						id: item.id,
+						name: item.name,
+						address: item.address,
+						phone: item.phone,
+						status: item.verified ? 'approved' : 'pending',
+						licenseImage: item.license,
+						latitude: item.latitude,
+						longitude: item.longitude,
+						createdAt: item.create_time || item.createdAt || ''
+					}))
+				} catch (e) {
+					this.factoryList = []
+				}
+			},
 			formatDate(dateStr) {
+				if (!dateStr) return ''
 				const date = new Date(dateStr.replace(/-/g, '/'))
 				const now = new Date()
 				const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -98,12 +101,12 @@
 			},
 			onCertify(item) {
 				uni.navigateTo({
-					url: '/pages/factory/certify?name=' + encodeURIComponent(item.name)
+					url: '/pages/factory/certify?id=' + item.id
 				})
 			},
 			onPublishPrice(item) {
 				uni.navigateTo({
-					url: '/pages/factory/price?name=' + encodeURIComponent(item.name)
+					url: '/pages/factory/price?id=' + item.id
 				})
 			},
 			onDelete(item, index) {
@@ -111,17 +114,20 @@
 					title: '确认删除',
 					content: '删除以后对应的品类都将删除，确定要删除「' + item.name + '」吗？',
 					confirmColor: '#ff4d4f',
-					success: (res) => {
+					success: async (res) => {
 						if (res.confirm) {
-							this.factoryList.splice(index, 1)
-							uni.showToast({ title: '已删除', icon: 'success' })
+							try {
+								await factoryApi.remove(item.id)
+								this.factoryList.splice(index, 1)
+								uni.showToast({ title: '已删除', icon: 'success' })
+							} catch (e) {}
 						}
 					}
 				})
 			},
 			goDetail(item) {
 				uni.navigateTo({
-					url: '/pages/factory/detail?name=' + encodeURIComponent(item.name)
+					url: '/pages/factory/detail?id=' + item.id
 				})
 			}
 		}

@@ -230,12 +230,16 @@
 					uni.showToast({ title: '请选择地区', icon: 'none' })
 					return
 				}
+				if (!this.form.houseType) {
+					uni.showToast({ title: '请选择户型', icon: 'none' })
+					return
+				}
 				if (!this.form.area) {
 					uni.showToast({ title: '请填写面积', icon: 'none' })
 					return
 				}
-				if (!this.form.price) {
-					uni.showToast({ title: '请填写售价', icon: 'none' })
+				if (!this.form.floor) {
+					uni.showToast({ title: '请选择楼层', icon: 'none' })
 					return
 				}
 				if (!this.form.phone) {
@@ -262,28 +266,21 @@
 				const postData = {
 					id: this.editingId || undefined,
 					title: this.form.title,
-					community: this.form.community,
-					region: this.form.region,
-					location_name: this.form.locationName,
-					latitude: this.form.latitude,
-					longitude: this.form.longitude,
-					house_type: this.form.houseType,
-					area: this.form.area,
+					name: this.form.community,
+					shape: this.form.houseType,
+					acreage: this.form.area,
 					floor: this.form.floor,
 					price: this.form.price,
-					phone: this.form.phone,
-					images: this.form.images,
-					description: this.form.description
+					mobile: this.form.phone,
+					second_image: this.form.images,
+					explain: this.form.description,
+					area: this.form.region,
+					location: this.form.locationName,
 				}
 
 				try {
-					if (this.editingId) {
-						await secondHouseApi.edit(postData)
-						uni.showToast({ title: '修改成功', icon: 'success' })
-					} else {
-						await secondHouseApi.add(postData)
-						uni.showToast({ title: '发布成功', icon: 'success' })
-					}
+					await secondHouseApi.addHouse(postData)
+					uni.showToast({ title: this.editingId ? '修改成功' : '发布成功', icon: 'success' })
 					setTimeout(() => {
 						uni.navigateBack()
 					}, 1000)

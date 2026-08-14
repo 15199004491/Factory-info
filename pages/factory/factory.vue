@@ -46,14 +46,13 @@
 			<view class="factory-item" v-for="(item, index) in factoryList" :key="index" @tap="goDetail(item)">
 				<view class="item-top">
 					<view class="name-wrap">
-						<text class="verified-tag" v-if="item.verified">已认证</text>
-						<!-- <text class="unverified-tag" v-else>未认证</text> -->
+						<text class="verified-tag" v-if="item.identification === 1">已认证</text>
 						<text class="factory-name">{{ item.name }}</text>
 					</view>
 				</view>
 				<view class="item-bottom">
 					<view class="category-text">{{ item.categories.join(' / ') }}</view>
-					<text class="date">{{ formatDate(item.date) }}</text>
+					<text class="date">{{ formatDateTime(item.createTime) }}</text>
 				</view>
 			</view>
 		</view>
@@ -71,6 +70,7 @@
 	import uInput from 'uview-plus/components/u-input/u-input.vue'
 	import tabBar from '@/components/tab-bar/tab-bar.vue'
 	import { factoryApi } from '@/utils/request.js'
+	import { formatDateTime } from '../../utils/date.js'
 
 	export default {
 		components: {
@@ -101,6 +101,7 @@
 				],
 				userLat: 0,
 				userLng: 0,
+				firstLoaded: false,
 				factoryList: []
 			}
 		},
@@ -108,7 +109,9 @@
 			this.getLocation()
 		},
 		onShow() {
-			this.loadList()
+			if (this.firstLoaded) {
+				this.loadList()
+			}
 		},
 		methods: {
 			getLocation() {
@@ -117,9 +120,10 @@
 					success: (res) => {
 						this.userLat = res.latitude
 						this.userLng = res.longitude
-						this.loadList()
 					},
-					fail: () => {
+					fail: () => {},
+					complete: () => {
+						this.firstLoaded = true
 						this.loadList()
 					}
 				})
@@ -130,45 +134,25 @@
 					keyword: this.keyword,
 					distance: distanceVal === 'all' ? '' : distanceVal,
 					lat: this.userLat,
-					lng: this.userLng
+					lng: this.userLng,
+					page: 1,
+					limit: 1000
 				}
 				try {
-					const data = await factoryApi.getList(params)
-					this.factoryList = (data || []).map(item => ({
+					const res = await factoryApi.getList(params)
+					const list = (res && res.list) ? res.list : (Array.isArray(res) ? res : [])
+					this.factoryList = list.map(item => ({
 						id: item.id,
 						name: item.name,
-						verified: !!item.verified,
-						categories: Array.isArray(item.categories) ? item.categories : (item.categories || '').split(',').filter(Boolean),
-						date: item.create_time || item.date || ''
+						identification: item.identification,
+						createTime: item.update_time || item.create_time || item.createtime || 0,
+						categories: Array.isArray(item.categories) ? item.categories : (item.categories || '').split(',').filter(Boolean)
 					}))
 				} catch (e) {
 					this.factoryList = []
 				}
 			},
-			formatDate(dateStr) {
-				const date = new Date(dateStr.replace(/-/g, '/'))
-				const now = new Date()
-				const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-				const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-				const diffDays = Math.floor((todayStart - dateStart) / (24 * 60 * 60 * 1000))
-				const hh = String(date.getHours()).padStart(2, '0')
-				const mm = String(date.getMinutes()).padStart(2, '0')
-				const time = `${hh}:${mm}`
-
-				if (diffDays === 0) {
-					return `今天 ${time}`
-				} else if (diffDays === 1) {
-					return `昨天 ${time}`
-				} else if (diffDays < 7) {
-					const weekDays = ['日', '一', '二', '三', '四', '五', '六']
-					return `周${weekDays[date.getDay()]} ${time}`
-				} else {
-					const y = date.getFullYear()
-					const m = String(date.getMonth() + 1).padStart(2, '0')
-					const d = String(date.getDate()).padStart(2, '0')
-					return `${y}-${m}-${d}`
-				}
-			},
+			formatDateTime,
 			toggleMenu() {
 				this.showMenu = !this.showMenu
 			},
@@ -394,6 +378,28 @@
 		font-size: 20rpx;
 		color: #fff;
 		background: linear-gradient(135deg, #3c9cff, #1890ff);
+		padding: 4rpx 12rpx;
+		border-radius: 6rpx;
+		flex-shrink: 0;
+		margin-right: 8rpx;
+	}
+
+	.certifying-tag {
+		font-size: 20rpx;
+		color: #ff8c00;
+		background-color: rgba(255, 140, 0, 0.1);
+		border: 1rpx solid rgba(255, 140, 0, 0.3);
+		padding: 4rpx 12rpx;
+		border-radius: 6rpx;
+		flex-shrink: 0;
+		margin-right: 8rpx;
+	}
+
+	.failed-tag {
+		font-size: 20rpx;
+		color: #ff4d4f;
+		background-color: rgba(255, 77, 79, 0.1);
+		border: 1rpx solid rgba(255, 77, 79, 0.3);
 		padding: 4rpx 12rpx;
 		border-radius: 6rpx;
 		flex-shrink: 0;

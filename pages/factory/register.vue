@@ -57,10 +57,14 @@
 </template>
 
 <script>
+	import { factoryApi, userApi } from '@/utils/request.js'
+	import { uploadImage } from '@/utils/upload.js'
+
 	export default {
 		data() {
 			return {
 				isEdit: false,
+				factoryId: null,
 				form: {
 					name: '',
 					phone: '',
@@ -72,51 +76,38 @@
 			}
 		},
 		onLoad(options) {
-			if (options.edit === '1' && options.name) {
+			if (options.edit === '1' && options.id) {
 				this.isEdit = true
+				this.factoryId = parseInt(options.id)
 				uni.setNavigationBarTitle({ title: '编辑加工厂' })
-				this.loadFactoryData(decodeURIComponent(options.name))
+				this.loadFactoryData()
 			}
 		},
 		methods: {
-			loadFactoryData(name) {
-				const mockData = {
-					'红旗粮食综合加工厂': {
-						name: '红旗粮食综合加工厂',
-						phone: '13888888888',
-						address: '山东省济南市历城区农业产业园88号',
-						latitude: 36.6512,
-						longitude: 117.1201
-					},
-					'丰收粮油加工厂': {
-						name: '丰收粮油加工厂',
-						phone: '13999999999',
-						address: '山东省济南市章丘区工业大道66号',
-						latitude: 36.7200,
-						longitude: 117.1800
+			async loadFactoryData() {
+				try {
+					const data = await factoryApi.getDetail(this.factoryId)
+					this.form = {
+						name: data.name || '',
+						phone: data.phone || '',
+						address: data.address || '',
+						latitude: data.latitude || 0,
+						longitude: data.longitude || 0,
+						license: data.license || ''
 					}
-				}
-				const data = mockData[name]
-				if (data) {
-					this.form = { ...this.form, ...data }
-				}
+				} catch (e) {}
 			},
-			onGetPhone(e) {
+			async onGetPhone(e) {
 				if (e.detail.errMsg === 'getPhoneNumber:ok') {
-					const code = e.detail.code
-					this.mockExchangePhone(code)
+					try {
+						const data = await userApi.getPhone(e.detail.code)
+						this.form.phone = data.phoneNumber
+					} catch (err) {
+						uni.showToast({ title: '获取手机号失败', icon: 'none' })
+					}
 				} else {
 					uni.showToast({ title: '获取手机号失败', icon: 'none' })
 				}
-			},
-			mockExchangePhone(code) {
-				uni.showLoading({ title: '获取中...' })
-				setTimeout(() => {
-					uni.hideLoading()
-					const mockPhone = '13888888888'
-					this.form.phone = mockPhone
-					uni.showToast({ title: '已获取手机号', icon: 'success' })
-				}, 600)
 			},
 			onChooseLocation() {
 				uni.chooseLocation({
@@ -130,13 +121,22 @@
 					}
 				})
 			},
-			onChooseLicense() {
+			async onChooseLicense() {
 				uni.chooseImage({
 					count: 1,
 					sizeType: ['compressed'],
 					sourceType: ['album', 'camera'],
-					success: (res) => {
-						this.form.license = res.tempFilePaths[0]
+					success: async (res) => {
+						const tempPath = res.tempFilePaths[0]
+						uni.showLoading({ title: '上传中...' })
+						try {
+							const result = await uploadImage(tempPath)
+							this.form.license = result.url
+						} catch (e) {
+							uni.showToast({ title: '上传失败', icon: 'none' })
+						} finally {
+							uni.hideLoading()
+						}
 					}
 				})
 			},
@@ -159,7 +159,7 @@
 					}
 				})
 			},
-			onSubmit() {
+			async onSubmit() {
 				if (!this.form.name.trim()) {
 					uni.showToast({ title: '请输入加工厂名称', icon: 'none' })
 					return
@@ -172,28 +172,47 @@
 					uni.showToast({ title: '请选择加工厂地址', icon: 'none' })
 					return
 				}
-				if (!this.form.license) {
-					uni.showToast({ title: '请上传营业执照', icon: 'none' })
-					return
+
+				const msg = [
+					this.form.name,
+					this.form.phone,
+					this.form.address
+				].filter(Boolean).join(' ')
+
+				try {
+					const result = await userApi.msgCheck(msg)
+					if (result.errcode !== 0) {
+						uni.showToast({ title: '内容包含敏感信息', icon: 'none' })
+						return
+					}
+				} catch (e) {}
+
+				const postData = {
+					id: this.factoryId || undefined,
+					name: this.form.name,
+					phone: this.form.phone,
+					address: this.form.address,
+					latitude: this.form.latitude,
+					longitude: this.form.longitude,
+					license: this.form.license
 				}
-				if (this.isEdit) {
-					uni.showModal({
-						title: '保存成功',
-						content: '加工厂信息已更新',
-						showCancel: false,
-						success: () => {
-							uni.navigateBack()
-						}
-					})
-				} else {
-					uni.showModal({
-						title: '提交成功',
-						content: '您的入驻申请已提交，审核结果将通过电话通知您',
-						showCancel: false,
-						success: () => {
-							uni.navigateBack()
-						}
-					})
+
+				try {
+					uni.showLoading({ title: '提交中...' })
+					if (this.isEdit) {
+						await factoryApi.edit(postData)
+						uni.showToast({ title: '保存成功', icon: 'success' })
+					} else {
+						await factoryApi.addFactory(postData)
+						uni.showToast({ title: '提交成功', icon: 'success' })
+					}
+					setTimeout(() => {
+						uni.navigateBack()
+					}, 1000)
+				} catch (e) {
+					uni.showToast({ title: '提交失败', icon: 'none' })
+				} finally {
+					uni.hideLoading()
 				}
 			}
 		}
