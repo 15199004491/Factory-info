@@ -49,8 +49,24 @@
 		</view>
 
 		<view class="submit-area">
-			<view class="submit-btn" @tap="onSubmit">
-				<text class="submit-text">{{ isEdit ? '保存修改' : '提交入驻申请' }}</text>
+			<view class="submit-row" v-if="isEdit">
+				<view class="submit-btn" @tap="onSubmit('edit')">
+					<text class="submit-text">保存修改</text>
+				</view>
+			</view>
+			<view class="submit-row" v-else>
+				<view class="submit-btn btn-trial" @tap="onSubmit('trial')">
+					<text class="submit-btn-label">免费试用</text>
+					<text class="submit-btn-sub">30天</text>
+				</view>
+				<view class="submit-btn btn-yearly" @tap="onSubmit('yearly')">
+					<view class="discount-badge">3.0折</view>
+					<text class="submit-btn-label">付费入驻</text>
+					<view class="yearly-price-row">
+						<text class="submit-btn-sub">¥300/年</text>
+						<text class="original-price">¥1000/年</text>
+					</view>
+				</view>
 			</view>
 		</view>
 	</view>
@@ -156,7 +172,7 @@
 					}
 				})
 			},
-			async onSubmit() {
+			async onSubmit(plan) {
 				if (!this.form.name.trim()) {
 					uni.showToast({ title: '请输入加工厂名称', icon: 'none' })
 					return
@@ -199,15 +215,43 @@
 						address: this.form.address,
 						latitude: this.form.latitude,
 						longitude: this.form.longitude,
-						license: licenseUrl
+						license: licenseUrl,
+						plan: plan
 					}
 
 					if (this.isEdit) {
 						await factoryApi.edit(postData)
 						uni.showToast({ title: '保存成功', icon: 'success' })
-					} else {
+					} else if (plan === 'trial') {
 						await factoryApi.addFactory(postData)
-						uni.showToast({ title: '提交成功', icon: 'success' })
+						uni.showToast({ title: '已开通30天免费试用', icon: 'success' })
+					} else if (plan === 'yearly') {
+						uni.showModal({
+							title: '付费入驻',
+							content: '请联系客服完成 ¥300/年 的入驻付费后提交申请。是否继续提交？',
+							confirmText: '继续提交',
+							success: async (res) => {
+								if (res.confirm) {
+									try {
+										await factoryApi.addFactory(postData)
+										uni.showToast({ title: '提交成功，请联系客服完成付费', icon: 'none' })
+										setTimeout(() => {
+											uni.navigateBack()
+										}, 1500)
+									} catch (e) {
+										uni.showToast({ title: '提交失败', icon: 'none' })
+									} finally {
+										uni.hideLoading()
+									}
+								} else {
+									uni.hideLoading()
+								}
+							},
+							fail: () => {
+								uni.hideLoading()
+							}
+						})
+						return
 					}
 					setTimeout(() => {
 						uni.navigateBack()
@@ -215,7 +259,9 @@
 				} catch (e) {
 					uni.showToast({ title: '提交失败', icon: 'none' })
 				} finally {
-					uni.hideLoading()
+					if (plan !== 'yearly') {
+						uni.hideLoading()
+					}
 				}
 			}
 		}
@@ -381,21 +427,79 @@
 	}
 
 	.submit-area {
-		padding: 40rpx 48rpx 20rpx;
+		padding: 40rpx 24rpx 20rpx;
+	}
+
+	.submit-row {
+		display: flex;
 	}
 
 	.submit-btn {
-		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
-		padding: 28rpx 0;
-		border-radius: 12rpx;
+		flex: 1;
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
+		padding: 20rpx 0;
+		margin: 0 12rpx;
+		border-radius: 12rpx;
 	}
 
 	.submit-text {
-		font-size: 32rpx;
-		font-weight: 600;
+		font-size: 28rpx;
+		font-weight: 500;
 		color: #fff;
+	}
+
+	.submit-btn-label {
+		font-size: 28rpx;
+		font-weight: 500;
+		color: #fff;
+	}
+
+	.submit-btn-sub {
+		font-size: 24rpx;
+		color: rgba(255, 255, 255, 0.9);
+		margin-top: 6rpx;
+	}
+
+	.yearly-price-row {
+		display: flex;
+		align-items: baseline;
+		margin-top: 6rpx;
+	}
+
+	.yearly-price-row .submit-btn-sub {
+		margin-top: 0;
+	}
+
+	.original-price {
+		font-size: 20rpx;
+		color: rgba(255, 255, 255, 0.6);
+		text-decoration: line-through;
+		margin-left: 12rpx;
+	}
+
+	.btn-trial {
+		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
+	}
+
+	.btn-yearly {
+		background: linear-gradient(135deg, #ff9800, #ffb74d);
+		position: relative;
+		overflow: hidden;
+	}
+
+	.discount-badge {
+		position: absolute;
+		top: 0;
+		right: 0;
+		background: linear-gradient(135deg, #ff4d4f, #ff7875);
+		color: #fff;
+		font-size: 20rpx;
+		font-weight: 700;
+		padding: 4rpx 16rpx;
+		border-bottom-left-radius: 12rpx;
+		line-height: 1.2;
 	}
 </style>

@@ -12,15 +12,22 @@
 				<view class="item-info">
 					<text class="info-address">{{ item.address }}</text>
 				</view>
+				<view class="item-validity">
+					<view class="validity-icon-wrap">
+						<u-icon name="clock" size="14" :color="getValidityInfo(item).color" />
+					</view>
+					<text class="validity-label">有效期至</text>
+					<text class="validity-date" :style="{ color: getValidityInfo(item).color }">{{ item.validityEnd || '未设置' }}</text>
+					<view class="validity-tag" :class="getValidityInfo(item).tagClass">
+						<text class="validity-tag-text">{{ getValidityInfo(item).tagText }}</text>
+					</view>
+				</view>
 				<view class="item-actions">
-					<!-- <view class="action-btn btn-certify" @tap.stop="onCertify(item)">
-						<text class="action-text">认证</text>
-					</view> -->
 					<view class="action-btn btn-price" @tap.stop="onPublishPrice(item)">
 						<text class="action-text">发布信息</text>
 					</view>
-					<view class="action-btn btn-delete" @tap.stop="onDelete(item, index)">
-						<text class="action-text">删除</text>
+					<view class="action-btn btn-more" @tap.stop="onMore(item, index)">
+						<text class="action-text">更多</text>
 					</view>
 				</view>
 			</view>
@@ -63,11 +70,95 @@
 						licenseImage: item.license,
 						latitude: item.latitude,
 						longitude: item.longitude,
-						createdAt: item.create_time || item.createdAt || ''
+						createdAt: item.create_time || item.createdAt || '',
+						validityEnd: item.expire_time || item.validity_end || item.validityEnd || ''
 					}))
 				} catch (e) {
 					this.factoryList = []
 				}
+				if (this.factoryList.length === 0) {
+					this.factoryList = this.getMockList()
+				}
+			},
+			getMockList() {
+				const now = new Date()
+				const fmt = (d) => {
+					const y = d.getFullYear()
+					const m = String(d.getMonth() + 1).padStart(2, '0')
+					const day = String(d.getDate()).padStart(2, '0')
+					return `${y}-${m}-${day}`
+				}
+				const addDays = (date, days) => {
+					const d = new Date(date)
+					d.setDate(d.getDate() + days)
+					return d
+				}
+				return [
+					{
+						id: 'mock1',
+						name: '兰州新区诚信机械加工厂',
+						address: '甘肃省兰州市兰州新区昆仑大道中段 1688 号',
+						status: 'approved',
+						createdAt: fmt(addDays(now, -60)),
+						validityEnd: fmt(addDays(now, 180))
+					},
+					{
+						id: 'mock2',
+						name: '七里河区顺达五金制品厂',
+						address: '甘肃省兰州市七里河区西津西路 399 号',
+						status: 'approved',
+						createdAt: fmt(addDays(now, -180)),
+						validityEnd: fmt(addDays(now, 15))
+					},
+					{
+						id: 'mock3',
+						name: '城关区金鑫钣金加工厂',
+						address: '甘肃省兰州市城关区东岗东路 256 号',
+						status: 'approved',
+						createdAt: fmt(addDays(now, -365)),
+						validityEnd: fmt(addDays(now, -10))
+					},
+					{
+						id: 'mock4',
+						name: '安宁区宏达精密铸造厂',
+						address: '甘肃省兰州市安宁区安宁东路 888 号',
+						status: 'pending',
+						createdAt: fmt(addDays(now, -3)),
+						validityEnd: ''
+					}
+				]
+			},
+			getValidityInfo(item) {
+				const info = {
+					color: '#666',
+					tagClass: 'validity-tag-normal',
+					tagText: '正常'
+				}
+				if (!item.validityEnd) {
+					info.color = '#999'
+					info.tagClass = 'validity-tag-none'
+					info.tagText = '未设置'
+					return info
+				}
+				const end = new Date(item.validityEnd.replace(/-/g, '/'))
+				const now = new Date()
+				const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+				const diffMs = end.getTime() - todayStart.getTime()
+				const diffDays = Math.ceil(diffMs / (24 * 60 * 60 * 1000))
+				if (diffDays < 0) {
+					info.color = '#ff4d4f'
+					info.tagClass = 'validity-tag-expired'
+					info.tagText = '已过期'
+				} else if (diffDays <= 30) {
+					info.color = '#fa8c16'
+					info.tagClass = 'validity-tag-warning'
+					info.tagText = `剩${diffDays}天`
+				} else {
+					info.color = '#52c41a'
+					info.tagClass = 'validity-tag-normal'
+					info.tagText = '正常'
+				}
+				return info
 			},
 			formatDate(dateStr) {
 				if (!dateStr) return ''
@@ -99,9 +190,35 @@
 					url: '/pages/factory/register'
 				})
 			},
+			onEdit(item) {
+				uni.navigateTo({
+					url: '/pages/factory/register?edit=1&id=' + item.id
+				})
+			},
 			onCertify(item) {
 				uni.navigateTo({
-					url: '/pages/factory/certify?id=' + item.id
+					url: '/pages/factory/certify?id=' + item.id + '&name=' + encodeURIComponent(item.name)
+				})
+			},
+			onMore(item, index) {
+				uni.showActionSheet({
+					itemList: ['认证', '续费', '编辑', '删除'],
+					success: (res) => {
+						if (res.tapIndex === 0) {
+							this.onCertify(item)
+						} else if (res.tapIndex === 1) {
+							this.onRenew(item)
+						} else if (res.tapIndex === 2) {
+							this.onEdit(item)
+						} else if (res.tapIndex === 3) {
+							this.onDelete(item, index)
+						}
+					}
+				})
+			},
+			onRenew(item) {
+				uni.navigateTo({
+					url: '/pages/factory/renew?id=' + item.id + '&name=' + encodeURIComponent(item.name) + '&validity=' + encodeURIComponent(item.validityEnd || '')
 				})
 			},
 			onPublishPrice(item) {
@@ -203,7 +320,7 @@
 	}
 
 	.item-info {
-		margin-bottom: 32rpx;
+		margin-bottom: 16rpx;
 	}
 
 	.info-address {
@@ -216,10 +333,84 @@
 		overflow: hidden;
 	}
 
+	.item-validity {
+		display: flex;
+		align-items: center;
+		background-color: #fafafa;
+		border-radius: 12rpx;
+		padding: 16rpx 20rpx;
+		margin-bottom: 28rpx;
+	}
+
+	.validity-icon-wrap {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		margin-right: 10rpx;
+	}
+
+	.validity-label {
+		font-size: 24rpx;
+		color: #888;
+		flex-shrink: 0;
+		margin-right: 10rpx;
+	}
+
+	.validity-date {
+		font-size: 24rpx;
+		font-weight: 600;
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.validity-tag {
+		flex-shrink: 0;
+		padding: 4rpx 14rpx;
+		border-radius: 8rpx;
+		margin-left: 12rpx;
+	}
+
+	.validity-tag-text {
+		font-size: 22rpx;
+	}
+
+	.validity-tag-normal {
+		background-color: rgba(82, 196, 26, 0.1);
+		.validity-tag-text {
+			color: #52c41a;
+		}
+	}
+
+	.validity-tag-warning {
+		background-color: rgba(250, 140, 22, 0.1);
+		.validity-tag-text {
+			color: #fa8c16;
+		}
+	}
+
+	.validity-tag-expired {
+		background-color: rgba(255, 77, 79, 0.1);
+		.validity-tag-text {
+			color: #ff4d4f;
+		}
+	}
+
+	.validity-tag-none {
+		background-color: rgba(153, 153, 153, 0.1);
+		.validity-tag-text {
+			color: #999;
+		}
+	}
+
 	.item-actions {
 		display: flex;
 		gap: 16rpx;
 		justify-content: flex-end;
+		padding-top: 20rpx;
+		border-top: 1rpx solid #f5f5f5;
 	}
 
 	.action-btn {

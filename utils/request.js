@@ -1,5 +1,6 @@
-// utils/api.js 或你现有的请求封装
-const BASE_URL = 'http://localhost/public/admin.php';
+import { BASE_URL } from './config.js'
+
+
 
 export function getOpenid() {
 	const info = uni.getStorageSync('user_info') || {}

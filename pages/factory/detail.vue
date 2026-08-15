@@ -24,16 +24,11 @@
 		</view> -->
 
 		<view class="module-card" :class="{ 'verified-card': factory.verified }">
-			<view class="section-title section-title-between">
+			<view class="section-title">
 				<view class="title-left">
 					<text class="title-text">基本信息</text>
 					<text class="verified-tag" v-if="factory.verified">已认证</text>
 					<text class="unverified-tag" v-else>未认证</text>
-				</view>
-				<view class="visitor-pill">
-					<text class="visitor-label">今日访客</text>
-					<text class="visitor-num">{{ todayVisitors }}</text>
-					<text class="visitor-label">人</text>
 				</view>
 			</view>
 			<view class="section-factory-name">
@@ -51,6 +46,18 @@
 				<view class="remark-row" v-if="factory.remark">
 					<text class="remark-label">备注：</text>
 					<text class="remark-text">{{ factory.remark }}</text>
+				</view>
+				<view class="visitor-divider-line"></view>
+				<view class="visitor-inline">
+					<view class="visitor-cell">
+						<text class="visitor-label">今日访客</text>
+						<text class="visitor-value">{{ formatVisitorCount(todayVisitors) }}</text>
+					</view>
+					<text class="visitor-sep">/</text>
+					<view class="visitor-cell">
+						<text class="visitor-label">历史访客</text>
+						<text class="visitor-value">{{ formatVisitorCount(historyVisitors) }}</text>
+					</view>
 				</view>
 			</view>
 		</view>
@@ -140,6 +147,7 @@
 			return {
 				showPoster: false,
 				todayVisitors: 1999,
+				historyVisitors: 28650,
 				factory: {
 					name: '红旗粮食综合加工厂',
 					verified: true,
@@ -209,6 +217,13 @@
 			getPriceNum(priceStr) {
 				const match = priceStr.match(/[\d.]+/)
 				return match ? match[0] : priceStr
+			},
+			formatVisitorCount(num) {
+				if (num >= 10000) {
+					const w = (num / 10000).toFixed(1)
+					return w + 'w'
+				}
+				return String(num)
 			},
 			getPriceUnit(priceStr) {
 				const match = priceStr.match(/[^\d.]+/)
@@ -332,9 +347,44 @@
 		margin-right: 60rpx;
 	}
 
+	.visitor-divider-line {
+		height: 1rpx;
+		background-color: #eee;
+		margin: 20rpx 0 16rpx;
+	}
+
+	.visitor-inline {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+	}
+
+	.visitor-cell {
+		display: inline-flex;
+		align-items: baseline;
+	}
+
+	.visitor-label {
+		font-size: 22rpx;
+		color: #999;
+		margin-right: 6rpx;
+	}
+
+	.visitor-value {
+		font-size: 26rpx;
+		font-weight: 600;
+		color: #3c9cff;
+	}
+
+	.visitor-sep {
+		font-size: 28rpx;
+		color: #ddd;
+		margin: 0 16rpx;
+	}
+
 	.module-card {
 		background-color: #fff;
-		margin: 20rpx 24rpx;
+		margin: 16rpx 24rpx;
 		border-radius: 16rpx;
 		overflow: hidden;
 	}
@@ -462,31 +512,6 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-	}
-
-	.visitor-pill {
-		display: inline-flex;
-		align-items: center;
-		background-color: #f5f7fa;
-		padding: 6rpx 20rpx;
-		border-radius: 20rpx;
-		flex-shrink: 0;
-	}
-
-	.visitor-label {
-		font-size: 24rpx;
-		color: #999;
-	}
-
-	.visitor-num {
-		font-size: 26rpx;
-		font-weight: 600;
-		color: #3c9cff;
-		margin-left: 8rpx;
-	}
-
-	.visitor-pill .visitor-label:last-child {
-		margin-left: 4rpx;
 	}
 
 	.title-text {

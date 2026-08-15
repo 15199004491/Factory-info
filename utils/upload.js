@@ -5,12 +5,13 @@ const COS_BASE_URL = 'https://' + COS_BUCKET + '.cos.' + COS_REGION + '.myqcloud
 const COS_SECRET_ID = 'AKIDayqVzFG4f1A4mMhx0oNhlaAWyDDyXrxp'
 const COS_SECRET_KEY = 'YsxrSq01y7FNSSRJ5kLqHfu2zkRyVpwq'
 
+import { BASE_URL } from './config.js'
+import { userApi } from './request.js'
+
 const MAX_SIZE_FACTORY = 1 * 1024 * 1024
 const MAX_SIZE_SECOND = 500 * 1024
 
-const BASE_URL = 'http://localhost/public/admin.php'
 
-import { userApi } from './request.js'
 
 function checkImage(filePath) {
 	return new Promise((resolve, reject) => {

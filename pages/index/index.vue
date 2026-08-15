@@ -98,8 +98,9 @@
 			onEntryTap(type) {
 				if (type === 'new') {
 					uni.showToast({
-						title: '新房业务即将上线',
-						icon: 'none'
+						title: '新房业务尚未开通，如有合作请联系客服',
+						icon: 'none',
+						duration: 2000
 					})
 					return
 				}

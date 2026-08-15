@@ -104,6 +104,12 @@
 			}
 		},
 		{
+			"path": "pages/factory/renew",
+			"style": {
+				"navigationBarTitleText": "加工厂续费"
+			}
+		},
+		{
 			"path": "pages/mine/mine",
 			"style": {
 				"navigationBarTitleText": "我的"
