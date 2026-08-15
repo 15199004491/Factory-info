@@ -3,9 +3,16 @@
 		<view class="picker-mask" v-show="visible" @tap="onMaskTap"></view>
 		<view class="picker-sheet" :class="{ 'picker-sheet-show': visible }">
 			<view class="sheet-header">
-				<view class="sheet-btn sheet-cancel" @tap="onCancel">取消</view>
-				<text class="sheet-title">选择地区</text>
-				<view class="sheet-btn sheet-confirm" @tap="onConfirm">确定</view>
+				<view class="sheet-header-left">
+					<view class="sheet-btn sheet-cancel" @tap="onCancel">取消</view>
+				</view>
+				<view class="sheet-header-center">
+					<text class="sheet-title">选择地区</text>
+				</view>
+				<view class="sheet-header-right">
+					<view class="sheet-btn sheet-all" v-if="showAll" @tap="onAll">全部</view>
+					<view class="sheet-btn sheet-confirm" @tap="onConfirm">确定</view>
+				</view>
 			</view>
 			<picker-view
 				class="sheet-picker"
@@ -43,6 +50,10 @@
 			current: {
 				type: String,
 				default: ''
+			},
+			showAll: {
+				type: Boolean,
+				default: false
 			}
 		},
 		data() {
@@ -129,6 +140,9 @@
 				}
 				var label = parts.length ? parts.join('') : (this.catList[this.col1Index] ? this.catList[this.col1Index].label : '')
 				this.$emit('confirm', label)
+			},
+			onAll() {
+				this.$emit('confirm', '全部')
 			},
 			onCancel() {
 				this.$emit('cancel')
@@ -224,24 +238,52 @@
 	.sheet-header {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
 		padding: 30rpx 32rpx;
 		border-bottom: 1rpx solid #f0f0f0;
+	}
+
+	.sheet-header-left,
+	.sheet-header-center,
+	.sheet-header-right {
+		width: 33.333%;
+		display: flex;
+		align-items: center;
+	}
+
+	.sheet-header-left {
+		justify-content: flex-start;
+	}
+
+	.sheet-header-center {
+		justify-content: center;
+	}
+
+	.sheet-header-right {
+		justify-content: flex-end;
 	}
 
 	.sheet-title {
 		font-size: 32rpx;
 		font-weight: 600;
 		color: #333;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.sheet-btn {
 		font-size: 32rpx;
 		padding: 8rpx 16rpx;
+		white-space: nowrap;
 	}
 
 	.sheet-cancel {
 		color: #999;
+	}
+
+	.sheet-all {
+		color: #666;
+		margin-right: 16rpx;
 	}
 
 	.sheet-confirm {

@@ -19,14 +19,6 @@
 				</view>
 			</view>
 
-			<view class="form-item form-item-link" @tap="openMapLocation">
-				<text class="form-label">地点</text>
-				<view class="form-input-wrap">
-					<text class="form-value" :class="{ 'form-placeholder-text': !form.locationName }">{{ form.locationName || '选择地点' }}</text>
-					<u-icon name="map" size="14" color="#999"></u-icon>
-				</view>
-			</view>
-
 			<view class="form-item form-item-link" @tap="openPicker('houseType')">
 				<text class="form-label">户型</text>
 				<view class="form-input-wrap">
@@ -143,9 +135,6 @@
 					title: '',
 					community: '',
 					region: '',
-					locationName: '',
-					latitude: null,
-					longitude: null,
 					houseType: '',
 					area: '',
 					floor: '',
@@ -178,9 +167,6 @@
 						title: data.title || '',
 						community: data.community || '',
 						region: data.region || '',
-						locationName: data.location_name || '',
-						latitude: data.latitude || null,
-						longitude: data.longitude || null,
 						houseType: data.house_type || '',
 						area: data.area || '',
 						floor: data.floor || '',
@@ -200,22 +186,6 @@
 			},
 			onRegionCancel() {
 				this.showRegionPicker = false
-			},
-			openMapLocation() {
-				var self = this
-				uni.chooseLocation({
-					success: function(res) {
-						self.form.locationName = res.name || res.address
-						self.form.latitude = res.latitude
-						self.form.longitude = res.longitude
-					},
-					fail: function() {
-						uni.showToast({
-							title: '请在小程序后台开启定位权限',
-							icon: 'none'
-						})
-					}
-				})
 			},
 			openPicker(type) {
 				this.pickerType = type
@@ -294,12 +264,12 @@
 					uni.showToast({ title: '请选择楼层', icon: 'none' })
 					return
 				}
-				if (!this.form.phone) {
-					uni.showToast({ title: '请填写联系电话', icon: 'none' })
+				if (!this.form.price) {
+					uni.showToast({ title: '请填写售价', icon: 'none' })
 					return
 				}
-				if (!this.form.images || !this.form.images.length) {
-					uni.showToast({ title: '请上传房源图片', icon: 'none' })
+				if (!this.form.phone) {
+					uni.showToast({ title: '请填写联系电话', icon: 'none' })
 					return
 				}
 
@@ -320,17 +290,21 @@
 				}
 
 				try {
-					let imageUrls = this.form.images.slice()
-					const tmpUrls = imageUrls.filter(img => img.indexOf('tmp') !== -1)
-					if (tmpUrls.length) {
-						const uploaded = await uni.uploadSecondImages(tmpUrls)
-						let idx = 0
-						imageUrls = imageUrls.map(img => {
-							if (img.indexOf('tmp') !== -1) {
-								return uploaded[idx++]
-							}
-							return img
-						})
+					let secondImage = ''
+					if (this.form.images && this.form.images.length) {
+						let imageUrls = this.form.images.slice()
+						const tmpUrls = imageUrls.filter(img => img.indexOf('tmp') !== -1)
+						if (tmpUrls.length) {
+							const uploaded = await uni.uploadSecondImages(tmpUrls)
+							let idx = 0
+							imageUrls = imageUrls.map(img => {
+								if (img.indexOf('tmp') !== -1) {
+									return uploaded[idx++]
+								}
+								return img
+							})
+						}
+						secondImage = imageUrls[0] || ''
 					}
 
 					const postData = {
@@ -342,10 +316,9 @@
 						floor: this.form.floor,
 						price: this.form.price,
 						mobile: this.form.phone,
-						second_image: imageUrls[0],
+						second_image: secondImage,
 						explain: this.form.description,
 						area: this.form.region,
-						location: this.form.locationName,
 					}
 					await secondHouseApi.addHouse(postData)
 					uni.hideLoading()
@@ -427,7 +400,7 @@
 	.page {
 		min-height: 100vh;
 		background-color: #f5f5f5;
-		padding-bottom: 160rpx;
+		padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
 	}
 
 	.form-list {
@@ -590,6 +563,7 @@
 		padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
 		background-color: #fff;
 		box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.06);
+		z-index: 999;
 	}
 
 	.submit-btn {

@@ -1,7 +1,7 @@
 <template>
 	<view class="page">
 		<view class="detail-header">
-			<image class="detail-image" :src="house.image" mode="aspectFill" />
+			<image-placeholder :src="house.second_image" mode="aspectFill" :previewable="true" />
 		</view>
 
 		<view class="detail-section">
@@ -37,25 +37,16 @@
 		<view class="detail-section">
 			<text class="section-title">位置信息</text>
 			<view class="location-row">
-				<text class="location-label">小区</text>
-				<text class="location-value">{{ house.community }}</text>
-			</view>
-			<view class="location-row location-row-link" @tap="onOpenMap">
 				<view class="location-left">
 					<text class="location-label">地区</text>
-					<text class="location-value">{{ house.region }}</text>
+					<text class="location-value">{{ house.region }}{{ house.address ? ' ' + house.address : '' }}</text>
 				</view>
-				<u-icon name="map" size="20" color="#3c9cff"></u-icon>
 			</view>
-			<view class="map-wrap" @tap="onOpenMap">
-				<map
-					class="detail-map"
-					:latitude="house.latitude"
-					:longitude="house.longitude"
-					:markers="mapMarkers"
-					scale="16"
-					show-location
-				></map>
+			<view class="location-row">
+				<view class="location-left">
+					<text class="location-label">小区</text>
+					<text class="location-value">{{ house.name }}</text>
+				</view>
 			</view>
 		</view>
 
@@ -74,11 +65,13 @@
 
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
+	import imagePlaceholder from '@/components/image-placeholder/image-placeholder.vue'
 	import { secondHouseApi } from '@/utils/request.js'
 
 	export default {
 		components: {
-			uIcon
+			uIcon,
+			imagePlaceholder
 		},
 		data() {
 			return {
@@ -89,13 +82,14 @@
 					title: '',
 					desc: '',
 					price: '',
-					image: '',
+					second_image: '',
 					houseType: '',
 					area: '',
 					floor: '',
 					phone: '',
-					community: '',
+					name: '',
 					region: '',
+					address: '',
 					latitude: 0,
 					longitude: 0,
 					description: ''
@@ -109,7 +103,7 @@
 						id: 1,
 						latitude: this.house.latitude,
 						longitude: this.house.longitude,
-						title: this.house.community,
+						title: this.house.name,
 						width: 32,
 						height: 32
 					}]
@@ -130,20 +124,21 @@
 					this.house = {
 						id: data.id,
 						title: data.title,
-						desc: `${data.acreage || ''}㎡ · ${data.house_type || ''}`,
+						desc: `${data.acreage || ''}㎡ · ${data.shape || ''}`,
 						price: data.price,
-						image: Array.isArray(data.images) && data.images.length ? data.images[0] : '',
-						houseType: data.house_type || '',
+						second_image: data.second_image,
+						houseType: data.shape || '',
 						area: (data.acreage || '') + '㎡',
 						floor: data.floor || '',
 						mobile: data.mobile || '',
-						community: data.community || '',
+						name: data.name || '',
 						region: data.region || '',
+						address: data.area || data.location_name || data.location || '',
 						latitude: data.latitude || 0,
 						longitude: data.longitude || 0,
-						description: data.description || ''
+						description: data.explain || data.description || ''
 					}
-					this.visitors = data.visitors || 0
+					this.visitors = data.count || data.visitors || 0
 				} catch (e) {}
 			},
 			onContact() {
@@ -160,7 +155,7 @@
 			},
 			onOpenMap() {
 				uni.navigateTo({
-					url: '/pages/second/map?latitude=' + this.house.latitude + '&longitude=' + this.house.longitude + '&title=' + encodeURIComponent(this.house.community)
+					url: '/pages/second/map?latitude=' + this.house.latitude + '&longitude=' + this.house.longitude + '&title=' + encodeURIComponent(this.house.name)
 				})
 			}
 		}
@@ -179,10 +174,7 @@
 		height: 500rpx;
 	}
 
-	.detail-image {
-		width: 100%;
-		height: 100%;
-	}
+
 
 	.detail-section {
 		background-color: #fff;

@@ -32,7 +32,7 @@
 				@tap="onHouseTap(item)"
 			>
 				<view class="house-image-wrap">
-					<image class="house-image" :src="item.image" mode="aspectFill" />
+					<image-placeholder :src="item.second_image" mode="aspectFill" />
 				</view>
 				<view class="house-info">
 					<text class="house-title">{{ item.title }}</text>
@@ -55,6 +55,7 @@
 		<region-picker
 			:visible="showRegionPicker"
 			:current="currentRegion"
+			:showAll="true"
 			@confirm="onRegionConfirm"
 			@cancel="onRegionCancel"
 		/>
@@ -64,12 +65,14 @@
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import regionPicker from '@/components/region-picker/region-picker.vue'
+	import imagePlaceholder from '@/components/image-placeholder/image-placeholder.vue'
 	import { secondHouseApi } from '@/utils/request.js'
 
 	export default {
 		components: {
 			uIcon,
-			regionPicker
+			regionPicker,
+			imagePlaceholder
 		},
 		data() {
 			return {
@@ -143,7 +146,7 @@
 					title: item.title,
 					desc: `${item.name || ''}· ${item.shape || ''}· ${item.acreage || ''}㎡ `,
 					price: item.price + '万',
-					image: Array.isArray(item.images) && item.images.length ? item.images[0] : ''
+					second_image: item.second_image
 				}))
 			},
 			checkNoMore() {
@@ -270,10 +273,7 @@
 		overflow: hidden;
 	}
 
-	.house-image {
-		width: 100%;
-		height: 100%;
-	}
+
 
 	.house-info {
 		padding: 20rpx;

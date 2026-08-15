@@ -33,9 +33,9 @@
 			</view>
 
 			<view class="house-grid">
-				<view class="house-card" v-for="(item, index) in houseList" :key="index" @tap="onHouseTap(item)">
+				<view class="house-card" v-for="(item, index) in houseList" :key="item.id || index" @tap="onHouseTap(item)">
 					<view class="house-image-wrap">
-						<image class="house-image" :src="item.image" mode="aspectFill" />
+						<image-placeholder :src="item.second_image" mode="aspectFill" />
 					</view>
 					<view class="house-info">
 						<text class="house-title">{{ item.title }}</text>
@@ -56,46 +56,45 @@
 
 <script>
 	import tabBar from '@/components/tab-bar/tab-bar.vue'
+	import imagePlaceholder from '@/components/image-placeholder/image-placeholder.vue'
+	import { secondHouseApi } from '@/utils/request.js'
 
 	export default {
 		components: {
-			tabBar
+			tabBar,
+			imagePlaceholder
 		},
 		data() {
 			return {
-				houseList: [
-					{
-						id: 1,
-						title: '阳光花园 3室2厅',
-						desc: '120㎡ · 南北通透 · 精装修',
-						price: '128万',
-						image: 'https://img.alicdn.com/imgextra/i3/6000000002334/O1CN01w2M5v81FmR5KjP1z_!!600000000472-0-yinhe.jpg'
-					},
-					{
-						id: 2,
-						title: '翠湖天地 2室1厅',
-						desc: '89㎡ · 湖景房 · 电梯房',
-						price: '95万',
-						image: 'https://img.alicdn.com/imgextra/i2/6000000002334/O1CN01w2M5v91FmR5KjP2z_!!600000000472-0-yinhe.jpg'
-					},
-					{
-						id: 3,
-						title: '金色家园 4室2厅',
-						desc: '160㎡ · 复式结构 · 带露台',
-						price: '186万',
-						image: 'https://img.alicdn.com/imgextra/i4/6000000002334/O1CN01w2M5vA1FmR5KjP3z_!!600000000472-0-yinhe.jpg'
-					},
-					{
-						id: 4,
-						title: '东方明珠 1室1厅',
-						desc: '55㎡ · 单身公寓 · 地铁口',
-						price: '58万',
-						image: 'https://img.alicdn.com/imgextra/i1/6000000002334/O1CN01w2M5vB1FmR5KjP4z_!!600000000472-0-yinhe.jpg'
-					}
-				]
+				houseList: []
 			}
 		},
+		onShow() {
+			this.loadList()
+		},
 		methods: {
+			async loadList() {
+				try {
+					const data = await secondHouseApi.getList({
+						keyword: '',
+						region: '',
+						page: 1,
+						limit: 6
+					})
+					this.houseList = this.formatList(data.list || [])
+				} catch (e) {
+					this.houseList = []
+				}
+			},
+			formatList(list) {
+				return (list || []).map(item => ({
+					id: item.Id,
+					title: item.title,
+					desc: `${item.name || ''}· ${item.shape || ''}· ${item.acreage || ''}㎡ `,
+					price: item.price + '万',
+					second_image: item.second_image
+				}))
+			},
 			onEntryTap(type) {
 				if (type === 'new') {
 					uni.showToast({
@@ -250,10 +249,7 @@
 		overflow: hidden;
 	}
 
-	.house-image {
-		width: 100%;
-		height: 100%;
-	}
+
 
 	.house-info {
 		padding: 20rpx;
