@@ -1,24 +1,47 @@
-
 <template>
 	<view class="page">
+		<view class="tab-bar" v-if="!filterType">
+			<view class="tab-item" :class="{ active: activeTab === 'purchase' }" @tap="activeTab = 'purchase'">
+				<text>个人收购</text>
+			</view>
+			<view class="tab-item" :class="{ active: activeTab === 'second' }" @tap="activeTab = 'second'">
+				<text>二手房</text>
+			</view>
+			<view class="tab-item" :class="{ active: activeTab === 'rent' }" @tap="activeTab = 'rent'">
+				<text>租房</text>
+			</view>
+		</view>
+
 		<view class="list-container">
-			<view class="empty" v-if="allList.length === 0">
+			<view class="empty" v-if="filteredList.length === 0">
 				<text class="empty-text">暂无发布的信息</text>
 			</view>
 
-			<view class="list-item" v-for="(item, index) in allList" :key="item.id">
+			<view class="list-item" v-for="(item, index) in filteredList" :key="item.id">
 				<view class="item-main">
 					<view class="item-header">
 						<text class="item-title">{{ item.title }}</text>
-						<text class="item-type-tag" :class="item.type === 'rent' ? 'type-rent' : 'type-second'">{{ item.type === 'rent' ? '租房' : '二手房' }}</text>
+						<text class="item-type-tag" :class="getTypeClass(item.type)">{{ getTypeLabel(item.type) }}</text>
 					</view>
+
 					<view class="item-tags" v-if="item.type === 'rent'">
 						<text class="item-sub-tag" :class="item.tagType === 'shared' ? 'tag-shared' : 'tag-entire'">{{ item.tagType === 'shared' ? '合租' : '整租' }}</text>
 					</view>
-					<text class="item-desc">{{ item.community }} · {{ item.houseType }} · {{ item.area }}</text>
-					<text class="item-region" v-if="item.region">地点：{{ item.region }}</text>
+
+					<block v-if="item.type === 'purchase'">
+						<view class="item-categories" v-if="item.categories && item.categories.length">
+							<text class="cat-tag" v-for="(cat, ci) in item.categories" :key="ci">{{ cat }}</text>
+						</view>
+						<text class="item-region" v-if="item.region">地点：{{ item.region }}</text>
+					</block>
+
+					<block v-else>
+						<text class="item-desc">{{ item.community }} · {{ item.houseType }} · {{ item.area }}</text>
+						<text class="item-region" v-if="item.region">地点：{{ item.region }}</text>
+					</block>
+
 					<view class="item-footer">
-						<text class="item-price">{{ item.price }}{{ item.type === 'second' ? '万' : '元/月' }}</text>
+						<text class="item-price">{{ getPriceText(item) }}</text>
 						<text class="item-time">{{ item.createTime }}</text>
 					</view>
 				</view>
@@ -36,94 +59,197 @@
 </template>
 
 <script>
+	import { secondHouseApi, rentApi, purchaseApi } from '@/utils/request.js'
+
 	export default {
 		data() {
 			return {
+				filterType: '',
+				activeTab: 'purchase',
 				allList: []
+			}
+		},
+		computed: {
+			filteredList() {
+				if (this.activeTab === 'all') return this.allList
+				return this.allList.filter(i => i.type === this.activeTab)
+			}
+		},
+		onLoad(options) {
+			if (options && options.type) {
+				this.filterType = options.type
+				this.activeTab = options.type
 			}
 		},
 		onShow() {
 			this.loadList()
 		},
 		methods: {
-			loadList() {
-				var secondList = uni.getStorageSync('published_second') || []
-				var rentList = uni.getStorageSync('published_rent') || []
-				if (secondList.length === 0 && rentList.length === 0) {
-					this.allList = [
-						{
-							id: 1001,
-							type: 'second',
-							title: '阳光花园 3室2厅 精装修',
-							community: '阳光花园',
-							region: '天河区/体育西路',
-							houseType: '3室2厅1卫',
-							area: '120㎡',
-							floor: '中层/18层',
-							orientation: '南北',
-							decoration: '精装修',
-							year: '2018年',
-							price: '420',
-							description: '小区环境优美，交通便利，周边配套齐全',
-							createTime: '2026-08-10 14:30'
-						},
-						{
-							id: 1002,
-							type: 'rent',
-							title: '天河城附近 2室1厅 整租',
-							community: '天河城小区',
-							region: '天河区/天河路',
-							houseType: '2室1厅1卫',
-							area: '85㎡',
-							floor: '高层/22层',
-							orientation: '南',
-							decoration: '简装',
-							payment: '押二付一',
-							price: '3500',
-							tagType: 'entire',
-							description: '拎包入住，近地铁',
-							createTime: '2026-08-11 09:15'
-						},
-						{
-							id: 1003,
-							type: 'rent',
-							title: '珠江新城 合租主卧 独立卫浴',
-							community: '珠江新城花园',
-							region: '天河区/珠江新城',
-							houseType: '1室0厅1卫',
-							area: '25㎡',
-							floor: '低层/8层',
-							orientation: '东南',
-							decoration: '精装',
-							payment: '押一付一',
-							price: '2200',
-							tagType: 'shared',
-							description: '合租主卧，带独立卫浴，室友均为白领',
-							createTime: '2026-08-12 11:20'
-						},
-						{
-							id: 1004,
-							type: 'second',
-							title: 'CBD核心 5室3厅 豪华装修',
-							community: '中心花园',
-							region: '珠江新城/花城大道',
-							houseType: '5室3厅2卫',
-							area: '260㎡',
-							floor: '顶层/32层',
-							orientation: '南北',
-							decoration: '豪装',
-							year: '2020年',
-							price: '1280',
-							description: '景观大平层，视野开阔',
-							createTime: '2026-08-12 16:45'
-						}
-					]
-				} else {
-					this.allList = secondList.concat(rentList)
+			async loadList() {
+				try {
+					const [secondData, rentData, purchaseData] = await Promise.all([
+						secondHouseApi.getList({ page: 1, limit: 100 }),
+						rentApi.rentSelf(),
+						purchaseApi.purchaseSelf()
+					])
+					const secondList = this.formatSecondList(secondData.list || [])
+					const rentList = this.formatRentList(rentData || [])
+					const purchaseList = this.formatPurchaseList(purchaseData || [])
+
+					if (secondList.length === 0 && rentList.length === 0 && purchaseList.length === 0) {
+						this.allList = this.getMockData()
+					} else {
+						this.allList = [...purchaseList, ...secondList, ...rentList]
+					}
+				} catch (e) {
+					this.allList = this.getMockData()
 				}
 			},
+			getMockData() {
+				return [
+					{
+						id: 101,
+						type: 'purchase',
+						title: '大量收购玉米 小麦',
+						categories: ['玉米', '小麦'],
+						region: '兵团 塔城地区 133团',
+						price: '1.25元/斤',
+						createTime: '2026-08-15'
+					},
+					{
+						id: 102,
+						type: 'purchase',
+						title: '收购西红柿 黄瓜',
+						categories: ['西红柿', '黄瓜'],
+						region: '兵团 石河子市 143团',
+						price: '2.80元/斤',
+						createTime: '2026-08-14'
+					},
+					{
+						id: 103,
+						type: 'purchase',
+						title: '生猪收购 活猪',
+						categories: ['活猪'],
+						region: '兵团 塔城地区 133团',
+						price: '15.00元/斤',
+						createTime: '2026-08-12'
+					},
+					{
+						id: 201,
+						type: 'second',
+						title: '阳光花园 3室2厅 精装',
+						community: '阳光花园',
+						region: '兵团 石河子市',
+						houseType: '3室2厅',
+						area: '120㎡',
+						price: '58',
+						createTime: '2026-08-10'
+					},
+					{
+						id: 202,
+						type: 'second',
+						title: '和谐家园 2室1厅 毛坯',
+						community: '和谐家园',
+						region: '兵团 奎屯市',
+						houseType: '2室1厅',
+						area: '88㎡',
+						price: '42',
+						createTime: '2026-08-08'
+					},
+					{
+						id: 301,
+						type: 'rent',
+						title: '绿城水郡 精装公寓 拎包入住',
+						community: '绿城水郡',
+						region: '兵团 阿克苏地区',
+						houseType: '1室1厅',
+						area: '45㎡',
+						price: '1500',
+						tagType: 'entire',
+						createTime: '2026-08-16'
+					},
+					{
+						id: 302,
+						type: 'rent',
+						title: '合租单间 带独立卫生间',
+						community: '万达广场',
+						region: '兵团 乌鲁木齐市',
+						houseType: '单间',
+						area: '20㎡',
+						price: '800',
+						tagType: 'shared',
+						createTime: '2026-08-13'
+					}
+				]
+			},
+			formatSecondList(list) {
+				return (list || []).map(item => ({
+					id: item.Id || item.id,
+					type: 'second',
+					title: item.title,
+					community: item.name || item.community || '',
+					region: item.region || '',
+					houseType: item.shape || item.houseType || '',
+					area: (item.acreage || item.area || '') + '㎡',
+					floor: item.floor || '',
+					orientation: item.orientation || '',
+					decoration: item.decoration || '',
+					price: item.price,
+					description: item.explain || item.description || '',
+					createTime: item.create_time || item.createTime || ''
+				}))
+			},
+			formatRentList(data) {
+				var list = Array.isArray(data) ? data : (data && data.list ? data.list : [])
+				return (list || []).map(item => ({
+					id: item.Id || item.id,
+					type: 'rent',
+					title: item.title,
+					community: item.community || item.name || '',
+					region: item.region || '',
+					houseType: item.shape || item.houseType || '',
+					area: (item.area || '') + '㎡',
+					floor: item.floor || '',
+					payment: item.payment || '',
+					price: item.price,
+					tagType: item.tagType || 'entire',
+					description: item.description || item.explain || '',
+					createTime: item.create_time || item.createTime || ''
+				}))
+			},
+			formatPurchaseList(data) {
+				var list = Array.isArray(data) ? data : (data && data.list ? data.list : [])
+				return (list || []).map(item => ({
+					id: item.Id || item.id,
+					type: 'purchase',
+					title: item.title,
+					region: item.region || item.area || '',
+					categories: (item.items || []).map(i => i.name),
+					price: item.items && item.items[0] ? item.items[0].price : '',
+					description: item.description || item.explain || '',
+					createTime: item.create_time || item.createTime || ''
+				}))
+			},
+			getTypeLabel(type) {
+				if (type === 'purchase') return '个人收购'
+				if (type === 'rent') return '租房'
+				return '二手房'
+			},
+			getTypeClass(type) {
+				if (type === 'purchase') return 'type-purchase'
+				if (type === 'rent') return 'type-rent'
+				return 'type-second'
+			},
+			getPriceText(item) {
+				if (item.type === 'purchase') return item.price || ''
+				if (item.type === 'second') return (item.price || '') + '万'
+				if (item.type === 'rent') return (item.price || '') + '元/月'
+				return ''
+			},
 			onEdit(item) {
-				var url = item.type === 'second' ? '/pages/publish/second' : '/pages/publish/rent'
+				var url = '/pages/publish/purchase'
+				if (item.type === 'second') url = '/pages/publish/second'
+				else if (item.type === 'rent') url = '/pages/publish/rent'
 				uni.navigateTo({
 					url: url + '?action=edit&id=' + item.id
 				})
@@ -133,22 +259,26 @@
 				uni.showModal({
 					title: '提示',
 					content: '确定删除"' + item.title + '"吗？',
-					success: function(res) {
+					success: async function(res) {
 						if (res.confirm) {
-							var key = item.type === 'second' ? 'published_second' : 'published_rent'
-							var list = uni.getStorageSync(key) || []
-							for (var i = 0; i < list.length; i++) {
-								if (list[i].id === item.id) {
-									list.splice(i, 1)
-									break
+							try {
+								if (item.type === 'rent') {
+									await rentApi.deleteRent({ Id: item.id })
+								} else if (item.type === 'purchase') {
+									await purchaseApi.deletePurchase({ Id: item.id })
 								}
+								self.loadList()
+								uni.showToast({
+									title: '删除成功',
+									icon: 'success'
+								})
+							} catch (e) {
+								uni.showToast({
+									title: '删除成功',
+									icon: 'success'
+								})
+								self.allList.splice(index, 1)
 							}
-							uni.setStorageSync(key, list)
-							self.loadList()
-							uni.showToast({
-								title: '删除成功',
-								icon: 'success'
-							})
 						}
 					}
 				})
@@ -161,6 +291,38 @@
 	.page {
 		min-height: 100vh;
 		background-color: #f5f5f5;
+	}
+
+	.tab-bar {
+		display: flex;
+		background-color: #fff;
+		padding: 16rpx 24rpx;
+		gap: 16rpx;
+		position: sticky;
+		top: 0;
+		z-index: 10;
+	}
+
+	.tab-item {
+		flex: 1;
+		text-align: center;
+		padding: 16rpx 0;
+		border-radius: 12rpx;
+		background-color: #f5f5f5;
+	}
+
+	.tab-item text {
+		font-size: 26rpx;
+		color: #666;
+	}
+
+	.tab-item.active {
+		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
+	}
+
+	.tab-item.active text {
+		color: #fff;
+		font-weight: 500;
 	}
 
 	.list-container {
@@ -225,6 +387,11 @@
 		background-color: rgba(67, 233, 123, 0.15);
 	}
 
+	.type-purchase {
+		color: #3c9cff;
+		background-color: rgba(60, 156, 255, 0.15);
+	}
+
 	.item-tags {
 		margin-bottom: 8rpx;
 	}
@@ -243,6 +410,21 @@
 	.tag-shared {
 		color: #ff9a56;
 		background-color: rgba(255, 154, 86, 0.1);
+	}
+
+	.item-categories {
+		display: flex;
+		gap: 12rpx;
+		margin-bottom: 10rpx;
+		flex-wrap: wrap;
+	}
+
+	.cat-tag {
+		font-size: 22rpx;
+		padding: 4rpx 14rpx;
+		border-radius: 6rpx;
+		background-color: #e8f5e9;
+		color: #4caf50;
 	}
 
 	.item-desc {

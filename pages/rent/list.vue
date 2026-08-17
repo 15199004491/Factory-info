@@ -20,15 +20,15 @@
 			</view>
 		</view>
 
-		<view class="result-count" v-if="rentList.length > 0">
-			<text class="result-count-text">共找到 {{ rentList.length }} 套租房</text>
+		<view class="result-count" v-if="total > 0">
+			<text class="result-count-text">共找到 {{ total }} 套租房</text>
 		</view>
 
 		<view class="rent-grid">
 			<view
 				class="rent-card"
 				v-for="(item, index) in rentList"
-				:key="index"
+				:key="item.id || index"
 				@tap="onRentTap(item)"
 			>
 				<view class="rent-image-wrap">
@@ -45,7 +45,13 @@
 			</view>
 		</view>
 
-		<view class="empty" v-if="rentList.length === 0">
+		<view class="load-more" v-if="rentList.length > 0">
+			<text v-if="loading" class="load-more-text">加载中...</text>
+			<text v-else-if="noMore" class="load-more-text">没有更多数据了</text>
+			<text v-else class="load-more-text" @tap="loadMore">加载更多</text>
+		</view>
+
+		<view class="empty" v-if="!loading && rentList.length === 0">
 			<text class="empty-text">暂无符合条件的租房源</text>
 		</view>
 
@@ -60,6 +66,7 @@
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import regionPicker from '@/components/region-picker/region-picker.vue'
+	import { rentApi } from '@/utils/request.js'
 
 	export default {
 		components: {
@@ -71,81 +78,94 @@
 				keyword: '',
 				showRegionPicker: false,
 				currentRegion: '全部',
-				rentList: [
-					{
-						id: 1,
-						title: '阳光花园 3室2厅',
-						desc: '120㎡ · 南北通透 · 精装修',
-						price: '2800元/月',
-						tag: '整租',
-						tagType: 'entire',
-						image: 'https://img.alicdn.com/imgextra/i3/6000000002334/O1CN01w2M5v81FmR5KjP1z_!!600000000472-0-yinhe.jpg'
-					},
-					{
-						id: 2,
-						title: '翠湖天地 2室1厅',
-						desc: '89㎡ · 湖景房 · 电梯房',
-						price: '2200元/月',
-						tag: '整租',
-						tagType: 'entire',
-						image: 'https://img.alicdn.com/imgextra/i2/6000000002334/O1CN01w2M5v91FmR5KjP2z_!!600000000472-0-yinhe.jpg'
-					},
-					{
-						id: 3,
-						title: '金色家园 4室2厅',
-						desc: '160㎡ · 复式结构 · 带露台',
-						price: '4500元/月',
-						tag: '整租',
-						tagType: 'entire',
-						image: 'https://img.alicdn.com/imgextra/i4/6000000002334/O1CN01w2M5vA1FmR5KjP3z_!!600000000472-0-yinhe.jpg'
-					},
-					{
-						id: 4,
-						title: '东方明珠 1室1厅',
-						desc: '55㎡ · 单身公寓 · 地铁口',
-						price: '1500元/月',
-						tag: '合租',
-						tagType: 'shared',
-						image: 'https://img.alicdn.com/imgextra/i1/6000000002334/O1CN01w2M5vB1FmR5KjP4z_!!600000000472-0-yinhe.jpg'
-					},
-					{
-						id: 5,
-						title: '绿地世纪城 3室2厅',
-						desc: '135㎡ · 精装修 · 学区房',
-						price: '3200元/月',
-						tag: '整租',
-						tagType: 'entire',
-						image: 'https://img.alicdn.com/imgextra/i3/6000000002334/O1CN01w2M5v81FmR5KjP1z_!!600000000472-0-yinhe.jpg'
-					},
-					{
-						id: 6,
-						title: '海景公寓 2室2厅',
-						desc: '98㎡ · 海景房 · 南北通透',
-						price: '2600元/月',
-						tag: '整租',
-						tagType: 'entire',
-						image: 'https://img.alicdn.com/imgextra/i2/6000000002334/O1CN01w2M5v91FmR5KjP2z_!!600000000472-0-yinhe.jpg'
-					}
-				]
+				rentList: [],
+				page: 1,
+				limit: 20,
+				total: 0,
+				loading: false,
+				noMore: false
+			}
+		},
+		onLoad() {
+			this.loadList()
+		},
+		onReachBottom() {
+			if (!this.noMore && !this.loading && this.rentList.length > 0) {
+				this.loadMore()
 			}
 		},
 		methods: {
+			async loadList() {
+				this.loading = true
+				this.noMore = false
+				this.page = 1
+				try {
+					const data = await rentApi.rentList({
+						keyword: this.keyword,
+						region: this.currentRegion === '全部' ? '' : this.currentRegion,
+						page: this.page,
+						limit: this.limit
+					})
+					this.total = data.total || 0
+					this.rentList = this.formatList(data.list || [])
+					this.checkNoMore()
+				} catch (e) {
+					this.rentList = []
+					this.total = 0
+					this.noMore = true
+				} finally {
+					this.loading = false
+				}
+			},
+			async loadMore() {
+				if (this.loading || this.noMore) return
+				this.loading = true
+				try {
+					this.page++
+					const data = await rentApi.rentList({
+						keyword: this.keyword,
+						region: this.currentRegion === '全部' ? '' : this.currentRegion,
+						page: this.page,
+						limit: this.limit
+					})
+					this.total = data.total || this.total
+					this.rentList = this.rentList.concat(this.formatList(data.list || []))
+					this.checkNoMore()
+				} catch (e) {
+					this.page--
+				} finally {
+					this.loading = false
+				}
+			},
+			formatList(list) {
+				return (list || []).map(item => ({
+					id: item.Id || item.id,
+					title: item.title,
+					desc: `${item.acreage || ''}㎡ · ${item.floor || ''}`,
+					price: (item.price || '') + '元/月',
+					tag: item.tagType === 'shared' ? '合租' : '整租',
+					tagType: item.tagType || 'entire',
+					image: item.rent_image || item.image || ''
+				}))
+			},
+			checkNoMore() {
+				if (this.rentList.length >= this.total || this.rentList.length < this.limit) {
+					this.noMore = true
+				}
+			},
 			openRegionPicker() {
 				this.showRegionPicker = true
 			},
 			onRegionConfirm(label) {
 				this.currentRegion = label
 				this.showRegionPicker = false
-				this.onSearch()
+				this.loadList()
 			},
 			onRegionCancel() {
 				this.showRegionPicker = false
 			},
 			onSearch() {
-				uni.showToast({
-					title: '搜索中...',
-					icon: 'none'
-				})
+				this.loadList()
 			},
 			onRentTap(item) {
 				uni.navigateTo({
@@ -303,6 +323,18 @@
 	.rent-tag-shared {
 		color: #ff9a56;
 		background-color: rgba(255, 154, 86, 0.1);
+	}
+
+	.load-more {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		padding: 24rpx 0 40rpx;
+	}
+
+	.load-more-text {
+		font-size: 26rpx;
+		color: #999;
 	}
 
 	.empty {

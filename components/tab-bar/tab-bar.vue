@@ -38,16 +38,22 @@
 				selectedColor: '#3c9cff',
 				tabs: [
 					{
-						text: '首页',
-						icon: 'home',
-						selectedIcon: 'home-fill',
-						pagePath: '/pages/index/index'
-					},
-					{
 						text: '加工厂',
 						icon: 'list',
 						selectedIcon: 'grid',
 						pagePath: '/pages/factory/factory'
+					},
+					{
+						text: '个人收购',
+						icon: 'file-text',
+						selectedIcon: 'rmb-circle',
+						pagePath: '/pages/purchase/purchase'
+					},
+					{
+						text: '住房',
+						icon: 'home',
+						selectedIcon: 'home-fill',
+						pagePath: '/pages/index/index'
 					},
 					{
 						text: '我的',

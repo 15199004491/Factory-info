@@ -51,6 +51,23 @@ export const factoryApi = {
     publishFactory: (Id) => request('/farm/Factory/publishFactory', { Id }, 'POST'),
 };
 
+export const rentApi = {
+    addRent: (params) => request('/farm/Rent/addRent', { ...params, open_id: getOpenid() }, 'POST'),
+    rentDetail: (params) => request('/farm/Rent/rentDetail', params),
+    topRent: (params) => request('/farm/Rent/topRent', params, 'POST'),
+    rentList: (params) => request('/farm/Rent/rentList', params),
+    rentSelf: () => request('/farm/Rent/rentSelf', { open_id: getOpenid() }),
+    deleteRent: (params) => request('/farm/Rent/deleteRent', params, 'POST'),
+};
+
+export const purchaseApi = {
+    addPurchase: (params) => request('/farm/Purchase/addPurchase', { ...params, open_id: getOpenid() }, 'POST'),
+    purchaseDetail: (params) => request('/farm/Purchase/purchaseDetail', params),
+    purchaseList: (params) => request('/farm/Purchase/purchaseList', params),
+    purchaseSelf: () => request('/farm/Purchase/purchaseSelf', { open_id: getOpenid() }),
+    deletePurchase: (params) => request('/farm/Purchase/deletePurchase', params, 'POST'),
+};
+
 export const userApi = {
     login: (d) => request('/farm/Wxuser/login', d, 'POST'),
     logout: (token) => request('/farm/Wxuser/logout', { token }, 'POST'),

@@ -50,7 +50,7 @@
 			</view>
 		</view>
 
-		<tab-bar :currentIndex="0"></tab-bar>
+		<tab-bar :currentIndex="2"></tab-bar>
 	</view>
 </template>
 

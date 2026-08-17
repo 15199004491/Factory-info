@@ -1,27 +1,5 @@
 <template>
 	<view class="page">
-		<view class="notice-bar">
-			<view class="notice-icon">
-				<text class="notice-label">通知</text>
-			</view>
-			<view class="notice-content">
-				<view class="marquee">
-					<text class="notice-text">{{ factory.notice }}</text>
-					<text class="notice-text">{{ factory.notice }}</text>
-				</view>
-			</view>
-		</view>
-
-		<!-- <view class="unverified-tip" v-if="!factory.verified">
-			<view class="tip-bar"></view>
-			<view class="tip-body">
-				<view class="tip-title-row">
-					<text class="tip-icon-s">!</text>
-					<text class="tip-title">这家加工厂未进行平台认证</text>
-				</view>
-				<text class="tip-desc">信息由企业自行发布，交易前建议核实确认</text>
-			</view>
-		</view> -->
 
 		<view class="module-card" :class="{ 'verified-card': factory.verified }">
 			<view class="section-title">
@@ -77,9 +55,6 @@
 							<text class="cat-price-num">{{ getPriceNum(cat.price) }}</text>
 							<text class="cat-price-unit">{{ getPriceUnit(cat.price) }}</text>
 						</view>
-					</view>
-					<view class="cat-footer">
-						<text class="cat-update-time">更新于 {{ formatDate(cat.updateTime) }}</text>
 					</view>
 					<view class="cat-remark" v-if="cat.remark">
 						<text class="cat-remark-label">备注：</text>
@@ -150,7 +125,7 @@
 				historyVisitors: 28650,
 				factory: {
 					name: '红旗粮食综合加工厂',
-					verified: true,
+					verified: false,
 					address: '山东省济南市历城区农业产业园88号',
 					remark: '主要收购粮食作物，可上门收购，量大从优',
 					notice: '即日起至8月31日，小麦收购价格上调5%，欢迎广大农户前来出售！',

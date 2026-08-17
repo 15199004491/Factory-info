@@ -422,6 +422,7 @@ function uploadToCOS(filePath, dir) {
 export async function uploadImages(images, options = {}) {
 	const maxSizeBytes = options.maxSize || MAX_SIZE_SECOND
 	const dir = options.dir || 'second-house'
+	console.log('上传图片到目录:', dir)
 	const results = []
 
 	for (let i = 0; i < images.length; i++) {

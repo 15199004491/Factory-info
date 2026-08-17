@@ -8,9 +8,21 @@
 	},
 	"pages": [
 		{
+			"path": "pages/factory/factory",
+			"style": {
+				"navigationBarTitleText": "加工厂"
+			}
+		},
+		{
+			"path": "pages/purchase/purchase",
+			"style": {
+				"navigationBarTitleText": "个人收购"
+			}
+		},
+		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "本地生活"
+				"navigationBarTitleText": "住房"
 			}
 		},
 		{
@@ -68,12 +80,6 @@
 			}
 		},
 		{
-			"path": "pages/factory/factory",
-			"style": {
-				"navigationBarTitleText": "加工厂"
-			}
-		},
-		{
 			"path": "pages/factory/detail",
 			"style": {
 				"navigationBarTitleText": "加工厂详情"
@@ -114,6 +120,18 @@
 			"style": {
 				"navigationBarTitleText": "我的"
 			}
+		},
+		{
+			"path": "pages/purchase/detail",
+			"style": {
+				"navigationBarTitleText": "收购详情"
+			}
+		},
+		{
+			"path": "pages/publish/purchase",
+			"style": {
+				"navigationBarTitleText": "发布收购"
+			}
 		}
 	],
 	"globalStyle": {
@@ -130,12 +148,16 @@
 		"borderStyle": "black",
 		"list": [
 			{
-				"pagePath": "pages/index/index",
-				"text": "首页"
-			},
-			{
 				"pagePath": "pages/factory/factory",
 				"text": "加工厂"
+			},
+			{
+				"pagePath": "pages/purchase/purchase",
+				"text": "个人收购"
+			},
+			{
+				"pagePath": "pages/index/index",
+				"text": "住房"
 			},
 			{
 				"pagePath": "pages/mine/mine",

@@ -18,27 +18,15 @@
 
 		<view class="detail-section info-section">
 			<view class="info-item">
-				<text class="info-label">户型</text>
-				<text class="info-value">{{ house.houseType }}</text>
-			</view>
-			<view class="info-item">
 				<text class="info-label">面积</text>
-				<text class="info-value">{{ house.area }}</text>
+				<text class="info-value">{{ house.acreage }}</text>
 			</view>
 			<view class="info-item">
 				<text class="info-label">楼层</text>
 				<text class="info-value">{{ house.floor }}</text>
 			</view>
 			<view class="info-item">
-				<text class="info-label">朝向</text>
-				<text class="info-value">{{ house.orientation }}</text>
-			</view>
-			<view class="info-item">
-				<text class="info-label">装修</text>
-				<text class="info-value">{{ house.decoration }}</text>
-			</view>
-			<view class="info-item">
-				<text class="info-label">租金</text>
+				<text class="info-label">付款方式</text>
 				<text class="info-value">{{ house.payment }}</text>
 			</view>
 		</view>
@@ -47,12 +35,12 @@
 			<text class="section-title">位置信息</text>
 			<view class="location-row">
 				<text class="location-label">小区</text>
-				<text class="location-value">{{ house.community }}</text>
+				<text class="location-value">{{ house.name }}</text>
 			</view>
 			<view class="location-row location-row-link" @tap="onOpenMap">
 				<view class="location-left">
-					<text class="location-label">地点</text>
-					<text class="location-value">{{ house.region }}</text>
+					<text class="location-label">地区</text>
+					<text class="location-value">{{ house.area }}</text>
 				</view>
 				<u-icon name="map" size="20" color="#3c9cff"></u-icon>
 			</view>
@@ -70,7 +58,7 @@
 
 		<view class="detail-section">
 			<text class="section-title">房源描述</text>
-			<text class="detail-content">{{ house.description }}</text>
+			<text class="detail-content">{{ house.explain }}</text>
 		</view>
 
 		<view class="bottom-bar">
@@ -83,6 +71,7 @@
 
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
+	import { rentApi } from '@/utils/request.js'
 
 	export default {
 		components: {
@@ -91,6 +80,7 @@
 		data() {
 			return {
 				houseId: 0,
+				visitors: 0,
 				house: {
 					id: 0,
 					title: '',
@@ -99,17 +89,15 @@
 					tag: '',
 					tagType: '',
 					image: '',
-					houseType: '',
-					area: '',
+					acreage: '',
 					floor: '',
-					orientation: '',
-					decoration: '',
 					payment: '',
-					community: '',
-					region: '',
+					name: '',
+					area: '',
 					latitude: 0,
 					longitude: 0,
-					description: ''
+					explain: '',
+					mobile: ''
 				}
 			}
 		},
@@ -120,7 +108,7 @@
 						id: 1,
 						latitude: this.house.latitude,
 						longitude: this.house.longitude,
-						title: this.house.community,
+						title: this.house.name,
 						width: 32,
 						height: 32
 					}]
@@ -135,142 +123,45 @@
 			}
 		},
 		methods: {
-			loadHouseDetail() {
-				var detailMap = {
-					1: {
-						id: 1,
-						title: '阳光花园 3室2厅',
-						desc: '120㎡ · 南北通透 · 精装修',
-						price: '2800',
-						tag: '整租',
-						tagType: 'entire',
-						image: 'https://img.alicdn.com/imgextra/i3/6000000002334/O1CN01w2M5v81FmR5KjP1z_!!600000000472-0-yinhe.jpg',
-						houseType: '3室2厅1卫',
-						area: '120㎡',
-						floor: '中层/6层',
-						orientation: '南北',
-						decoration: '精装修',
-						payment: '押一付三',
-						community: '阳光花园',
-						region: '兵团 农一师',
-						latitude: 41.167,
-						longitude: 80.261,
-						description: '本房源位于阳光花园核心区域，交通便利，周边配套完善。房屋南北通透，采光极佳，精装修拎包入住。小区环境优美，绿化率高，适合居住。'
-					},
-					2: {
-						id: 2,
-						title: '翠湖天地 2室1厅',
-						desc: '89㎡ · 湖景房 · 电梯房',
-						price: '2200',
-						tag: '整租',
-						tagType: 'entire',
-						image: 'https://img.alicdn.com/imgextra/i2/6000000002334/O1CN01w2M5v91FmR5KjP2z_!!600000000472-0-yinhe.jpg',
-						houseType: '2室1厅1卫',
-						area: '89㎡',
-						floor: '高层/18层',
-						orientation: '正南',
-						decoration: '简装',
-						payment: '押一付三',
-						community: '翠湖天地',
-						region: '地方 乌鲁木齐市',
-						latitude: 43.8256,
-						longitude: 87.6168,
-						description: '翠湖天地湖景房源，视野开阔，可赏湖景。电梯公寓，出行便利。周边有多个商圈，购物方便。'
-					},
-					3: {
-						id: 3,
-						title: '金色家园 4室2厅',
-						desc: '160㎡ · 复式结构 · 带露台',
-						price: '4500',
-						tag: '整租',
-						tagType: 'entire',
-						image: 'https://img.alicdn.com/imgextra/i4/6000000002334/O1CN01w2M5vA1FmR5KjP3z_!!600000000472-0-yinhe.jpg',
-						houseType: '4室2厅2卫',
-						area: '160㎡',
-						floor: '跃层/12层',
-						orientation: '南北',
-						decoration: '豪华装修',
-						payment: '押一付半年',
-						community: '金色家园',
-						region: '兵团 农八师',
-						latitude: 44.3018,
-						longitude: 86.0142,
-						description: '金色家园复式豪宅，带私家露台，视野极佳。豪华装修，配置高端。小区配套完善，有健身房、游泳池等设施。'
-					},
-					4: {
-						id: 4,
-						title: '东方明珠 1室1厅',
-						desc: '55㎡ · 单身公寓 · 地铁口',
-						price: '1500',
-						tag: '合租',
-						tagType: 'shared',
-						image: 'https://img.alicdn.com/imgextra/i1/6000000002334/O1CN01w2M5vB1FmR5KjP4z_!!600000000472-0-yinhe.jpg',
-						houseType: '1室1厅1卫',
-						area: '55㎡',
-						floor: '低层/6层',
-						orientation: '南',
-						decoration: '普装',
-						payment: '押一付一',
-						community: '东方明珠',
-						region: '地方 乌鲁木齐市',
-						latitude: 43.8206,
-						longitude: 87.6128,
-						description: '东方明珠单身公寓，适合年轻人居住。紧邻地铁口，出行方便。周边生活设施齐全，超市、餐饮应有尽有。'
-					},
-					5: {
-						id: 5,
-						title: '绿地世纪城 3室2厅',
-						desc: '135㎡ · 精装修 · 学区房',
-						price: '3200',
-						tag: '整租',
-						tagType: 'entire',
-						image: 'https://img.alicdn.com/imgextra/i3/6000000002334/O1CN01w2M5v81FmR5KjP1z_!!600000000472-0-yinhe.jpg',
-						houseType: '3室2厅2卫',
-						area: '135㎡',
-						floor: '中层/11层',
-						orientation: '南北',
-						decoration: '精装修',
-						payment: '押一付三',
-						community: '绿地世纪城',
-						region: '地方 昌吉州',
-						latitude: 44.0194,
-						longitude: 87.3164,
-						description: '绿地世纪城学区房，对口重点学校，教育资源丰富。房屋精装修，户型方正，南北通透。小区环境好，物业管理规范。'
-					},
-					6: {
-						id: 6,
-						title: '海景公寓 2室2厅',
-						desc: '98㎡ · 海景房 · 南北通透',
-						price: '2600',
-						tag: '整租',
-						tagType: 'entire',
-						image: 'https://img.alicdn.com/imgextra/i2/6000000002334/O1CN01w2M5v91FmR5KjP2z_!!600000000472-0-yinhe.jpg',
-						houseType: '2室2厅1卫',
-						area: '98㎡',
-						floor: '高层/22层',
-						orientation: '南北',
-						decoration: '精装修',
-						payment: '押一付三',
-						community: '海景公寓',
-						region: '地方 吐鲁番市',
-						latitude: 42.9513,
-						longitude: 89.1895,
-						description: '海景公寓高层海景房，视野无敌，可俯瞰整个海景。房屋南北通透，采光通风俱佳。周边有多个旅游景点，适合度假居住。'
+			async loadHouseDetail() {
+				try {
+					const data = await rentApi.rentDetail({ Id: this.houseId })
+					this.house = {
+						id: data.Id || data.id,
+						title: data.title,
+						desc: `${data.acreage || ''}㎡ · ${data.floor || ''}`,
+						price: (data.price || '') + '元/月',
+						tag: data.tagType === 'shared' ? '合租' : '整租',
+						tagType: data.tagType || 'entire',
+						image: data.rent_image || data.image || '',
+						acreage: (data.acreage || '') + '㎡',
+						floor: data.floor || '',
+						payment: data.payment || '',
+						name: data.name || data.community || '',
+						area: data.area || data.region || '',
+						latitude: data.latitude || 0,
+						longitude: data.longitude || 0,
+						explain: data.explain || data.description || '',
+						mobile: data.mobile || ''
 					}
-				}
-				if (detailMap[this.houseId]) {
-					this.house = detailMap[this.houseId]
-				}
+					this.visitors = data.count || data.visitors || 0
+				} catch (e) {}
 			},
 			onContact() {
-				uni.showToast({
-					title: '正在联系房东...',
-					icon: 'none'
-				})
+				if (this.house.mobile) {
+					uni.makePhoneCall({
+						phoneNumber: this.house.mobile
+					})
+				} else {
+					uni.showToast({
+						title: '暂无联系电话',
+						icon: 'none'
+					})
+				}
 			},
 			onOpenMap() {
 				uni.navigateTo({
-					url: '/pages/second/map?latitude=' + this.house.latitude + '&longitude=' + this.house.longitude + '&title=' + encodeURIComponent(this.house.community)
+					url: '/pages/second/map?latitude=' + this.house.latitude + '&longitude=' + this.house.longitude + '&title=' + encodeURIComponent(this.house.name)
 				})
 			}
 		}

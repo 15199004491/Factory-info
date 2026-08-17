@@ -32,7 +32,7 @@
 			</view>
 		</view>
 
-		<tab-bar :currentIndex="2"></tab-bar>
+		<tab-bar :currentIndex="3"></tab-bar>
 	</view>
 </template>
 
@@ -139,7 +139,7 @@
 						return
 					}
 					uni.showActionSheet({
-						itemList: ['二手房', '租房', '新房'],
+						itemList: ['二手房', '租房', '个人收购', '新房'],
 						success: function(res) {
 							if (res.tapIndex === 0) {
 								uni.navigateTo({
@@ -150,6 +150,10 @@
 									url: '/pages/publish/rent'
 								})
 							} else if (res.tapIndex === 2) {
+								uni.navigateTo({
+									url: '/pages/publish/purchase'
+								})
+							} else if (res.tapIndex === 3) {
 								uni.showToast({
 									title: '暂未开通',
 									icon: 'none'
@@ -174,7 +178,7 @@
 					uni.navigateTo({
 						url: '/pages/mine/published'
 					})
-				} else {
+				}  else {
 					uni.showToast({
 						title: item + ' 即将上线',
 						icon: 'none'

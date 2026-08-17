@@ -343,7 +343,7 @@
 		right: 0;
 		bottom: 0;
 		background-color: rgba(0, 0, 0, 0.5);
-		z-index: 99;
+		z-index: 1098;
 	}
 
 	.filter-sheet {
@@ -353,7 +353,7 @@
 		bottom: 0;
 		background-color: #fff;
 		border-radius: 24rpx 24rpx 0 0;
-		z-index: 100;
+		z-index: 1099;
 		transform: translateY(100%);
 		transition: transform 0.3s ease;
 		padding-bottom: env(safe-area-inset-bottom);

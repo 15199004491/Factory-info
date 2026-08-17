@@ -6,6 +6,15 @@
 
 		<view class="form-section">
 			<view class="form-card">
+				<view class="form-item form-item-row">
+					<text class="form-label">通知</text>
+					<textarea class="form-textarea" v-model="factoryNotice" placeholder="请输入通知内容，如：即日起至8月31日，小麦收购价格上调5%" placeholder-class="input-placeholder" :maxlength="120" />
+				</view>
+			</view>
+		</view>
+
+		<view class="form-section">
+			<view class="form-card">
 				<view class="section-title">
 					<text class="title-text">收购品类</text>
 					<view class="add-category-btn" @tap="onAddCategory">
@@ -20,13 +29,11 @@
 								<text class="cat-status-tag" :class="cat.status">{{ cat.status === 'active' ? '收购中' : '暂停收购' }}</text>
 							</view>
 							<view class="cat-price">
-						<text class="cat-price-num">{{ formatPrice(cat.price) }}</text>
-						<text class="cat-price-unit">元/{{ cat.unit }}</text>
-					</view>
+								<text class="cat-price-num">{{ formatPrice(cat.price) }}</text>
+								<text class="cat-price-unit">元/{{ cat.unit }}</text>
+							</view>
 						</view>
-						<view class="cat-footer">
-							<text class="cat-update-time">更新于 {{ formatDate(cat.updateTime) }}</text>
-						</view>
+				
 						<view class="cat-remark" v-if="cat.remark">
 							<text class="cat-remark-label">备注：</text>
 							<text class="cat-remark-text">{{ cat.remark }}</text>
@@ -49,10 +56,6 @@
 
 		<view class="form-section">
 			<view class="form-card">
-				<view class="form-item form-item-row">
-					<text class="form-label">通知</text>
-					<textarea class="form-textarea" v-model="factoryNotice" placeholder="请输入通知内容，如：即日起至8月31日，小麦收购价格上调5%" placeholder-class="input-placeholder" :maxlength="120" />
-				</view>
 				<view class="form-item form-item-row">
 					<text class="form-label">备注</text>
 					<textarea class="form-textarea" v-model="factoryRemark" placeholder="请输入备注信息，如：主要收购粮食作物，可上门收购，量大从优" placeholder-class="input-placeholder" :maxlength="120" />

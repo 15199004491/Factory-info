@@ -61,7 +61,7 @@
 			<text class="empty-text">暂无数据</text>
 		</view>
 
-		<tab-bar :currentIndex="1"></tab-bar>
+		<tab-bar :currentIndex="0"></tab-bar>
 	</view>
 </template>
 
