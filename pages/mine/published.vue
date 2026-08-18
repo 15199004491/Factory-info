@@ -66,13 +66,18 @@
 			return {
 				filterType: '',
 				activeTab: 'purchase',
-				allList: []
+				allList: [],
+				loadedTabs: { purchase: false, second: false, rent: false }
 			}
 		},
 		computed: {
 			filteredList() {
-				if (this.activeTab === 'all') return this.allList
 				return this.allList.filter(i => i.type === this.activeTab)
+			}
+		},
+		watch: {
+			activeTab(val) {
+				this.loadTab(val)
 			}
 		},
 		onLoad(options) {
@@ -82,113 +87,41 @@
 			}
 		},
 		onShow() {
-			this.loadList()
+			this.loadTab(this.activeTab)
 		},
 		methods: {
-			async loadList() {
+			async loadTab(tab) {
+				if (!tab || this.loadedTabs[tab]) return
 				try {
-					const [secondData, rentData, purchaseData] = await Promise.all([
-						secondHouseApi.getList({ page: 1, limit: 100 }),
-						rentApi.rentSelf(),
-						purchaseApi.purchaseSelf()
-					])
-					const secondList = this.formatSecondList(secondData.list || [])
-					const rentList = this.formatRentList(rentData || [])
-					const purchaseList = this.formatPurchaseList(purchaseData || [])
-
-					if (secondList.length === 0 && rentList.length === 0 && purchaseList.length === 0) {
-						this.allList = this.getMockData()
-					} else {
-						this.allList = [...purchaseList, ...secondList, ...rentList]
+					var data = null
+					if (tab === 'purchase') {
+						data = await purchaseApi.purchaseSelf()
+						var list = this.formatPurchaseList(data)
+						this.appendList(list, 'purchase')
+					} else if (tab === 'second') {
+						data = await secondHouseApi.houseSelf()
+						var list = this.formatSecondList(data)
+						this.appendList(list, 'second')
+					} else if (tab === 'rent') {
+						data = await rentApi.rentSelf()
+						var list = this.formatRentList(data)
+						this.appendList(list, 'rent')
 					}
-				} catch (e) {
-					this.allList = this.getMockData()
-				}
+					this.loadedTabs[tab] = true
+				} catch (e) {}
 			},
-			getMockData() {
-				return [
-					{
-						id: 101,
-						type: 'purchase',
-						title: '大量收购玉米 小麦',
-						categories: ['玉米', '小麦'],
-						region: '兵团 塔城地区 133团',
-						price: '1.25元/斤',
-						createTime: '2026-08-15'
-					},
-					{
-						id: 102,
-						type: 'purchase',
-						title: '收购西红柿 黄瓜',
-						categories: ['西红柿', '黄瓜'],
-						region: '兵团 石河子市 143团',
-						price: '2.80元/斤',
-						createTime: '2026-08-14'
-					},
-					{
-						id: 103,
-						type: 'purchase',
-						title: '生猪收购 活猪',
-						categories: ['活猪'],
-						region: '兵团 塔城地区 133团',
-						price: '15.00元/斤',
-						createTime: '2026-08-12'
-					},
-					{
-						id: 201,
-						type: 'second',
-						title: '阳光花园 3室2厅 精装',
-						community: '阳光花园',
-						region: '兵团 石河子市',
-						houseType: '3室2厅',
-						area: '120㎡',
-						price: '58',
-						createTime: '2026-08-10'
-					},
-					{
-						id: 202,
-						type: 'second',
-						title: '和谐家园 2室1厅 毛坯',
-						community: '和谐家园',
-						region: '兵团 奎屯市',
-						houseType: '2室1厅',
-						area: '88㎡',
-						price: '42',
-						createTime: '2026-08-08'
-					},
-					{
-						id: 301,
-						type: 'rent',
-						title: '绿城水郡 精装公寓 拎包入住',
-						community: '绿城水郡',
-						region: '兵团 阿克苏地区',
-						houseType: '1室1厅',
-						area: '45㎡',
-						price: '1500',
-						tagType: 'entire',
-						createTime: '2026-08-16'
-					},
-					{
-						id: 302,
-						type: 'rent',
-						title: '合租单间 带独立卫生间',
-						community: '万达广场',
-						region: '兵团 乌鲁木齐市',
-						houseType: '单间',
-						area: '20㎡',
-						price: '800',
-						tagType: 'shared',
-						createTime: '2026-08-13'
-					}
-				]
+			appendList(list, type) {
+				var others = this.allList.filter(i => i.type !== type)
+				this.allList = others.concat(list)
 			},
-			formatSecondList(list) {
+			formatSecondList(data) {
+				var list = Array.isArray(data) ? data : (data && data.list ? data.list : [])
 				return (list || []).map(item => ({
 					id: item.Id || item.id,
 					type: 'second',
 					title: item.title,
 					community: item.name || item.community || '',
-					region: item.region || '',
+					region: item.region || item.area || '',
 					houseType: item.shape || item.houseType || '',
 					area: (item.acreage || item.area || '') + '㎡',
 					floor: item.floor || '',
@@ -206,7 +139,7 @@
 					type: 'rent',
 					title: item.title,
 					community: item.community || item.name || '',
-					region: item.region || '',
+					region: item.region || item.area || '',
 					houseType: item.shape || item.houseType || '',
 					area: (item.area || '') + '㎡',
 					floor: item.floor || '',
@@ -219,16 +152,19 @@
 			},
 			formatPurchaseList(data) {
 				var list = Array.isArray(data) ? data : (data && data.list ? data.list : [])
-				return (list || []).map(item => ({
-					id: item.Id || item.id,
-					type: 'purchase',
-					title: item.title,
-					region: item.region || item.area || '',
-					categories: (item.items || []).map(i => i.name),
-					price: item.items && item.items[0] ? item.items[0].price : '',
-					description: item.description || item.explain || '',
-					createTime: item.create_time || item.createTime || ''
-				}))
+				return (list || []).map(item => {
+					var cats = item.categories || item.items || []
+					return {
+						id: item.Id || item.id,
+						type: 'purchase',
+						title: item.title,
+						region: item.region || item.area || '',
+						categories: cats.map(function(c) { return typeof c === 'string' ? c : (c.name || '') }),
+						price: cats.length && cats[0].price ? cats[0].price : '',
+						description: item.description || item.explain || '',
+						createTime: item.create_time || item.createTime || ''
+					}
+				})
 			},
 			getTypeLabel(type) {
 				if (type === 'purchase') return '个人收购'
@@ -266,8 +202,11 @@
 									await rentApi.deleteRent({ Id: item.id })
 								} else if (item.type === 'purchase') {
 									await purchaseApi.deletePurchase({ Id: item.id })
+								} else if (item.type === 'second') {
+									await secondHouseApi.deleteHouse({ Id: item.id })
 								}
-								self.loadList()
+								self.loadedTabs[item.type] = false
+								self.loadTab(item.type)
 								uni.showToast({
 									title: '删除成功',
 									icon: 'success'

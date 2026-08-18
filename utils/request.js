@@ -4,7 +4,7 @@ import { BASE_URL } from './config.js'
 
 export function getOpenid() {
 	const info = uni.getStorageSync('user_info') || {}
-	return info.openid || ''
+	return info.open_id || ''
 }
 
 export function request(url, data = {}, method = 'GET') {
@@ -38,6 +38,8 @@ export const secondHouseApi = {
     getList: (params) => request('/farm/Secondhouse/houseList', params),
     getDetail: (Id) => request('/farm/Secondhouse/houseDetail', { Id }),
     addHouse: (data) => request('/farm/Secondhouse/addHouse', { ...data, open_id: getOpenid() }, 'POST'),
+    houseSelf: () => request('/farm/Secondhouse/houseSelf', { open_id: getOpenid() }),
+    deleteHouse: (params) => request('/farm/Secondhouse/deleteHouse', params, 'POST'),
 };
 
 export const factoryApi = {

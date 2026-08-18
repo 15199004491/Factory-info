@@ -19,8 +19,11 @@
 		<view class="form-section">
 			<view class="form-card">
 				<view class="section-title">
-					<text class="title-text">收购品类</text>
-					<view class="add-category-btn" @tap="onAddCategory">
+					<view class="title-wrap">
+						<text class="title-text">收购品类</text>
+						<text class="title-count">（{{ form.categories.length }}/6）</text>
+					</view>
+					<view class="add-category-btn" :class="{ 'add-category-btn-disabled': form.categories.length >= 6 }" @tap="onAddCategory">
 						<text class="add-category-text">+ 新增品类</text>
 					</view>
 				</view>
@@ -82,7 +85,7 @@
 				<view class="modal-form">
 					<view class="form-row">
 						<text class="form-label">品类名称</text>
-						<input class="form-input" v-model="formData.name" placeholder="请输入品类名称" placeholder-class="form-placeholder" />
+						<input class="form-input" v-model="formData.name" maxlength="10" placeholder="请输入品类名称" placeholder-class="form-placeholder" />
 					</view>
 					<view class="form-row">
 						<text class="form-label">收购价格</text>
@@ -126,7 +129,7 @@
 				showRegionPicker: false,
 				showModal: false,
 				editingIndex: -1,
-				unitOptions: ['斤', '公斤', '吨'],
+				unitOptions: ['公斤', '吨'],
 				editingId: null,
 				form: {
 					title: '',
@@ -138,7 +141,7 @@
 				formData: {
 					name: '',
 					price: '',
-					unit: '斤'
+					unit: '公斤'
 				}
 			}
 		},
@@ -165,7 +168,7 @@
 						categories: data.items ? data.items.map(item => ({
 							name: item.name || '',
 							price: item.price || '',
-							unit: item.unit || '斤'
+							unit: item.unit || '公斤'
 						})) : []
 					}
 				} catch (e) {}
@@ -181,8 +184,12 @@
 				this.showRegionPicker = false
 			},
 			onAddCategory() {
+				if (this.form.categories.length >= 6) {
+					uni.showToast({ title: '最多只能添加6个品类', icon: 'none' })
+					return
+				}
 				this.editingIndex = -1
-				this.formData = { name: '', price: '', unit: '斤' }
+				this.formData = { name: '', price: '', unit: '公斤' }
 				this.showModal = true
 			},
 			onEditCategory(idx) {
@@ -305,12 +312,13 @@
 						region: this.form.region,
 						mobile: this.form.mobile,
 						description: this.form.description,
-						items: this.form.categories.map(c => ({
+						categories: this.form.categories.map(c => ({
 							name: c.name,
 							price: c.price,
 							unit: c.unit
 						}))
 					}
+					console.log('postData--', postData)
 					await purchaseApi.addPurchase(postData)
 					uni.hideLoading()
 					uni.showToast({ title: this.editingId ? '修改成功' : '发布成功', icon: 'success' })
@@ -351,15 +359,30 @@
 		border-bottom: 1rpx solid #f0f0f0;
 	}
 
+	.title-wrap {
+		display: flex;
+		align-items: center;
+	}
+
 	.title-text {
 		font-size: 26rpx;
 		color: #666;
 		font-weight: normal;
 	}
 
+	.title-count {
+		font-size: 24rpx;
+		color: #999;
+		margin-left: 8rpx;
+	}
+
 	.add-category-btn {
 		flex: none;
 		padding: 0;
+	}
+
+	.add-category-btn-disabled .add-category-text {
+		color: #ccc !important;
 	}
 
 	.add-category-text {
