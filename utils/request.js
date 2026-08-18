@@ -16,21 +16,33 @@ export function request(url, data = {}, method = 'GET') {
                 header['Token'] = token
             }
         }
-        uni.request({
-            url: BASE_URL + url,
-            data,
-            method,
-            header,
-            success: (res) => {
-                if (res.data.code === 200) {
-                    resolve(res.data.data);
-                } else {
-                    uni.showToast({ title: res.data.msg || '请求失败', icon: 'none' });
-                    reject(res.data);
+        try {
+            uni.request({
+                url: BASE_URL + url,
+                data,
+                method,
+                header,
+                timeout: 10000,
+                success: (res) => {
+                    try {
+                        if (res && res.data && res.data.code === 200) {
+                            resolve(res.data.data);
+                        } else {
+                            const msg = (res && res.data && res.data.msg) || '请求失败'
+                            uni.showToast({ title: msg, icon: 'none' });
+                            reject((res && res.data) || {});
+                        }
+                    } catch (e) {
+                        reject(e);
+                    }
+                },
+                fail: (err) => {
+                    reject(err || {});
                 }
-            },
-            fail: reject
-        });
+            });
+        } catch (e) {
+            reject(e);
+        }
     });
 }
 

@@ -37,10 +37,20 @@
 			</picker-view>
 		</view>
 
-		<view class="tip-bar">
-			<text class="tip-text">如果没有你关注的加工厂，请</text>
-			<text class="tip-link" @tap="onInvite">邀请入驻</text>
+		<view class="invite-banner-wrap">
+		<view class="invite-banner" @tap="onInvite">
+			<view class="invite-left">
+				<view class="invite-info">
+					<text class="invite-title">没有找到想要的加工厂？</text>
+					<text class="invite-desc">邀请加工厂入驻，帮更多农户找到优质收购商</text>
+				</view>
+			</view>
+			<view class="invite-action">
+				<text class="invite-btn-text">立即邀请</text>
+				<text class="invite-arrow">›</text>
+			</view>
 		</view>
+	</view>
 
 		<view class="factory-list">
 			<view class="factory-item" v-for="(item, index) in factoryList" :key="index" @tap="goDetail(item)">
@@ -142,7 +152,7 @@
 					const res = await factoryApi.getList(params)
 					const list = (res && res.list) ? res.list : (Array.isArray(res) ? res : [])
 					this.factoryList = list.map(item => ({
-						id: item.id,
+						id: item.Id,
 						name: item.name,
 						identification: item.identification,
 						createTime: item.update_time || item.create_time || item.createtime || 0,
@@ -191,7 +201,7 @@
 			},
 			goDetail(item) {
 				uni.navigateTo({
-					url: '/pages/factory/detail?id=' + item.id
+					url: '/pages/factory/detail?Id=' + item.id
 				})
 			}
 		}
@@ -227,26 +237,70 @@
 		margin-right: 6rpx;
 	}
 
-	.tip-bar {
-		display: flex;
-		align-items: center;
-		justify-content: flex-start;
-		padding: 20rpx 24rpx;
+	.invite-banner-wrap {
+		width: 100%;
 		background-color: #fff;
-		border-top: 1rpx solid #f0f0f0;
+		padding: 20rpx 0;
 		border-bottom: 1rpx solid #f0f0f0;
 	}
 
-	.tip-text {
-		font-size: 26rpx;
+	.invite-banner {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 24rpx 24rpx;
+		margin: 0 24rpx;
+		background: linear-gradient(135deg, #fff8e6 0%, #fff3d6 100%);
+		border-radius: 16rpx;
+		border: 1rpx solid #ffe4a3;
+	}
+
+	.invite-left {
+		display: flex;
+		align-items: center;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.invite-info {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.invite-title {
+		font-size: 28rpx;
+		color: #333;
+		font-weight: 600;
+		margin-bottom: 6rpx;
+	}
+
+	.invite-desc {
+		font-size: 22rpx;
 		color: #999;
 	}
 
-	.tip-link {
-		font-size: 26rpx;
-		color: #3c9cff;
-		margin-left: 8rpx;
+	.invite-action {
+		display: flex;
+		align-items: center;
+		background: linear-gradient(135deg, #ff9800, #ffb74d);
+		padding: 14rpx 24rpx;
+		border-radius: 28rpx;
+		flex-shrink: 0;
+	}
+
+	.invite-btn-text {
+		font-size: 24rpx;
+		color: #fff;
 		font-weight: 500;
+	}
+
+	.invite-arrow {
+		font-size: 28rpx;
+		color: #fff;
+		margin-left: 6rpx;
+		font-weight: bold;
 	}
 
 	.filter-mask {

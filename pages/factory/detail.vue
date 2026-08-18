@@ -1,68 +1,79 @@
 <template>
 	<view class="page">
 
-		<view class="module-card" :class="{ 'verified-card': factory.verified }">
-			<view class="section-title">
-				<view class="title-left">
-					<text class="title-text">基本信息</text>
+		<view class="header-card">
+			<view class="header-top">
+				<view class="factory-title-row">
+					<text class="factory-name">{{ factory.name }}</text>
 					<text class="verified-tag" v-if="factory.verified">已认证</text>
-					<text class="unverified-tag" v-else>未认证</text>
 				</view>
-			</view>
-			<view class="section-factory-name">
-				<text class="factory-title">{{ factory.name }}</text>
-			</view>
-			<view class="info-card">
 				<view class="address-row" @tap="openLocation">
-					<view class="address-info">
-						<text class="address-text">{{ factory.address }}</text>
-					</view>
-					<view class="map-btn">
-						<text class="map-icon">📍</text>
-					</view>
+					<u-icon name="map" size="14" color="rgba(255,255,255,0.85)"></u-icon>
+					<text class="address-text">{{ factory.address }}</text>
+					<text class="address-arrow">›</text>
 				</view>
-				<view class="remark-row" v-if="factory.remark">
-					<text class="remark-label">备注：</text>
-					<text class="remark-text">{{ factory.remark }}</text>
+			</view>
+			<view class="header-stats">
+				<view class="stat-item">
+					<text class="stat-value">{{ formatVisitorCount(todayVisitors) }}</text>
+					<text class="stat-label">今日访客</text>
 				</view>
-				<view class="visitor-divider-line"></view>
-				<view class="visitor-inline">
-					<view class="visitor-cell">
-						<text class="visitor-label">今日访客</text>
-						<text class="visitor-value">{{ formatVisitorCount(todayVisitors) }}</text>
-					</view>
-					<text class="visitor-sep">/</text>
-					<view class="visitor-cell">
-						<text class="visitor-label">历史访客</text>
-						<text class="visitor-value">{{ formatVisitorCount(historyVisitors) }}</text>
-					</view>
+				<view class="stat-divider"></view>
+				<view class="stat-item">
+					<text class="stat-value">{{ formatVisitorCount(historyVisitors) }}</text>
+					<text class="stat-label">历史访客</text>
+				</view>
+				<view class="stat-divider"></view>
+				<view class="stat-item">
+					<text class="stat-value">{{ factory.updateTime ? formatDate(factory.updateTime) : '--' }}</text>
+					<text class="stat-label">更新时间</text>
 				</view>
 			</view>
 		</view>
 
-		<view class="module-card">
-			<view class="section-title">
-				<text class="title-text">收购品类</text>
-			</view>
-			<view class="category-list">
-				<view class="category-item" v-for="(cat, idx) in categories" :key="idx">
-					<view class="cat-header">
-						<view class="cat-name-wrap">
-							<text class="cat-name">{{ cat.name }}</text>
-							<text class="cat-status-tag" :class="cat.status">{{ cat.status === 'active' ? '收购中' : '暂停收购' }}</text>
-						</view>
-						<view class="cat-price">
-							<text class="cat-price-num">{{ getPriceNum(cat.price) }}</text>
-							<text class="cat-price-unit">{{ getPriceUnit(cat.price) }}</text>
-						</view>
+		<scroll-view scroll-y class="scroll-area" :show-scrollbar="false">
+			<view class="scroll-inner">
+				<view class="module-card">
+					<view class="section-header">
+						<view class="section-title-bar"></view>
+						<text class="section-title">通知</text>
 					</view>
-					<view class="cat-remark" v-if="cat.remark">
-						<text class="cat-remark-label">备注：</text>
-						<text class="cat-remark-text">{{ cat.remark }}</text>
+					<view class="notice-body" v-if="factory.notice">
+						<text class="notice-text">{{ factory.notice }}</text>
+					</view>
+					<view class="empty-tip" v-else>
+						<text class="empty-tip-text">暂无通知</text>
 					</view>
 				</view>
+
+				<view class="module-card">
+					<view class="section-header">
+						<view class="section-title-bar"></view>
+						<text class="section-title">品类价格</text>
+					</view>
+					<view class="category-list" v-if="categories.length > 0">
+						<view class="category-item" v-for="(cat, idx) in categories" :key="idx">
+							<view class="cat-main">
+								<view class="cat-info">
+									<text class="cat-name">{{ cat.name }}</text>
+								</view>
+								<view class="cat-price-wrap">
+									<text class="cat-price-num">{{ getPriceNum(cat.price) }}</text>
+									<text class="cat-price-unit">{{ getPriceUnit(cat.price) }}</text>
+								</view>
+							</view>
+							<view class="cat-remark" v-if="cat.remark">
+								<text class="cat-remark-text">{{ cat.remark }}</text>
+							</view>
+						</view>
+					</view>
+					<view class="empty-tip" v-else>
+						<text class="empty-tip-text">暂无品类信息</text>
+					</view>
+				</view>
+				<safe-bottom :height="130"></safe-bottom>
 			</view>
-		</view>
+		</scroll-view>
 
 		<view class="bottom-bar">
 			<view class="action-btn poster-btn" @tap="onShowPoster">
@@ -117,48 +128,40 @@
 </template>
 
 <script>
+	import { factoryApi } from '@/utils/request.js'
+
 	export default {
 		data() {
 			return {
 				showPoster: false,
-				todayVisitors: 1999,
-				historyVisitors: 28650,
+				loading: true,
+				factoryId: null,
+				todayVisitors: 0,
+				historyVisitors: 0,
 				factory: {
-					name: '红旗粮食综合加工厂',
+					name: '',
 					verified: false,
-					address: '山东省济南市历城区农业产业园88号',
-					remark: '主要收购粮食作物，可上门收购，量大从优',
-					notice: '即日起至8月31日，小麦收购价格上调5%，欢迎广大农户前来出售！',
-					latitude: 36.6512,
-					longitude: 117.1201
+					address: '',
+					notice: '',
+					latitude: 0,
+					longitude: 0,
+					updateTime: ''
 				},
-				categories: [
-					{
-						name: '小麦',
-						price: '2.85元/斤',
-						updateTime: '2026-08-11 09:30',
-						remark: '要求水分≤14%，无霉变',
-						status: 'active'
-					},
-					{
-						name: '玉米',
-						price: '2.60元/斤',
-						updateTime: '2026-08-10 14:20',
-						remark: '要求颗粒饱满，杂质少',
-						status: 'paused'
-					}
-				]
+				categories: []
 			}
 		},
 		onLoad(options) {
-			if (options.name) {
+			if (options && options.Id) {
+				this.factoryId = options.Id
+			}
+			if (options && options.name) {
 				this.factory.name = decodeURIComponent(options.name)
 				uni.setNavigationBarTitle({
 					title: this.factory.name
 				})
 			}
 			uni.hideShareMenu()
-			this.loadTodayVisitors()
+			this.loadDetail()
 		},
 		onShareAppMessage() {
 			return {
@@ -167,31 +170,86 @@
 			}
 		},
 		methods: {
-			loadTodayVisitors() {
-				const today = this.getTodayKey()
-				const factoryKey = this.factory.name || 'default'
-				const storageKey = `visitors_${factoryKey}`
-				const record = uni.getStorageSync(storageKey)
-				let count = 1999
-				if (record && record.date === today) {
-					count = record.count + 1
+			async loadDetail() {
+				if (!this.factoryId) {
+					this.loading = false
+					return
 				}
-				uni.setStorageSync(storageKey, {
-					date: today,
-					count: count
+				this.loading = true
+				try {
+					const res = await factoryApi.getDetail(this.factoryId)
+					if (res) {
+						this.applyData(res)
+					} else {
+						this.useMockData()
+					}
+				} catch (e) {
+					console.log('loadDetail catch:', e)
+					this.useMockData()
+				} finally {
+					this.loading = false
+				}
+			},
+			applyData(res) {
+				this.factory.name = res.name || ''
+				this.factory.verified = res.identification === 1 || res.verified === true
+				this.factory.address = res.address || res.location || ''
+				this.factory.notice = res.notice || res.announcement || ''
+				this.factory.latitude = Number(res.latitude || res.lat || 0)
+				this.factory.longitude = Number(res.longitude || res.lng || 0)
+				this.factory.updateTime = res.update_time || res.create_time || res.createtime || ''
+				this.todayVisitors = Number(res.today_visitors || res.todayVisitors || 0)
+				this.historyVisitors = Number(res.history_visitors || res.historyVisitors || 0)
+				if (this.factory.name) {
+					uni.setNavigationBarTitle({
+						title: this.factory.name
+					})
+				}
+				if (res.categories) {
+					this.categories = this.parseCategories(res.categories)
+				}
+			},
+			useMockData() {
+				this.factory.name = '绿源农产品加工厂'
+				this.factory.verified = true
+				this.factory.address = '山东省潍坊市寿光市323省道附近'
+				this.factory.notice = '本厂长期收购各类农产品，欢迎广大农户前来洽谈合作。每天营业时间 8:00 - 18:00。'
+				this.factory.latitude = 36.869
+				this.factory.longitude = 118.847
+				this.factory.updateTime = Date.now()
+				this.todayVisitors = 186
+				this.historyVisitors = 5230
+				this.categories = [
+					{ name: '玉米', price: '1.25元/斤', remark: '优质玉米，无霉变' },
+					{ name: '小麦', price: '1.30元/斤', remark: '新麦优先' },
+					{ name: '大豆', price: '2.80元/斤', remark: '高蛋白大豆' },
+					{ name: '花生', price: '3.50元/斤', remark: '颗粒饱满' },
+					{ name: '棉花', price: '6.80元/斤', remark: '籽棉收购' },
+					{ name: '苹果', price: '2.50元/斤', remark: '红富士，80mm以上' },
+					{ name: '白菜', price: '0.35元/斤', remark: '大白菜，无虫害' },
+					{ name: '萝卜', price: '0.45元/斤', remark: '白萝卜' }
+				]
+				uni.setNavigationBarTitle({
+					title: this.factory.name
 				})
-				this.todayVisitors = count
 			},
-			getTodayKey() {
-				const now = new Date()
-				const y = now.getFullYear()
-				const m = String(now.getMonth() + 1).padStart(2, '0')
-				const d = String(now.getDate()).padStart(2, '0')
-				return `${y}-${m}-${d}`
-			},
-			getPriceNum(priceStr) {
-				const match = priceStr.match(/[\d.]+/)
-				return match ? match[0] : priceStr
+			parseCategories(data) {
+				if (Array.isArray(data)) {
+					return data.map(item => {
+						if (typeof item === 'string') {
+							return { name: item, price: '', remark: '' }
+						}
+						return {
+							name: item.name || item.category || '',
+							price: item.price ? (item.price_unit ? item.price + item.price_unit : item.price) : '',
+							remark: item.remark || item.notes || ''
+						}
+					})
+				}
+				if (typeof data === 'string') {
+					return data.split(',').filter(Boolean).map(name => ({ name, price: '', remark: '' }))
+				}
+				return []
 			},
 			formatVisitorCount(num) {
 				if (num >= 10000) {
@@ -200,11 +258,16 @@
 				}
 				return String(num)
 			},
+			getPriceNum(priceStr) {
+				const match = priceStr.match(/[\d.]+/)
+				return match ? match[0] : priceStr
+			},
 			getPriceUnit(priceStr) {
 				const match = priceStr.match(/[^\d.]+/)
 				return match ? match[0] : ''
 			},
 			formatDate(dateStr) {
+				if (!dateStr) return ''
 				const date = new Date(dateStr.replace(/-/g, '/'))
 				const now = new Date()
 				const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -270,279 +333,184 @@
 
 <style lang="scss">
 	.page {
-		min-height: 100vh;
+		height: 100vh;
+		display: flex;
+		flex-direction: column;
 		background-color: #f5f5f5;
-		padding-bottom: 160rpx;
+		overflow: hidden;
 	}
 
-	.notice-bar {
+	.header-card {
+		background: linear-gradient(135deg, #3c9cff 0%, #1890ff 100%);
+		padding: 40rpx 32rpx 120rpx;
+		position: relative;
+		flex-shrink: 0;
+		box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+		z-index: 10;
+	}
+
+	.header-top {
+		position: relative;
+		z-index: 1;
+	}
+
+	.factory-title-row {
 		display: flex;
 		align-items: center;
-		background: linear-gradient(135deg, #fff7e6, #fffbe6);
-		padding: 20rpx 24rpx;
-		border-bottom: 1rpx solid #ffe5b4;
+		margin-bottom: 24rpx;
 	}
 
-	.notice-icon {
-		flex-shrink: 0;
-		margin-right: 16rpx;
+	.factory-name {
+		font-size: 40rpx;
+		font-weight: 700;
+		color: #fff;
 	}
 
-	.notice-label {
+	.verified-tag {
 		font-size: 22rpx;
 		color: #fff;
-		background: linear-gradient(135deg, #ff9800, #ff5722);
+		background-color: rgba(255, 255, 255, 0.25);
+		border: 1rpx solid rgba(255, 255, 255, 0.5);
 		padding: 6rpx 16rpx;
 		border-radius: 20rpx;
-	}
-
-	.notice-content {
-		flex: 1;
-		overflow: hidden;
-	}
-
-	.marquee {
-		display: flex;
-		white-space: nowrap;
-		animation: marquee 15s linear infinite;
-	}
-
-	@keyframes marquee {
-		0% {
-			transform: translateX(0);
-		}
-		100% {
-			transform: translateX(-50%);
-		}
-	}
-
-	.notice-text {
-		font-size: 26rpx;
-		color: #d4691a;
-		margin-right: 60rpx;
-	}
-
-	.visitor-divider-line {
-		height: 1rpx;
-		background-color: #eee;
-		margin: 20rpx 0 16rpx;
-	}
-
-	.visitor-inline {
-		display: flex;
-		align-items: center;
-		justify-content: flex-end;
-	}
-
-	.visitor-cell {
-		display: inline-flex;
-		align-items: baseline;
-	}
-
-	.visitor-label {
-		font-size: 22rpx;
-		color: #999;
-		margin-right: 6rpx;
-	}
-
-	.visitor-value {
-		font-size: 26rpx;
-		font-weight: 600;
-		color: #3c9cff;
-	}
-
-	.visitor-sep {
-		font-size: 28rpx;
-		color: #ddd;
-		margin: 0 16rpx;
-	}
-
-	.module-card {
-		background-color: #fff;
-		margin: 16rpx 24rpx;
-		border-radius: 16rpx;
-		overflow: hidden;
-	}
-
-	.verified-card {
-		border: 2rpx solid rgba(60, 156, 255, 0.3);
-		background: linear-gradient(180deg, #f0f7ff 0%, #ffffff 40%);
-		box-shadow: 0 4rpx 20rpx rgba(60, 156, 255, 0.12);
-	}
-
-	.verified-card .title-text {
-		color: #1890ff;
-	}
-
-	.info-card {
-		padding: 0 24rpx 24rpx;
-	}
-
-	.unverified-tip {
-		display: flex;
-		align-items: stretch;
-		margin: 20rpx 24rpx;
-		background-color: #fdf6ec;
-		border-radius: 12rpx;
-		overflow: hidden;
-	}
-
-	.tip-bar {
-		width: 6rpx;
+		margin-left: 16rpx;
 		flex-shrink: 0;
-		background: linear-gradient(180deg, #faad14, #d48806);
-	}
-
-	.tip-body {
-		flex: 1;
-		padding: 18rpx 20rpx;
-	}
-
-	.tip-title-row {
-		display: flex;
-		align-items: center;
-		margin-bottom: 6rpx;
-	}
-
-	.tip-icon-s {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 32rpx;
-		height: 32rpx;
-		background-color: #faad14;
-		color: #fff;
-		font-size: 22rpx;
-		font-weight: 700;
-		border-radius: 50%;
-		margin-right: 12rpx;
-	}
-
-	.tip-title {
-		font-size: 26rpx;
-		font-weight: 600;
-		color: #874d00;
-		line-height: 1.4;
-	}
-
-	.tip-desc {
-		display: block;
-		font-size: 24rpx;
-		color: #a06a1a;
-		line-height: 1.5;
+		font-weight: 500;
 	}
 
 	.address-row {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
+		background-color: rgba(255, 255, 255, 0.2);
+		border-radius: 12rpx;
+		padding: 18rpx 20rpx;
 	}
 
-	.address-info {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		margin-right: 20rpx;
+	.address-row .u-icon {
+		margin-right: 10rpx;
+		flex-shrink: 0;
 	}
 
 	.address-text {
+		flex: 1;
 		font-size: 28rpx;
-		color: #333;
+		color: #fff;
 		line-height: 1.5;
 	}
 
-	.map-btn {
+	.address-arrow {
+		font-size: 36rpx;
+		color: rgba(255, 255, 255, 0.8);
 		flex-shrink: 0;
+	}
+
+	.header-stats {
+		position: absolute;
+		left: 24rpx;
+		right: 24rpx;
+		bottom: -60rpx;
+		background-color: #fff;
+		border-radius: 20rpx;
+		padding: 32rpx 24rpx;
 		display: flex;
 		align-items: center;
-		justify-content: center;
+		box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
 	}
 
-	.map-icon {
-		font-size: 36rpx;
+	.stat-item {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
 	}
 
-	.remark-row {
-		margin-top: 20rpx;
-		padding-top: 20rpx;
-		border-top: 1rpx solid #f0f0f0;
+	.stat-value {
+		font-size: 32rpx;
+		font-weight: 700;
+		color: #3c9cff;
+		margin-bottom: 8rpx;
 	}
 
-	.remark-label {
-		font-size: 26rpx;
+	.stat-label {
+		font-size: 24rpx;
 		color: #999;
 	}
 
-	.remark-text {
+	.stat-divider {
+		width: 1rpx;
+		height: 48rpx;
+		background-color: #eee;
+	}
+
+	.scroll-area {
+		flex: 1;
+		overflow: hidden;
+	}
+
+	.scroll-inner {
+		padding: 80rpx 24rpx 0;
+	}
+
+	.module-card {
+		background-color: #fff;
+		margin-bottom: 24rpx;
+		border-radius: 20rpx;
+		overflow: hidden;
+	}
+
+	.module-card:last-child {
+		margin-bottom: 0;
+	}
+
+	.empty-tip {
+		padding: 48rpx 24rpx;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.empty-tip-text {
 		font-size: 26rpx;
-		color: #666;
-		line-height: 1.5;
+		color: #bbb;
+	}
+
+	.section-header {
+		display: flex;
+		align-items: center;
+		padding: 28rpx 24rpx;
+		border-bottom: 1rpx solid #f0f0f0;
+	}
+
+	.section-title-bar {
+		width: 6rpx;
+		height: 28rpx;
+		background: linear-gradient(180deg, #3c9cff, #5ac8fa);
+		border-radius: 3rpx;
+		margin-right: 12rpx;
 	}
 
 	.section-title {
-		padding: 24rpx;
-	}
-
-	.section-title-between {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	.title-text {
 		font-size: 30rpx;
 		font-weight: 600;
 		color: #333;
 	}
 
-	.factory-title-wrap {
-		display: flex;
-		align-items: center;
-		flex: 1;
-		min-width: 0;
+	.notice-body {
+		padding: 24rpx;
 	}
 
-	.section-factory-name {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		padding: 0 24rpx 16rpx;
-	}
-
-	.factory-title {
+	.notice-text {
 		font-size: 28rpx;
-		color: #333;
-		line-height: 1.5;
-		word-break: break-all;
-	}
-
-	.verified-tag {
-		font-size: 20rpx;
-		color: #fff;
-		background: linear-gradient(135deg, #3c9cff, #1890ff);
-		padding: 4rpx 12rpx;
-		border-radius: 6rpx;
-		flex-shrink: 0;
-		margin-left: 12rpx;
-	}
-
-	.unverified-tag {
-		font-size: 20rpx;
-		color: #ff8c00;
-		background-color: rgba(255, 140, 0, 0.1);
-		border: 1rpx solid rgba(255, 140, 0, 0.3);
-		padding: 4rpx 12rpx;
-		border-radius: 6rpx;
-		flex-shrink: 0;
-		margin-left: 12rpx;
+		color: #666;
+		line-height: 1.6;
 	}
 
 	.category-list {
-		padding: 0 24rpx 24rpx;
+		padding: 0 24rpx 16rpx;
 	}
 
 	.category-item {
-		padding: 20rpx 0;
+		padding: 24rpx 0;
 		border-bottom: 1rpx solid #f0f0f0;
 	}
 
@@ -550,32 +518,15 @@
 		border-bottom: none;
 	}
 
-	.cat-header {
+	.cat-main {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 	}
 
-	.cat-name-wrap {
+	.cat-info {
 		display: flex;
 		align-items: center;
-	}
-
-	.cat-status-tag {
-		font-size: 20rpx;
-		padding: 4rpx 12rpx;
-		border-radius: 8rpx;
-		margin-left: 12rpx;
-	}
-
-	.cat-status-tag.active {
-		background-color: #e8f5e9;
-		color: #4caf50;
-	}
-
-	.cat-status-tag.paused {
-		background-color: #ffebee;
-		color: #f44336;
 	}
 
 	.cat-name {
@@ -584,7 +535,7 @@
 		color: #333;
 	}
 
-	.cat-price {
+	.cat-price-wrap {
 		display: flex;
 		align-items: baseline;
 	}
@@ -596,35 +547,20 @@
 	}
 
 	.cat-price-unit {
-		font-size: 18rpx;
-		font-weight: 700;
+		font-size: 24rpx;
+		font-weight: 600;
 		color: #ff5722;
 		margin-left: 4rpx;
 	}
 
-	.cat-footer {
-		margin-top: 12rpx;
-	}
-
-	.cat-update-time {
-		font-size: 24rpx;
-		color: #999;
-	}
-
 	.cat-remark {
 		margin-top: 16rpx;
-		padding-top: 16rpx;
-		border-top: 1rpx dashed #eee;
-	}
-
-	.cat-remark-label {
-		font-size: 24rpx;
-		color: #999;
 	}
 
 	.cat-remark-text {
-		font-size: 24rpx;
-		color: #666;
+		font-size: 26rpx;
+		color: #999;
+		line-height: 1.5;
 	}
 
 	.bottom-bar {
@@ -642,33 +578,23 @@
 	.action-btn {
 		flex: 1;
 		display: flex;
-		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		padding: 20rpx 0;
+		padding: 24rpx 0;
 		margin: 0 12rpx;
-		border-radius: 12rpx;
-	}
-
-	.share-btn {
-		background: linear-gradient(135deg, #ff9800, #ffb74d);
+		border-radius: 16rpx;
 	}
 
 	.poster-btn {
 		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
 	}
 
-	.btn-icon-wrap {
-		margin-bottom: 6rpx;
-	}
-
-	.btn-icon-text {
-		font-size: 24rpx;
-		color: #fff;
+	.share-btn {
+		background: linear-gradient(135deg, #ff9800, #ffb74d);
 	}
 
 	.btn-label {
-		font-size: 28rpx;
+		font-size: 30rpx;
 		color: #fff;
 		font-weight: 500;
 	}

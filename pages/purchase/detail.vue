@@ -20,7 +20,7 @@
 				<view class="info-title-bar"></view>
 				<text class="info-title">收购品类</text>
 			</view>
-			<view class="category-grid">
+			<view class="category-grid" v-if="detail.items.length > 0">
 				<view class="category-card" v-for="(item, idx) in detail.items" :key="idx" :class="{ 'no-border': idx === detail.items.length - 1 }">
 					<text class="cat-name">{{ item.name }}</text>
 					<view class="cat-price-value">
@@ -29,6 +29,9 @@
 					</view>
 				</view>
 			</view>
+			<view class="empty-tip" v-else>
+				<text class="empty-tip-text">暂无品类信息</text>
+			</view>
 		</view>
 
 		<view class="detail-section">
@@ -36,7 +39,10 @@
 				<view class="info-title-bar"></view>
 				<text class="info-title">详细说明</text>
 			</view>
-			<text class="detail-content">{{ detail.description }}</text>
+			<text class="detail-content" v-if="detail.description">{{ detail.description }}</text>
+			<view class="empty-tip" v-else>
+				<text class="empty-tip-text">暂无详细说明</text>
+			</view>
 		</view>
 
 		<view class="bottom-bar">
@@ -219,6 +225,18 @@
 		font-size: 30rpx;
 		font-weight: 600;
 		color: #333;
+	}
+
+	.empty-tip {
+		padding: 48rpx 0;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.empty-tip-text {
+		font-size: 26rpx;
+		color: #bbb;
 	}
 
 	.category-grid {
