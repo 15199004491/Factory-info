@@ -59,9 +59,8 @@ export const factoryApi = {
     getSelf: () => request('/farm/Factory/factorySelf', { open_id: getOpenid() }),
     getDetail: (Id) => request('/farm/Factory/factoryDetail', { Id }),
     addFactory: (d) => request('/farm/Factory/addFactory', { ...d, open_id: getOpenid() }, 'POST'),
-    edit: (d) => request('/farm/Factory/editFactory', d, 'POST'),
     remove: (Id) => request('/farm/Factory/deleteFactory', { Id }, 'POST'),
-    verify: (Id, verified, remark) => request('/farm/Factory/verifyFactory', { Id, verified, remark }, 'POST'),
+    verifyFactory: (Id, license, id_card) => request('/farm/Factory/verifyFactory', { Id, license, id_card,open_id: getOpenid() }, 'POST'),
     publishFactory: (Id) => request('/farm/Factory/publishFactory', { Id }, 'POST'),
 };
 

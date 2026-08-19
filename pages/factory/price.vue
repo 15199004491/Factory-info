@@ -33,7 +33,6 @@
 								<text class="cat-price-unit">元/{{ cat.unit }}</text>
 							</view>
 						</view>
-				
 						<view class="cat-remark" v-if="cat.remark">
 							<text class="cat-remark-label">备注：</text>
 							<text class="cat-remark-text">{{ cat.remark }}</text>
@@ -52,15 +51,7 @@
 					<text class="empty-text">暂无品类，点击右上角新增</text>
 				</view>
 			</view>
-		</view>
-
-		<view class="form-section">
-			<view class="form-card">
-				<view class="form-item form-item-row">
-					<text class="form-label">备注</text>
-					<textarea class="form-textarea" v-model="factoryRemark" placeholder="请输入备注信息，如：主要收购粮食作物，可上门收购，量大从优" placeholder-class="input-placeholder" :maxlength="120" />
-				</view>
-			</view>
+			<safe-bottom :height="180"></safe-bottom>
 		</view>
 
 		<view class="bottom-bar">
@@ -127,7 +118,6 @@
 			return {
 				factoryName: '',
 				factoryNotice: '',
-				factoryRemark: '',
 				categories: [],
 				showModal: false,
 				editingIndex: -1,
@@ -145,7 +135,7 @@
 			if (options.name) {
 				this.factoryName = decodeURIComponent(options.name)
 				uni.setNavigationBarTitle({
-					title: this.factoryName + ' - 发布价格'
+					title: this.factoryName + ' - 发布信息'
 				})
 			}
 			this.loadCategories()
@@ -303,9 +293,10 @@
 
 <style lang="scss">
 	.page {
-		min-height: 100vh;
+		height: 100vh;
 		background-color: #f5f5f5;
 		padding-bottom: 180rpx;
+		box-sizing: border-box;
 	}
 
 	.factory-bar {

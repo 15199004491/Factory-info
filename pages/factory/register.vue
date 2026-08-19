@@ -7,18 +7,18 @@
 			<view class="form-card">
 				<view class="form-item">
 					<text class="form-label">加工厂名称</text>
-					<input class="form-input" v-model="form.name" placeholder="请输入加工厂名称" placeholder-class="input-placeholder" />
+					<input class="form-input" v-model="form.name" maxlength="20" placeholder="请输入加工厂名称" placeholder-class="input-placeholder" />
 				</view>
 				<view class="form-item">
 					<text class="form-label">联系电话</text>
 					<button class="phone-btn" open-type="getPhoneNumber" @getphonenumber="onGetPhone">
-						<text v-if="form.phone" class="phone-value">{{ form.phone }}</text>
+						<text v-if="form.mobile" class="phone-value">{{ form.mobile }}</text>
 						<text v-else class="phone-placeholder">获取手机号</text>
 					</button>
 				</view>
 				<view class="form-item" @tap="onChooseLocation">
 					<text class="form-label">加工厂地址</text>
-					<text v-if="form.address" class="location-value">{{ form.address }}</text>
+					<text v-if="form.location.address" class="location-value">{{ form.location.address }}</text>
 					<text v-else class="location-placeholder">获取地址</text>
 				</view>
 			</view>
@@ -34,7 +34,7 @@
 					<view class="license-upload">
 						<view class="license-preview" v-if="form.license" @tap="onPreviewLicense">
 							<image class="license-image" :src="form.license" mode="aspectFill" />
-							<view class="license-remove" @tap="onRemoveLicense">
+							<view class="license-remove" @tap.stop="onRemoveLicense">
 								<text class="remove-icon">×</text>
 							</view>
 						</view>
@@ -49,23 +49,9 @@
 		</view>
 
 		<view class="submit-area">
-			<view class="submit-row" v-if="isEdit">
-				<view class="submit-btn" @tap="onSubmit('edit')">
-					<text class="submit-text">保存修改</text>
-				</view>
-			</view>
-			<view class="submit-row" v-else>
-				<view class="submit-btn btn-trial" @tap="onSubmit('trial')">
-					<text class="submit-btn-label">免费试用</text>
-					<text class="submit-btn-sub">30天</text>
-				</view>
-				<view class="submit-btn btn-yearly" @tap="onSubmit('yearly')">
-					<view class="discount-badge">3.0折</view>
-					<text class="submit-btn-label">付费入驻</text>
-					<view class="yearly-price-row">
-						<text class="submit-btn-sub">¥300/年</text>
-						<text class="original-price">¥1000/年</text>
-					</view>
+			<view class="submit-row">
+				<view class="submit-btn btn-free" @tap="onSubmit">
+					<text class="submit-btn-label">立即入驻</text>
 				</view>
 			</view>
 		</view>
@@ -83,10 +69,12 @@
 				factoryId: null,
 				form: {
 					name: '',
-					phone: '',
-					address: '',
-					latitude: 0,
-					longitude: 0,
+					mobile: '',
+					location: {
+						address: '',
+						latitude: 0,
+						longitude: 0
+					},
 					license: ''
 				}
 			}
@@ -103,12 +91,26 @@
 			async loadFactoryData() {
 				try {
 					const data = await factoryApi.getDetail(this.factoryId)
+					let locationObj = null
+					if (data.location) {
+						if (typeof data.location === 'string') {
+							try {
+								locationObj = JSON.parse(data.location)
+							} catch (e) {
+								locationObj = null
+							}
+						} else {
+							locationObj = data.location
+						}
+					}
 					this.form = {
 						name: data.name || '',
-						phone: data.phone || '',
-						address: data.address || '',
-						latitude: data.latitude || 0,
-						longitude: data.longitude || 0,
+						mobile: data.mobile || '',
+						location: {
+							address: locationObj ? locationObj.address : (data.address || ''),
+							latitude: locationObj ? locationObj.latitude : (data.latitude || 0),
+							longitude: locationObj ? locationObj.longitude : (data.longitude || 0)
+						},
 						license: data.license || ''
 					}
 				} catch (e) {}
@@ -117,7 +119,7 @@
 				if (e.detail.errMsg === 'getPhoneNumber:ok') {
 					try {
 						const data = await userApi.getPhone(e.detail.code)
-						this.form.phone = data.phoneNumber
+						this.form.mobile = data.phoneNumber
 					} catch (err) {
 						uni.showToast({ title: '获取手机号失败', icon: 'none' })
 					}
@@ -128,9 +130,11 @@
 			onChooseLocation() {
 				uni.chooseLocation({
 					success: (res) => {
-						this.form.address = res.address || res.name
-						this.form.latitude = res.latitude
-						this.form.longitude = res.longitude
+						this.form.location = {
+							address: res.address || res.name,
+							latitude: res.latitude,
+							longitude: res.longitude
+						}
 					},
 					fail: (err) => {
 						console.error('chooseLocation fail:', err)
@@ -172,24 +176,32 @@
 					}
 				})
 			},
-			async onSubmit(plan) {
+			async onSubmit() {
 				if (!this.form.name.trim()) {
 					uni.showToast({ title: '请输入加工厂名称', icon: 'none' })
 					return
 				}
-				if (!this.form.phone) {
+				if (this.form.name.trim().length > 20) {
+					uni.showToast({ title: '加工厂名称不能超过20字', icon: 'none' })
+					return
+				}
+				if (!this.form.mobile) {
 					uni.showToast({ title: '请获取联系电话', icon: 'none' })
 					return
 				}
-				if (!this.form.address) {
+				if (!this.form.location.address) {
 					uni.showToast({ title: '请选择加工厂地址', icon: 'none' })
+					return
+				}
+				if (!this.isEdit && !this.form.license) {
+					uni.showToast({ title: '请上传营业执照', icon: 'none' })
 					return
 				}
 
 				const msg = [
 					this.form.name,
-					this.form.phone,
-					this.form.address
+					this.form.mobile,
+					this.form.location.address
 				].filter(Boolean).join(' ')
 
 				try {
@@ -210,58 +222,22 @@
 
 					const postData = {
 						id: this.factoryId || undefined,
-						name: this.form.name,
-						phone: this.form.phone,
-						address: this.form.address,
-						latitude: this.form.latitude,
-						longitude: this.form.longitude,
-						license: licenseUrl,
-						plan: plan
+						name: this.form.name.trim(),
+						mobile: this.form.mobile,
+						location: JSON.stringify(this.form.location),
+						license: licenseUrl
 					}
 
-					if (this.isEdit) {
-						await factoryApi.edit(postData)
-						uni.showToast({ title: '保存成功', icon: 'success' })
-					} else if (plan === 'trial') {
-						await factoryApi.addFactory(postData)
-						uni.showToast({ title: '已开通30天免费试用', icon: 'success' })
-					} else if (plan === 'yearly') {
-						uni.showModal({
-							title: '付费入驻',
-							content: '请联系客服完成 ¥300/年 的入驻付费后提交申请。是否继续提交？',
-							confirmText: '继续提交',
-							success: async (res) => {
-								if (res.confirm) {
-									try {
-										await factoryApi.addFactory(postData)
-										uni.showToast({ title: '提交成功，请联系客服完成付费', icon: 'none' })
-										setTimeout(() => {
-											uni.navigateBack()
-										}, 1500)
-									} catch (e) {
-										uni.showToast({ title: '提交失败', icon: 'none' })
-									} finally {
-										uni.hideLoading()
-									}
-								} else {
-									uni.hideLoading()
-								}
-							},
-							fail: () => {
-								uni.hideLoading()
-							}
-						})
-						return
-					}
+					postData.id = this.factoryId || undefined
+					await factoryApi.addFactory(postData)
+					uni.showToast({ title: this.isEdit ? '保存成功' : '入驻成功', icon: 'success' })
 					setTimeout(() => {
 						uni.navigateBack()
 					}, 1000)
 				} catch (e) {
 					uni.showToast({ title: '提交失败', icon: 'none' })
 				} finally {
-					if (plan !== 'yearly') {
-						uni.hideLoading()
-					}
+					uni.hideLoading()
 				}
 			}
 		}
@@ -270,9 +246,10 @@
 
 <style lang="scss">
 	.page {
-		min-height: 100vh;
+		height: 100vh;
 		background-color: #f5f5f5;
-		padding-bottom: 60rpx;
+		padding-bottom: 180rpx;
+		box-sizing: border-box;
 	}
 
 	.form-section {
@@ -380,9 +357,9 @@
 		position: absolute;
 		top: 0;
 		right: 0;
-		width: 40rpx;
-		height: 40rpx;
-		background-color: rgba(0, 0, 0, 0.5);
+		width: 56rpx;
+		height: 56rpx;
+		background-color: rgba(0, 0, 0, 0.55);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -391,7 +368,7 @@
 
 	.remove-icon {
 		color: #fff;
-		font-size: 28rpx;
+		font-size: 36rpx;
 		line-height: 1;
 	}
 
@@ -427,7 +404,14 @@
 	}
 
 	.submit-area {
-		padding: 40rpx 24rpx 20rpx;
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		padding: 24rpx 48rpx;
+		padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+		background-color: #fff;
+		box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
 	}
 
 	.submit-row {
@@ -440,66 +424,19 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		padding: 20rpx 0;
+		padding: 28rpx 0;
 		margin: 0 12rpx;
 		border-radius: 12rpx;
 	}
 
-	.submit-text {
-		font-size: 28rpx;
-		font-weight: 500;
-		color: #fff;
-	}
-
 	.submit-btn-label {
-		font-size: 28rpx;
-		font-weight: 500;
+		font-size: 30rpx;
+		font-weight: 600;
 		color: #fff;
 	}
 
-	.submit-btn-sub {
-		font-size: 24rpx;
-		color: rgba(255, 255, 255, 0.9);
-		margin-top: 6rpx;
-	}
-
-	.yearly-price-row {
-		display: flex;
-		align-items: baseline;
-		margin-top: 6rpx;
-	}
-
-	.yearly-price-row .submit-btn-sub {
-		margin-top: 0;
-	}
-
-	.original-price {
-		font-size: 20rpx;
-		color: rgba(255, 255, 255, 0.6);
-		text-decoration: line-through;
-		margin-left: 12rpx;
-	}
-
-	.btn-trial {
+	.btn-free {
 		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
-	}
-
-	.btn-yearly {
-		background: linear-gradient(135deg, #ff9800, #ffb74d);
-		position: relative;
-		overflow: hidden;
-	}
-
-	.discount-badge {
-		position: absolute;
-		top: 0;
-		right: 0;
-		background: linear-gradient(135deg, #ff4d4f, #ff7875);
-		color: #fff;
-		font-size: 20rpx;
-		font-weight: 700;
-		padding: 4rpx 16rpx;
-		border-bottom-left-radius: 12rpx;
-		line-height: 1.2;
+		box-shadow: 0 8rpx 24rpx rgba(60, 156, 255, 0.35);
 	}
 </style>

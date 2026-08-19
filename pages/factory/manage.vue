@@ -4,23 +4,13 @@
 			<view class="list-item" v-for="(item, index) in factoryList" :key="index" @tap="goDetail(item)">
 				<view class="item-top">
 					<view class="item-header">
-						<text class="item-status" :class="item.status === 'approved' ? 'status-approved' : 'status-pending'">{{ item.status === 'approved' ? '已入驻' : '待审核' }}</text>
+						<text class="item-status" :class="getStatusClass(item.identification)">{{ getStatusText(item.identification) }}</text>
 						<text class="item-name">{{ item.name }}</text>
 					</view>
 					<text class="item-time">{{ formatDate(item.createdAt) }}</text>
 				</view>
 				<view class="item-info">
 					<text class="info-address">{{ item.address }}</text>
-				</view>
-				<view class="item-validity">
-					<view class="validity-icon-wrap">
-						<u-icon name="clock" size="14" :color="getValidityInfo(item).color" />
-					</view>
-					<text class="validity-label">有效期至</text>
-					<text class="validity-date" :style="{ color: getValidityInfo(item).color }">{{ item.validityEnd || '未设置' }}</text>
-					<view class="validity-tag" :class="getValidityInfo(item).tagClass">
-						<text class="validity-tag-text">{{ getValidityInfo(item).tagText }}</text>
-					</view>
 				</view>
 				<view class="item-actions">
 					<view class="action-btn btn-price" @tap.stop="onPublishPrice(item)">
@@ -61,18 +51,35 @@
 			async loadList() {
 				try {
 					const data = await factoryApi.getSelf()
-					this.factoryList = (data || []).map(item => ({
-						id: item.id,
-						name: item.name,
-						address: item.address,
-						phone: item.phone,
-						status: item.verified ? 'approved' : 'pending',
-						licenseImage: item.license,
-						latitude: item.latitude,
-						longitude: item.longitude,
-						createdAt: item.create_time || item.createdAt || '',
-						validityEnd: item.expire_time || item.validity_end || item.validityEnd || ''
-					}))
+					this.factoryList = (data || []).map(item => {
+						let locationObj = null
+						if (item.location) {
+							if (typeof item.location === 'string') {
+								try {
+									locationObj = JSON.parse(item.location)
+								} catch (e) {
+									locationObj = null
+								}
+							} else {
+								locationObj = item.location
+							}
+						}
+						return {
+							id: item.Id,
+							name: item.name,
+							address: locationObj ? locationObj.address : (item.address || ''),
+							mobile: item.mobile || item.phone || '',
+							location: locationObj || {
+								address: item.address || '',
+								latitude: item.latitude || 0,
+								longitude: item.longitude || 0
+							},
+							identification: item.identification,
+							licenseImage: item.license,
+							createdAt: item.create_time || item.createdAt || '',
+							validityEnd: item.expire_time || item.validity_end || item.validityEnd || ''
+						}
+					})
 				} catch (e) {
 					this.factoryList = []
 				}
@@ -98,7 +105,7 @@
 						id: 'mock1',
 						name: '兰州新区诚信机械加工厂',
 						address: '甘肃省兰州市兰州新区昆仑大道中段 1688 号',
-						status: 'approved',
+						identification: 1,
 						createdAt: fmt(addDays(now, -60)),
 						validityEnd: fmt(addDays(now, 180))
 					},
@@ -106,7 +113,7 @@
 						id: 'mock2',
 						name: '七里河区顺达五金制品厂',
 						address: '甘肃省兰州市七里河区西津西路 399 号',
-						status: 'approved',
+						identification: 0,
 						createdAt: fmt(addDays(now, -180)),
 						validityEnd: fmt(addDays(now, 15))
 					},
@@ -114,7 +121,7 @@
 						id: 'mock3',
 						name: '城关区金鑫钣金加工厂',
 						address: '甘肃省兰州市城关区东岗东路 256 号',
-						status: 'approved',
+						identification: 2,
 						createdAt: fmt(addDays(now, -365)),
 						validityEnd: fmt(addDays(now, -10))
 					},
@@ -122,7 +129,7 @@
 						id: 'mock4',
 						name: '安宁区宏达精密铸造厂',
 						address: '甘肃省兰州市安宁区安宁东路 888 号',
-						status: 'pending',
+						identification: null,
 						createdAt: fmt(addDays(now, -3)),
 						validityEnd: ''
 					}
@@ -185,6 +192,18 @@
 					return `${y}-${m}-${d}`
 				}
 			},
+			getStatusText(identification) {
+				if (identification === 1 || identification === '1') return '已认证'
+				if (identification === 0 || identification === '0') return '认证中'
+				if (identification === 2 || identification === '2') return '认证失败'
+				return '未认证'
+			},
+			getStatusClass(identification) {
+				if (identification === 1 || identification === '1') return 'status-verified'
+				if (identification === 0 || identification === '0') return 'status-pending'
+				if (identification === 2 || identification === '2') return 'status-failed'
+				return 'status-unverified'
+			},
 			onAdd() {
 				uni.navigateTo({
 					url: '/pages/factory/register'
@@ -202,23 +221,16 @@
 			},
 			onMore(item, index) {
 				uni.showActionSheet({
-					itemList: ['认证', '续费', '编辑', '删除'],
+					itemList: ['认证', '修改基本信息', '删除'],
 					success: (res) => {
 						if (res.tapIndex === 0) {
 							this.onCertify(item)
 						} else if (res.tapIndex === 1) {
-							this.onRenew(item)
-						} else if (res.tapIndex === 2) {
 							this.onEdit(item)
-						} else if (res.tapIndex === 3) {
+						} else if (res.tapIndex === 2) {
 							this.onDelete(item, index)
 						}
 					}
-				})
-			},
-			onRenew(item) {
-				uni.navigateTo({
-					url: '/pages/factory/renew?id=' + item.id + '&name=' + encodeURIComponent(item.name) + '&validity=' + encodeURIComponent(item.validityEnd || '')
 				})
 			},
 			onPublishPrice(item) {
@@ -302,7 +314,7 @@
 		margin-right: 12rpx;
 	}
 
-	.status-approved {
+	.status-verified {
 		color: #52c41a;
 		background-color: rgba(82, 196, 26, 0.1);
 	}
@@ -310,6 +322,16 @@
 	.status-pending {
 		color: #fa8c16;
 		background-color: rgba(250, 140, 22, 0.1);
+	}
+
+	.status-failed {
+		color: #ff4d4f;
+		background-color: rgba(255, 77, 79, 0.1);
+	}
+
+	.status-unverified {
+		color: #999;
+		background-color: rgba(153, 153, 153, 0.1);
 	}
 
 	.item-time {

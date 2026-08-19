@@ -439,9 +439,15 @@ export async function uploadImages(images, options = {}) {
 	return results
 }
 
-export async function uploadFactoryLicense(tempPath) {
+export async function uploadFactoryLicense(tempPath, dir = 'license') {
 	const result = await compressImage(tempPath, MAX_SIZE_FACTORY)
-	const uploadResult = await uploadToCOS(result, 'factory')
+	const uploadResult = await uploadToCOS(result, dir)
+	return uploadResult.url
+}
+
+export async function uploadFactoryIdCard(tempPath) {
+	const result = await compressImage(tempPath, MAX_SIZE_FACTORY)
+	const uploadResult = await uploadToCOS(result, 'id_card')
 	return uploadResult.url
 }
 
@@ -454,5 +460,6 @@ export { compressImage, uploadToCOS, MAX_SIZE_FACTORY, MAX_SIZE_SECOND }
 uni.checkImageSafe = checkImageSafe
 uni.checkTextSafe = checkTextSafe
 uni.uploadFactoryLicense = uploadFactoryLicense
+uni.uploadFactoryIdCard = uploadFactoryIdCard
 uni.uploadSecondImages = uploadSecondImages
 uni.uploadImages = uploadImages

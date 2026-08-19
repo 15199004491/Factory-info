@@ -4,6 +4,15 @@
 			<text class="factory-name">{{ factoryName }}</text>
 		</view>
 
+		<view class="status-banner status-pending" v-if="identification === 0">
+			<text class="status-icon">⏳</text>
+			<text class="status-text">您的认证资料已提交，将在1-7个工作日内审核完毕</text>
+		</view>
+		<view class="status-banner status-failed" v-if="identification === 2">
+			<text class="status-icon">✕</text>
+			<text class="status-text">认证未通过，请重新提交或联系客服</text>
+		</view>
+
 		<view class="form-section">
 			<view class="section-title">
 				<text class="title-text">提交营业执照</text>
@@ -11,14 +20,19 @@
 			<view class="form-card">
 				<view class="form-item upload-item">
 					<text class="form-label">营业执照</text>
-					<view class="upload-area" @tap="onChooseLicense">
-						<image v-if="licenseImage" class="upload-preview" :src="licenseImage" mode="aspectFill" @click.stop="onPreviewLicense" />
-						<view v-else class="upload-placeholder">
-							<text class="upload-icon">+</text>
-							<text class="upload-text">点击上传营业执照</text>
-							<text class="upload-tip">请上传清晰完整的营业执照原件照片</text>
+					<view class="upload-wrap">
+						<view class="license-preview" v-if="licenseImage" @tap="onPreviewLicense">
+							<image class="license-image" :src="licenseImage" mode="aspectFill" />
+							<view class="license-remove" @tap.stop="onRemoveLicense">
+								<text class="remove-icon">×</text>
+							</view>
+						</view>
+						<view class="license-add" v-else @tap="onChooseLicense">
+							<text class="add-icon">+</text>
+							<text class="add-text">上传营业执照</text>
 						</view>
 					</view>
+					<text class="upload-tip">请上传清晰完整的营业执照原件照片</text>
 				</view>
 			</view>
 		</view>
@@ -30,14 +44,19 @@
 			<view class="form-card">
 				<view class="form-item upload-item">
 					<text class="form-label">企业法人身份证照片</text>
-					<view class="upload-area" @tap="onChooseIdCard">
-						<image v-if="idCardImage" class="upload-preview" :src="idCardImage" mode="aspectFill" @click.stop="onPreviewIdCard" />
-						<view v-else class="upload-placeholder">
-							<text class="upload-icon">+</text>
-							<text class="upload-text">点击上传法人身份证</text>
-							<text class="upload-tip">请上传清晰完整的身份证原件照片</text>
+					<view class="upload-wrap">
+						<view class="license-preview" v-if="idCardImage" @tap="onPreviewIdCard">
+							<image class="license-image" :src="idCardImage" mode="aspectFill" />
+							<view class="license-remove" @tap.stop="onRemoveIdCard">
+								<text class="remove-icon">×</text>
+							</view>
+						</view>
+						<view class="license-add" v-else @tap="onChooseIdCard">
+							<text class="add-icon">+</text>
+							<text class="add-text">上传法人身份证</text>
 						</view>
 					</view>
+					<text class="upload-tip">请上传清晰完整的身份证原件照片</text>
 				</view>
 			</view>
 		</view>
@@ -49,18 +68,19 @@
 				</view>
 				<text class="agreement-text">我已阅读并同意</text>
 			</view>
-			<text class="agreement-link" @tap="onViewAgreement">《加工厂认证服务协议》</text>
+			<text class="agreement-link" @tap="onViewAgreement(false)">《加工厂认证服务协议》</text>
 		</view>
 
 		<view class="bottom-bar">
-			<view class="pay-btn" :class="{ disabled: isSubmitting }" @tap="onSubmit">
-				<text class="pay-text">{{ isSubmitting ? '提交中...' : '立即认证' }}</text>
+			<view class="pay-btn" :class="{ disabled: isBtnDisabled }" @tap="onSubmit">
+				<text class="pay-text">{{ submitBtnText }}</text>
 			</view>
 		</view>
 	</view>
 </template>
 
 <script>
+	import { factoryApi } from '@/utils/request.js'
 	import '@/utils/upload.js'
 	export default {
 		data() {
@@ -70,12 +90,25 @@
 				licenseImage: '',
 				idCardImage: '',
 				agreed: false,
-				isSubmitting: false
+				isSubmitting: false,
+				identification: null
+			}
+		},
+		computed: {
+			submitBtnText() {
+				if (this.isSubmitting) return '提交中...'
+				if (this.identification === 0) return '认证中...'
+				if (this.identification === 2) return '重新提交'
+				return '立即认证'
+			},
+			isBtnDisabled() {
+				return this.isSubmitting || this.identification === 0
 			}
 		},
 		onLoad(options) {
 			if (options.id) {
 				this.factoryId = options.id
+				this.loadFactoryInfo()
 			}
 			if (options.name) {
 				this.factoryName = decodeURIComponent(options.name)
@@ -85,6 +118,31 @@
 			}
 		},
 		methods: {
+			async loadFactoryInfo() {
+				try {
+					const data = await factoryApi.getDetail(this.factoryId)
+					if (data.license) {
+						this.licenseImage = data.license
+					}
+					if (data.id_card) {
+						this.idCardImage = data.id_card
+					}
+					if (data.identification !== undefined && data.identification !== null && data.identification !== '') {
+						this.identification = Number(data.identification)
+						if (this.identification === 1) {
+							uni.showModal({
+								title: '认证成功',
+								content: '恭喜您，加工厂认证已通过！',
+								showCancel: false,
+								confirmText: '返回',
+								success: () => {
+									uni.navigateBack()
+								}
+							})
+						}
+					}
+				} catch (e) {}
+			},
 			onChooseLicense() {
 				uni.chooseImage({
 					count: 1,
@@ -133,15 +191,47 @@
 					current: this.idCardImage
 				})
 			},
-			onViewAgreement() {
+			onRemoveLicense() {
+				uni.showModal({
+					title: '提示',
+					content: '确定要删除营业执照吗？',
+					success: (res) => {
+						if (res.confirm) {
+							this.licenseImage = ''
+						}
+					}
+				})
+			},
+			onRemoveIdCard() {
+				uni.showModal({
+					title: '提示',
+					content: '确定要删除身份证照片吗？',
+					success: (res) => {
+						if (res.confirm) {
+							this.idCardImage = ''
+						}
+					}
+				})
+			},
+			onViewAgreement(autoAgree = false) {
 				uni.showModal({
 					title: '加工厂认证服务协议',
-					content: '1. 用户同意提交真实有效的营业执照及法人身份信息。\n2. 认证审核通过后，加工厂将获得认证标识和优先展示权益。\n3. 平台有权对提交的资料进行审核，资料不实将取消认证资格。\n4. 认证有效期与加工厂入驻有效期一致。\n5. 平台保留最终解释权。',
-					showCancel: false,
-					confirmText: '我知道了'
+					content: '1. 用户同意提交真实有效的营业执照及法人身份信息。\n2. 认证审核通过后，加工厂将获得认证标识和优先展示权益。\n3. 平台有权对提交的资料进行审核，资料不实将取消认证资格。\n4. 平台保留最终解释权。',
+					showCancel: !autoAgree,
+					confirmText: autoAgree ? '同意并认证' : '我知道了',
+					cancelText: '不同意',
+					success: (res) => {
+						if (res.confirm) {
+							this.agreed = true
+							if (autoAgree) {
+								this.onSubmit()
+							}
+						}
+					}
 				})
 			},
 			onSubmit() {
+				if (this.isSubmitting) return
 				if (!this.licenseImage) {
 					uni.showToast({ title: '请先上传营业执照', icon: 'none' })
 					return
@@ -151,25 +241,44 @@
 					return
 				}
 				if (!this.agreed) {
-					uni.showToast({ title: '请先同意认证服务协议', icon: 'none' })
+					this.onViewAgreement(true)
 					return
 				}
 				this.isSubmitting = true
 				uni.showLoading({ title: '提交中...', mask: true })
+				this.doSubmit()
+			},
+			async doSubmit() {
+				try {
+					let licenseUrl = this.licenseImage
+					if (licenseUrl && !licenseUrl.startsWith('http')) {
+						licenseUrl = await uni.uploadFactoryLicense(licenseUrl)
+					}
 
-				setTimeout(() => {
+					let idCardUrl = this.idCardImage
+					if (idCardUrl && !idCardUrl.startsWith('http')) {
+						idCardUrl = await uni.uploadFactoryIdCard(idCardUrl)
+					}
+
+					await factoryApi.verifyFactory(this.factoryId, licenseUrl, idCardUrl)
 					uni.hideLoading()
 					this.isSubmitting = false
 
+					this.identification = 0
+
 					uni.showModal({
 						title: '提交成功',
-						content: '您的加工厂认证资料已提交，审核结果将在1-3个工作日内通知您',
+						content: '您的加工厂认证资料已提交，将在1-7个工作日内审核完毕',
 						showCancel: false,
 						success: () => {
 							uni.navigateBack()
 						}
 					})
-				}, 1500)
+				} catch (e) {
+					uni.hideLoading()
+					this.isSubmitting = false
+					uni.showToast({ title: '提交失败', icon: 'none' })
+				}
 			}
 		}
 	}
@@ -192,6 +301,41 @@
 		font-size: 30rpx;
 		font-weight: 600;
 		color: #333;
+	}
+
+	.status-banner {
+		margin: 20rpx 24rpx 0;
+		padding: 24rpx;
+		border-radius: 12rpx;
+		display: flex;
+		align-items: center;
+	}
+
+	.status-pending {
+		background-color: #fff8e6;
+	}
+
+	.status-pending .status-icon {
+		color: #fa8c16;
+	}
+
+	.status-failed {
+		background-color: #fff1f0;
+	}
+
+	.status-failed .status-icon {
+		color: #ff4d4f;
+	}
+
+	.status-icon {
+		font-size: 32rpx;
+		margin-right: 16rpx;
+	}
+
+	.status-text {
+		font-size: 26rpx;
+		color: #666;
+		flex: 1;
 	}
 
 	.form-section {
@@ -234,48 +378,71 @@
 		border-bottom: none;
 	}
 
-	.upload-area {
-		width: 100%;
-		min-height: 360rpx;
-		background-color: #f8f8f8;
+	.upload-wrap {
+		margin-top: 16rpx;
+	}
+
+	.license-preview {
+		position: relative;
+		width: 240rpx;
+		height: 160rpx;
 		border-radius: 12rpx;
-		display: flex;
-		align-items: center;
-		justify-content: center;
 		overflow: hidden;
 	}
 
-	.upload-preview {
+	.license-image {
 		width: 100%;
-		height: 400rpx;
-		display: block;
+		height: 100%;
 	}
 
-	.upload-placeholder {
+	.license-remove {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 56rpx;
+		height: 56rpx;
+		background-color: rgba(0, 0, 0, 0.55);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-bottom-left-radius: 12rpx;
+	}
+
+	.remove-icon {
+		color: #fff;
+		font-size: 36rpx;
+		line-height: 1;
+	}
+
+	.license-add {
+		width: 240rpx;
+		height: 160rpx;
+		border: 2rpx dashed #ccc;
+		border-radius: 12rpx;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		padding: 48rpx;
+		background-color: #fafafa;
 	}
 
-	.upload-icon {
-		font-size: 80rpx;
+	.add-icon {
+		font-size: 48rpx;
 		color: #ccc;
 		line-height: 1;
 	}
 
-	.upload-text {
-		font-size: 28rpx;
-		color: #333;
-		margin-top: 16rpx;
+	.add-text {
+		font-size: 24rpx;
+		color: #999;
+		margin-top: 8rpx;
 	}
 
 	.upload-tip {
 		font-size: 24rpx;
 		color: #999;
 		margin-top: 12rpx;
-		text-align: center;
+		display: block;
 	}
 
 	.agreement-row {
@@ -332,6 +499,7 @@
 		padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
 		background-color: #fff;
 		box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
+		z-index: 999;
 	}
 
 	.pay-btn {
@@ -345,7 +513,9 @@
 	}
 
 	.pay-btn.disabled {
-		opacity: 0.7;
+		background: linear-gradient(135deg, #b3d9ff, #c4e6ff);
+		box-shadow: none;
+		pointer-events: none;
 	}
 
 	.pay-text {

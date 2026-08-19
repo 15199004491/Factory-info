@@ -100,7 +100,7 @@
 		{
 			"path": "pages/factory/price",
 			"style": {
-				"navigationBarTitleText": "发布价格"
+				"navigationBarTitleText": "发布信息"
 			}
 		},
 		{
