@@ -49,9 +49,9 @@
 			<view class="action-btn contact-btn" @tap="onContact">
 				<text class="btn-label">电话联系</text>
 			</view>
-			<view class="action-btn share-btn" @tap="onShare">
+			<button class="action-btn share-btn" open-type="share">
 				<text class="btn-label">分享</text>
-			</view>
+			</button>
 		</view>
 	</view>
 </template>
@@ -126,24 +126,6 @@
 					title: this.detail.title + ' - 收购信息',
 					path: '/pages/purchase/detail?id=' + this.id
 				}
-			},
-			onShare() {
-				// #ifdef MP-WEIXIN
-				uni.showShareMenu({
-					withShareTicket: true
-				})
-				uni.showToast({
-					title: '请点击右上角分享给好友',
-					icon: 'none',
-					duration: 2000
-				})
-				// #endif
-				// #ifndef MP-WEIXIN
-				uni.showToast({
-					title: '请在微信中打开分享',
-					icon: 'none'
-				})
-				// #endif
 			}
 		}
 	}
@@ -346,12 +328,17 @@
 	.action-btn {
 		flex: 1;
 		display: flex;
-		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		padding: 20rpx 0;
+		padding: 24rpx 0;
 		margin: 0 12rpx;
-		border-radius: 12rpx;
+		border-radius: 16rpx;
+		border: none;
+		line-height: 1;
+	}
+
+	.action-btn::after {
+		border: none;
 	}
 
 	.contact-btn {
@@ -363,7 +350,7 @@
 	}
 
 	.btn-label {
-		font-size: 28rpx;
+		font-size: 30rpx;
 		color: #fff;
 		font-weight: 500;
 	}

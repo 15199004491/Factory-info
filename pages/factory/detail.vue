@@ -80,9 +80,9 @@
 			<view class="action-btn poster-btn" @tap="onShowPoster">
 				<text class="btn-label">海报</text>
 			</view>
-			<view class="action-btn share-btn" @tap="onShare">
+			<button class="action-btn share-btn" open-type="share">
 				<text class="btn-label">分享</text>
-			</view>
+			</button>
 		</view>
 
 		<view class="poster-modal" v-if="showPoster" @tap="showPoster = false">
@@ -90,11 +90,7 @@
 				<view class="poster-card">
 					<view class="poster-header">
 						<view class="poster-factory-name">{{ factory.name }}</view>
-						<view class="poster-verified-badge" v-if="factory.verified">✓ 已认证</view>
-					</view>
-					<view class="poster-address">
-						<text class="poster-address-icon">📍</text>
-						<text class="poster-address-text">{{ factory.address }}</text>
+						<view class="poster-address-text poster-header-address">{{ factory.location.address }}</view>
 					</view>
 					<view class="poster-categories">
 						<view class="poster-cat-title">收购品类</view>
@@ -106,14 +102,11 @@
 					</view>
 					<view class="poster-bottom">
 						<view class="poster-qrcode">
-							<view class="poster-qr-box">
-								<text class="poster-qr-temp">二维码</text>
-							</view>
+							<canvas type="2d" id="qrCanvas" class="poster-qr-canvas" :style="{ width: qrCanvasSize + 'px', height: qrCanvasSize + 'px' }"></canvas>
 							<text class="poster-qr-tip">微信扫一扫</text>
 						</view>
 						<view class="poster-slogan">
 							<text class="poster-slogan-main">扫码看最新收购价</text>
-							<text class="poster-slogan-sub">足不出户掌握行情</text>
 						</view>
 					</view>
 				</view>
@@ -131,6 +124,7 @@
 <script>
 	import { factoryApi } from '@/utils/request.js'
 	import { formatVisitorCount, formatDate } from '@/utils/date.js'
+	import { generateQRData } from '@/utils/qrcode.js'
 
 	export default {
 		data() {
@@ -138,6 +132,7 @@
 				showPoster: false,
 				loading: true,
 				factoryId: null,
+				qrCanvasSize: 100,
 				factory: {
 					name: '',
 					verified: false,
@@ -232,26 +227,48 @@
 					scale: 16
 				})
 			},
-			onShare() {
-				// #ifdef MP-WEIXIN
-				uni.showShareMenu({
-					withShareTicket: true
-				})
-				uni.showToast({
-					title: '请点击右上角分享给好友',
-					icon: 'none',
-					duration: 2000
-				})
-				// #endif
-				// #ifndef MP-WEIXIN
-				uni.showToast({
-					title: '请在微信中打开分享',
-					icon: 'none'
-				})
-				// #endif
-			},
 			onShowPoster() {
 				this.showPoster = true
+				this.$nextTick(() => {
+					this.renderQRCode()
+				})
+			},
+			renderQRCode() {
+				const sysInfo = uni.getSystemInfoSync()
+				const size = Math.floor(260 * sysInfo.windowWidth / 750)
+				this.qrCanvasSize = size
+				const qrText = 'https://www.housefactory.cn.cn/pages/factory/detail?Id=' + this.factoryId
+				try {
+					const data = generateQRData(qrText, 0)
+					const qrSize = data.size
+					const margin = 2
+					const moduleCount = qrSize + margin * 2
+					const cellSize = size / moduleCount
+					const query = uni.createSelectorQuery().in(this)
+					query.select('#qrCanvas').fields({ node: true, size: true }).exec((res) => {
+						if (!res || !res[0]) return
+						const canvas = res[0].node
+						const ctx = canvas.getContext('2d')
+						const dpr = sysInfo.pixelRatio || 2
+						canvas.width = size * dpr
+						canvas.height = size * dpr
+						ctx.scale(dpr, dpr)
+						ctx.fillStyle = '#ffffff'
+						ctx.fillRect(0, 0, size, size)
+						ctx.fillStyle = '#333333'
+						for (let row = 0; row < qrSize; row++) {
+							for (let col = 0; col < qrSize; col++) {
+								if (data.modules[row][col]) {
+									const x = (col + margin) * cellSize
+									const y = (row + margin) * cellSize
+									ctx.fillRect(x, y, cellSize + 0.5, cellSize + 0.5)
+								}
+							}
+						}
+					})
+				} catch (e) {
+					console.error('QR code generation failed:', e)
+				}
 			},
 			onSavePoster() {
 				uni.showToast({
@@ -532,6 +549,12 @@
 		padding: 24rpx 0;
 		margin: 0 12rpx;
 		border-radius: 16rpx;
+		border: none;
+		line-height: 1;
+	}
+
+	.action-btn::after {
+		border: none;
 	}
 
 	.poster-btn {
@@ -578,19 +601,17 @@
 
 	.poster-header {
 		display: flex;
-		align-items: center;
-		margin-bottom: 16rpx;
+		flex-direction: column;
+		margin-bottom: 20rpx;
+		padding-bottom: 20rpx;
+		border-bottom: 1rpx solid #eee;
 	}
 
 	.poster-factory-name {
 		font-size: 36rpx;
 		font-weight: 700;
 		color: #333;
-		flex: 1;
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		margin-bottom: 10rpx;
 	}
 
 	.poster-verified-badge {
@@ -674,29 +695,11 @@
 		margin-bottom: 24rpx;
 	}
 
-	.poster-qr-box {
-		width: 200rpx;
-		height: 200rpx;
-		background: repeating-linear-gradient(
-			45deg,
-			#333,
-			#333 4rpx,
-			#fff 4rpx,
-			#fff 8rpx
-		);
-		border: 2rpx solid #333;
-		border-radius: 12rpx;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.poster-qr-temp {
-		font-size: 24rpx;
-		color: #333;
+	.poster-qr-canvas {
 		background-color: #fff;
-		padding: 8rpx 16rpx;
-		border-radius: 6rpx;
+		border-radius: 12rpx;
+		width: 260rpx;
+		height: 260rpx;
 	}
 
 	.poster-qr-tip {

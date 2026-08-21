@@ -50,9 +50,12 @@
 		</view>
 
 		<view class="bottom-bar">
-			<view class="bar-btn bar-contact" @tap="onContact">
-				<text class="bar-icon">联系房东</text>
+			<view class="action-btn contact-btn" @tap="onContact">
+				<text class="btn-label">联系房东</text>
 			</view>
+			<button class="action-btn share-btn" open-type="share">
+				<text class="btn-label">分享</text>
+			</button>
 		</view>
 	</view>
 </template>
@@ -129,6 +132,13 @@
 						title: '暂无联系电话',
 						icon: 'none'
 					})
+				}
+			},
+			onShareAppMessage() {
+				return {
+					title: this.house.title || '租房详情',
+					path: '/pages/rent/detail?id=' + this.houseId,
+					imageUrl: this.house.image || ''
 				}
 			}
 		}
@@ -276,34 +286,40 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		height: 120rpx;
-		background-color: #fff;
 		display: flex;
-		align-items: center;
-		padding: 0 20rpx;
-		box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.06);
-		padding-bottom: env(safe-area-inset-bottom);
+		background-color: #fff;
+		padding: 20rpx 24rpx;
+		padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+		box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
 	}
 
-	.bar-btn {
+	.action-btn {
+		flex: 1;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		height: 80rpx;
-		border-radius: 40rpx;
+		padding: 24rpx 0;
+		margin: 0 12rpx;
+		border-radius: 16rpx;
+		border: none;
+		line-height: 1;
 	}
 
-	.bar-contact {
-		flex: 1;
+	.contact-btn {
 		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
 	}
 
-	.bar-contact .bar-icon {
-		color: #fff;
-		font-weight: 500;
+	.share-btn {
+		background: linear-gradient(135deg, #ff9800, #ffb74d);
 	}
 
-	.bar-icon {
-		font-size: 28rpx;
+	.share-btn::after {
+		border: none;
+	}
+
+	.btn-label {
+		font-size: 30rpx;
+		color: #fff;
+		font-weight: 500;
 	}
 </style>

@@ -38,7 +38,7 @@
 		</view>
 
 		<view class="invite-banner-wrap">
-		<view class="invite-banner" @tap="onInvite">
+		<button class="invite-banner" open-type="share">
 			<view class="invite-left">
 				<view class="invite-info">
 					<text class="invite-title">没有找到想要的加工厂？</text>
@@ -49,7 +49,7 @@
 				<text class="invite-btn-text">立即邀请</text>
 				<text class="invite-arrow">›</text>
 			</view>
-		</view>
+		</button>
 	</view>
 
 		<view class="factory-list">
@@ -270,23 +270,11 @@
 			onSearch() {
 				this.loadList()
 			},
-			onInvite() {
-				// #ifdef MP-WEIXIN
-				uni.showShareMenu({
-					withShareTicket: true
-				})
-				uni.showToast({
-					title: '请点击右上角分享给好友',
-					icon: 'none',
-					duration: 2000
-				})
-				// #endif
-				// #ifndef MP-WEIXIN
-				uni.showToast({
-					title: '请在微信中打开分享',
-					icon: 'none'
-				})
-				// #endif
+			onShareAppMessage() {
+				return {
+					title: '邀请加工厂入驻，帮更多农户找到优质收购商',
+					path: '/pages/factory/factory'
+				}
 			},
 			goDetail(item) {
 				uni.navigateTo({
@@ -342,6 +330,11 @@
 		background: linear-gradient(135deg, #fff8e6 0%, #fff3d6 100%);
 		border-radius: 16rpx;
 		border: 1rpx solid #ffe4a3;
+		line-height: 1;
+	}
+
+	.invite-banner::after {
+		border: none;
 	}
 
 	.invite-left {
@@ -354,6 +347,7 @@
 	.invite-info {
 		display: flex;
 		flex-direction: column;
+		align-items: flex-start;
 		flex: 1;
 		min-width: 0;
 	}
@@ -362,12 +356,13 @@
 		font-size: 28rpx;
 		color: #333;
 		font-weight: 600;
-		margin-bottom: 6rpx;
+		margin-bottom: 12rpx;
 	}
 
 	.invite-desc {
 		font-size: 22rpx;
 		color: #999;
+		line-height: 1.6;
 	}
 
 	.invite-action {
