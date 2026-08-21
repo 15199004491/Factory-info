@@ -8,7 +8,10 @@
 			<view class="form-card">
 				<view class="form-item form-item-row">
 					<text class="form-label">通知</text>
-					<textarea class="form-textarea" v-model="factoryNotice" placeholder="请输入通知内容，如：即日起至8月31日，小麦收购价格上调5%" placeholder-class="input-placeholder" :maxlength="120" />
+					<view class="notice-wrap">
+						<textarea class="form-textarea notice-textarea" v-model="factoryNotice" maxlength="200" auto-height placeholder="请输入通知内容，如：即日起至8月31日，小麦收购价格上调5%" placeholder-class="input-placeholder" />
+						<text class="notice-count">{{ factoryNotice.length }}/200</text>
+					</view>
 				</view>
 			</view>
 		</view>
@@ -55,8 +58,8 @@
 		</view>
 
 		<view class="bottom-bar">
-			<view class="publish-btn" @tap="onPublish">
-				<text class="publish-text">发布</text>
+			<view class="publish-btn" :class="{ 'publishing': publishing }" @tap="onPublish">
+				<text class="publish-text">{{ publishing ? '发布中...' : '发布' }}</text>
 			</view>
 		</view>
 
@@ -68,12 +71,15 @@
 				<view class="modal-form">
 					<view class="form-row">
 						<text class="form-label">品类名称</text>
-						<input class="form-input" v-model="form.name" placeholder="请输入品类名称" placeholder-class="form-placeholder" />
+						<view class="name-wrap">
+							<input class="form-input" v-model="form.name" maxlength="10" placeholder="请输入品类名称" placeholder-class="form-placeholder" />
+							<text class="name-count">{{ form.name.length }}/10</text>
+						</view>
 					</view>
 					<view class="form-row">
 						<text class="form-label">价格</text>
 						<view class="price-row">
-							<input class="form-input price-input" v-model="form.price" type="digit" placeholder="请输入价格" placeholder-class="form-placeholder" @input="onPriceInput" @blur="onPriceBlur" />
+							<input class="form-input price-input" v-model="form.price" type="digit" maxlength="10" placeholder="请输入价格" placeholder-class="form-placeholder" @input="onPriceInput" @blur="onPriceBlur" />
 							<text class="price-unit-label">元</text>
 							<picker class="unit-picker" :value="unitIndex" :range="unitOptions" @change="onUnitChange">
 								<view class="unit-select">
@@ -96,15 +102,18 @@
 					</view>
 					<view class="form-row">
 						<text class="form-label">备注</text>
-						<textarea class="form-textarea" v-model="form.remark" placeholder="选填，如：要求水分≤14%" placeholder-class="form-placeholder" />
+						<view class="remark-wrap">
+							<textarea class="form-textarea" v-model="form.remark" maxlength="50" placeholder="选填，如：要求水分≤14%" placeholder-class="form-placeholder" />
+							<text class="remark-count">{{ form.remark.length }}/50</text>
+						</view>
 					</view>
 				</view>
 				<view class="modal-actions">
 					<view class="modal-btn btn-cancel" @tap="closeModal">
 						<text>取消</text>
 					</view>
-					<view class="modal-btn btn-confirm" @tap="saveCategory">
-						<text>确定</text>
+					<view class="modal-btn btn-confirm" :class="{ disabled: saving }" @tap="saveCategory">
+						<text>{{ saving ? '校验中...' : '确定' }}</text>
 					</view>
 				</view>
 			</view>
@@ -113,32 +122,40 @@
 </template>
 
 <script>
+	import { factoryApi, userApi } from '@/utils/request.js'
+
 	export default {
 		data() {
 			return {
+				factoryId: null,
 				factoryName: '',
 				factoryNotice: '',
 				categories: [],
 				showModal: false,
 				editingIndex: -1,
-				unitOptions: ['斤', '公斤', '吨'],
+				saving: false,
+				publishing: false,
+				unitOptions: ['公斤', '斤','吨'],
 				form: {
 					name: '',
 					price: '',
-					unit: '斤',
+					unit: '公斤',
 					status: 'active',
 					remark: ''
 				}
 			}
 		},
 		onLoad(options) {
+			if (options.id) {
+				this.factoryId = parseInt(options.id)
+			}
 			if (options.name) {
 				this.factoryName = decodeURIComponent(options.name)
 				uni.setNavigationBarTitle({
 					title: this.factoryName + ' - 发布信息'
 				})
 			}
-			this.loadCategories()
+			this.loadFactoryInfo()
 		},
 		computed: {
 			unitIndex() {
@@ -167,55 +184,92 @@
 					this.form.price = val.toFixed(2)
 				}
 			},
-			loadCategories() {
-				this.categories = [
-					{
-						name: '小麦',
-						price: '2.85',
-						unit: '斤',
-						updateTime: '2026-08-11 09:30',
-						remark: '要求水分≤14%，无霉变',
-						status: 'active'
-					},
-					{
-						name: '玉米',
-						price: '2.60',
-						unit: '公斤',
-						updateTime: '2026-08-10 14:20',
-						remark: '要求颗粒饱满，杂质少',
-						status: 'paused'
+			async loadFactoryInfo() {
+				if (!this.factoryId) return
+				try {
+					const data = await factoryApi.getDetail(this.factoryId)
+					console.log('getDetail完整返回:', JSON.stringify(data))
+					if (data) {
+						if (!this.factoryName && data.name) {
+							this.factoryName = data.name
+							uni.setNavigationBarTitle({
+								title: this.factoryName + ' - 发布信息'
+							})
+						}
+						this.factoryNotice = data.notice || data.announcement || ''
+						console.log('notice:', this.factoryNotice)
+
+						let categoryData = null
+						const candidates = ['categories', 'category_list', 'list', 'goods', 'items', 'purchase_list', 'category', 'data']
+						for (const key of candidates) {
+							if (data[key] && (Array.isArray(data[key]) || typeof data[key] === 'string')) {
+								categoryData = data[key]
+								console.log('匹配到品类字段:', key, '=', categoryData)
+								break
+							}
+						}
+						if (!categoryData && data.info) {
+							for (const key of candidates) {
+								if (data.info[key]) {
+									categoryData = data.info[key]
+									console.log('在info下匹配到品类字段:', key, '=', categoryData)
+									break
+								}
+							}
+						}
+						if (!categoryData && data.factory) {
+							for (const key of candidates) {
+								if (data.factory[key]) {
+									categoryData = data.factory[key]
+									console.log('在factory下匹配到品类字段:', key, '=', categoryData)
+									break
+								}
+							}
+						}
+						if (categoryData) {
+							this.categories = this.parseCategories(categoryData)
+							console.log('解析后品类:', this.categories)
+						} else {
+							console.log('未找到品类字段，所有顶层key:', Object.keys(data))
+						}
 					}
-				]
+				} catch (e) {
+					console.error('loadFactoryInfo错误:', e)
+				}
+			},
+			parseCategories(data) {
+				if (!data) return []
+				if (Array.isArray(data)) {
+					return data.map(item => {
+						if (typeof item === 'string') {
+							return { name: item, price: '', unit: '公斤', status: 'active', remark: '' }
+						}
+						const rawPrice = item.price != null ? String(item.price) : ''
+						return {
+							name: item.name || item.category || '',
+							price: rawPrice ? this.formatPrice(rawPrice) : '',
+							unit: item.unit || '公斤',
+							status: item.status === 1 || item.status === '1' ? 'active' : 'paused',
+							remark: item.remark || item.notes || ''
+						}
+					})
+				}
+				if (typeof data === 'string') {
+					return data.split(',').filter(Boolean).map(name => ({
+						name, price: '', unit: '斤', status: 'active', remark: ''
+					}))
+				}
+				return []
 			},
 			formatPrice(price) {
 				const val = parseFloat(price)
 				return isNaN(val) ? price : val.toFixed(2)
 			},
-			formatDate(dateStr) {
-				const date = new Date(dateStr.replace(/-/g, '/'))
-				const now = new Date()
-				const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-				const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-				const diffDays = Math.floor((todayStart - dateStart) / (24 * 60 * 60 * 1000))
-				const hh = String(date.getHours()).padStart(2, '0')
-				const mm = String(date.getMinutes()).padStart(2, '0')
-				const time = `${hh}:${mm}`
-
-				if (diffDays === 0) {
-					return `今天 ${time}`
-				} else if (diffDays === 1) {
-					return `昨天 ${time}`
-				} else if (diffDays < 7) {
-					const weekDays = ['日', '一', '二', '三', '四', '五', '六']
-					return `周${weekDays[date.getDay()]} ${time}`
-				} else {
-					const y = date.getFullYear()
-					const m = String(date.getMonth() + 1).padStart(2, '0')
-					const d = String(date.getDate()).padStart(2, '0')
-					return `${y}-${m}-${d}`
-				}
-			},
 			onAddCategory() {
+				if (this.categories.length >= 6) {
+					uni.showToast({ title: '最多只能添加6个品类', icon: 'none' })
+					return
+				}
 				this.editingIndex = -1
 				this.form = { name: '', price: '', unit: '斤', status: 'active', remark: '' }
 				this.showModal = true
@@ -248,7 +302,8 @@
 			closeModal() {
 				this.showModal = false
 			},
-			saveCategory() {
+			async saveCategory() {
+				if (this.saving) return
 				if (!this.form.name.trim()) {
 					uni.showToast({ title: '请输入品类名称', icon: 'none' })
 					return
@@ -258,34 +313,91 @@
 					return
 				}
 				const price = this.formatPrice(this.form.price)
-				const now = new Date()
-				const pad = (n) => String(n).padStart(2, '0')
-				const updateTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`
+
+				const msg = [
+					this.form.name.trim(),
+					this.form.remark
+				].filter(Boolean).join(' ')
+
+				this.saving = true
+				uni.showLoading({ title: '校验中...', mask: true })
+				try {
+					const result = await userApi.msgCheck(msg)
+					if (result.errcode !== 0) {
+						uni.hideLoading()
+						uni.showToast({ title: '内容包含敏感信息', icon: 'none' })
+						return
+					}
+				} catch (e) {
+					console.error('敏感词校验失败:', e)
+					uni.hideLoading()
+					return
+				} finally {
+					this.saving = false
+					uni.hideLoading()
+				}
+
+				const catData = {
+					name: this.form.name.trim(),
+					price: price,
+					unit: this.form.unit,
+					status: this.form.status === 'active' ? 1 : 0,
+					remark: this.form.remark
+				}
 
 				if (this.editingIndex >= 0) {
-					this.categories.splice(this.editingIndex, 1, {
-						name: this.form.name,
-						price,
-						unit: this.form.unit,
+					this.$set(this.categories, this.editingIndex, {
+						...this.categories[this.editingIndex],
+						name: catData.name,
+						price: catData.price,
+						unit: catData.unit,
 						status: this.form.status,
-						remark: this.form.remark,
-						updateTime
+						remark: catData.remark
 					})
 				} else {
 					this.categories.push({
-						name: this.form.name,
-						price,
-						unit: this.form.unit,
+						name: catData.name,
+						price: catData.price,
+						unit: catData.unit,
 						status: this.form.status,
-						remark: this.form.remark,
-						updateTime
+						remark: catData.remark
 					})
 				}
 				this.showModal = false
 				uni.showToast({ title: '保存成功', icon: 'success' })
 			},
-			onPublish() {
-				uni.showToast({ title: '发布成功', icon: 'success' })
+			async onPublish() {
+				if (this.publishing) return
+				if (!this.factoryId) {
+					uni.showToast({ title: '加工厂信息缺失', icon: 'none' })
+					return
+				}
+				this.publishing = true
+				uni.showLoading({ title: '发布中...', mask: true })
+				try {
+					const payload = {
+						id: this.factoryId,
+						notice: this.factoryNotice,
+						categories: this.categories.map(cat => ({
+							name: cat.name,
+							price: parseFloat(cat.price),
+							unit: cat.unit,
+							status: cat.status === 'active' ? 1 : 0,
+							remark: cat.remark
+						}))
+					}
+					await factoryApi.publishFactory(payload)
+					uni.hideLoading()
+					uni.showToast({ title: '发布成功', icon: 'success' })
+					setTimeout(() => {
+						uni.navigateBack()
+					}, 1000)
+				} catch (e) {
+					console.error('发布失败:', e)
+					uni.hideLoading()
+				} finally {
+					this.publishing = false
+				}
 			}
 		}
 	}
@@ -370,6 +482,51 @@
 
 	.form-item-row .form-textarea {
 		flex: 1;
+	}
+
+	.notice-wrap {
+		flex: 1;
+		position: relative;
+	}
+
+	.notice-textarea {
+		width: 100%;
+		min-height: 180rpx !important;
+		max-height: 360rpx !important;
+	}
+
+	.notice-count {
+		display: block;
+		text-align: right;
+		font-size: 22rpx;
+		color: #999;
+		margin-top: 8rpx;
+	}
+
+	.remark-wrap {
+		flex: 1;
+		position: relative;
+	}
+
+	.remark-count {
+		display: block;
+		text-align: right;
+		font-size: 22rpx;
+		color: #999;
+		margin-top: 8rpx;
+	}
+
+	.name-wrap {
+		flex: 1;
+		position: relative;
+	}
+
+	.name-count {
+		display: block;
+		text-align: right;
+		font-size: 22rpx;
+		color: #999;
+		margin-top: 8rpx;
 	}
 
 	.form-label {
@@ -535,6 +692,11 @@
 		box-shadow: 0 8rpx 24rpx rgba(60, 156, 255, 0.35);
 	}
 
+	.publish-btn.publishing {
+		opacity: 0.6;
+		pointer-events: none;
+	}
+
 	.publish-text {
 		font-size: 32rpx;
 		font-weight: 600;
@@ -698,5 +860,10 @@
 	.btn-confirm {
 		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
 		color: #fff;
+	}
+
+	.modal-btn.disabled {
+		opacity: 0.6;
+		pointer-events: none;
 	}
 </style>

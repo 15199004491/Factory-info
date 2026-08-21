@@ -12,7 +12,7 @@
 			</view>
 
 		<view class="visitor-bar">
-			<text class="visitor-text">今日访客：{{ detail.todayVisitors }}人 | 历史访客：{{ detail.totalVisitors }}人</text>
+			<text class="visitor-text">今日访客：{{ formatVisitorCount(detail.todayVisitors) }}人 | 历史访客：{{ formatVisitorCount(detail.totalVisitors) }}人</text>
 		</view>
 
 		<view class="detail-section info-section">
@@ -57,7 +57,7 @@
 </template>
 
 <script>
-	import { formatUpdateTime } from '@/utils/date.js'
+	import { formatUpdateTime, formatVisitorCount } from '@/utils/date.js'
 	import { purchaseApi } from '@/utils/request.js'
 
 	export default {
@@ -85,6 +85,7 @@
 			}
 		},
 		methods: {
+			formatVisitorCount,
 			async loadDetail() {
 				try {
 					const data = await purchaseApi.purchaseDetail({ Id: this.id })

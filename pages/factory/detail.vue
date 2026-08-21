@@ -9,23 +9,23 @@
 				</view>
 				<view class="address-row" @tap="openLocation">
 					<u-icon name="map" size="14" color="rgba(255,255,255,0.85)"></u-icon>
-					<text class="address-text">{{ factory.address }}</text>
+					<text class="address-text">{{ factory.location.address }}</text>
 					<text class="address-arrow">›</text>
 				</view>
 			</view>
 			<view class="header-stats">
 				<view class="stat-item">
-					<text class="stat-value">{{ formatVisitorCount(todayVisitors) }}</text>
+					<text class="stat-value">{{ formatVisitorCount(factory.today_count) }}</text>
 					<text class="stat-label">今日访客</text>
 				</view>
 				<view class="stat-divider"></view>
 				<view class="stat-item">
-					<text class="stat-value">{{ formatVisitorCount(historyVisitors) }}</text>
+					<text class="stat-value">{{ formatVisitorCount(factory.count) }}</text>
 					<text class="stat-label">历史访客</text>
 				</view>
 				<view class="stat-divider"></view>
 				<view class="stat-item">
-					<text class="stat-value">{{ factory.updateTime ? formatDate(factory.updateTime) : '--' }}</text>
+					<text class="stat-value">{{ factory.update_time ? formatDate(factory.update_time) : '--' }}</text>
 					<text class="stat-label">更新时间</text>
 				</view>
 			</view>
@@ -56,10 +56,11 @@
 							<view class="cat-main">
 								<view class="cat-info">
 									<text class="cat-name">{{ cat.name }}</text>
+									<text class="cat-status-tag" :class="{ active: cat.status === '收购中', paused: cat.status === '暂停收购' }">{{ cat.status }}</text>
 								</view>
 								<view class="cat-price-wrap">
 									<text class="cat-price-num">{{ getPriceNum(cat.price) }}</text>
-									<text class="cat-price-unit">{{ getPriceUnit(cat.price) }}</text>
+									<text class="cat-price-unit">/{{ getPriceUnit(cat.price) }}</text>
 								</view>
 							</view>
 							<view class="cat-remark" v-if="cat.remark">
@@ -129,6 +130,7 @@
 
 <script>
 	import { factoryApi } from '@/utils/request.js'
+	import { formatVisitorCount, formatDate } from '@/utils/date.js'
 
 	export default {
 		data() {
@@ -136,8 +138,6 @@
 				showPoster: false,
 				loading: true,
 				factoryId: null,
-				todayVisitors: 0,
-				historyVisitors: 0,
 				factory: {
 					name: '',
 					verified: false,
@@ -145,7 +145,7 @@
 					notice: '',
 					latitude: 0,
 					longitude: 0,
-					updateTime: ''
+					update_time: ''
 				},
 				categories: []
 			}
@@ -177,71 +177,28 @@
 				}
 				this.loading = true
 				try {
-					const res = await factoryApi.getDetail(this.factoryId)
-					if (res) {
-						this.applyData(res)
-					} else {
-						this.useMockData()
-					}
+					this.factory = await factoryApi.getDetail(this.factoryId)
+					this.categories = this.parseCategories(this.factory.category)
 				} catch (e) {
-					console.log('loadDetail catch:', e)
-					this.useMockData()
+					console.error('loadDetail错误:', e)
+					uni.showToast({ title: '加载失败，请重试', icon: 'none' })
 				} finally {
 					this.loading = false
 				}
 			},
-			applyData(res) {
-				this.factory.name = res.name || ''
-				this.factory.verified = res.identification === 1 || res.verified === true
-				this.factory.address = res.address || res.location || ''
-				this.factory.notice = res.notice || res.announcement || ''
-				this.factory.latitude = Number(res.latitude || res.lat || 0)
-				this.factory.longitude = Number(res.longitude || res.lng || 0)
-				this.factory.updateTime = res.update_time || res.create_time || res.createtime || ''
-				this.todayVisitors = Number(res.today_visitors || res.todayVisitors || 0)
-				this.historyVisitors = Number(res.history_visitors || res.historyVisitors || 0)
-				if (this.factory.name) {
-					uni.setNavigationBarTitle({
-						title: this.factory.name
-					})
-				}
-				if (res.categories) {
-					this.categories = this.parseCategories(res.categories)
-				}
-			},
-			useMockData() {
-				this.factory.name = '绿源农产品加工厂'
-				this.factory.verified = true
-				this.factory.address = '山东省潍坊市寿光市323省道附近'
-				this.factory.notice = '本厂长期收购各类农产品，欢迎广大农户前来洽谈合作。每天营业时间 8:00 - 18:00。'
-				this.factory.latitude = 36.869
-				this.factory.longitude = 118.847
-				this.factory.updateTime = Date.now()
-				this.todayVisitors = 186
-				this.historyVisitors = 5230
-				this.categories = [
-					{ name: '玉米', price: '1.25元/斤', remark: '优质玉米，无霉变' },
-					{ name: '小麦', price: '1.30元/斤', remark: '新麦优先' },
-					{ name: '大豆', price: '2.80元/斤', remark: '高蛋白大豆' },
-					{ name: '花生', price: '3.50元/斤', remark: '颗粒饱满' },
-					{ name: '棉花', price: '6.80元/斤', remark: '籽棉收购' },
-					{ name: '苹果', price: '2.50元/斤', remark: '红富士，80mm以上' },
-					{ name: '白菜', price: '0.35元/斤', remark: '大白菜，无虫害' },
-					{ name: '萝卜', price: '0.45元/斤', remark: '白萝卜' }
-				]
-				uni.setNavigationBarTitle({
-					title: this.factory.name
-				})
-			},
 			parseCategories(data) {
+				if (!data) return []
 				if (Array.isArray(data)) {
 					return data.map(item => {
 						if (typeof item === 'string') {
 							return { name: item, price: '', remark: '' }
 						}
+						const priceVal = item.price ? String(item.price) : ''
+						const unitVal = item.unit || item.price_unit || ''
 						return {
 							name: item.name || item.category || '',
-							price: item.price ? (item.price_unit ? item.price + item.price_unit : item.price) : '',
+							price: priceVal ? priceVal + (unitVal || '') : '',
+							status: item.status == 1 ? '收购中' : '暂停收购',
 							remark: item.remark || item.notes || ''
 						}
 					})
@@ -251,13 +208,7 @@
 				}
 				return []
 			},
-			formatVisitorCount(num) {
-				if (num >= 10000) {
-					const w = (num / 10000).toFixed(1)
-					return w + 'w'
-				}
-				return String(num)
-			},
+			formatVisitorCount,
 			getPriceNum(priceStr) {
 				const match = priceStr.match(/[\d.]+/)
 				return match ? match[0] : priceStr
@@ -266,37 +217,14 @@
 				const match = priceStr.match(/[^\d.]+/)
 				return match ? match[0] : ''
 			},
-			formatDate(dateStr) {
-				if (!dateStr) return ''
-				const date = new Date(dateStr.replace(/-/g, '/'))
-				const now = new Date()
-				const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-				const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-				const diffDays = Math.floor((todayStart - dateStart) / (24 * 60 * 60 * 1000))
-				const hh = String(date.getHours()).padStart(2, '0')
-				const mm = String(date.getMinutes()).padStart(2, '0')
-				const time = `${hh}:${mm}`
-
-				if (diffDays === 0) {
-					return `今天 ${time}`
-				} else if (diffDays === 1) {
-					return `昨天 ${time}`
-				} else if (diffDays < 7) {
-					const weekDays = ['日', '一', '二', '三', '四', '五', '六']
-					return `周${weekDays[date.getDay()]} ${time}`
-				} else {
-					const y = date.getFullYear()
-					const m = String(date.getMonth() + 1).padStart(2, '0')
-					const d = String(date.getDate()).padStart(2, '0')
-					return `${y}-${m}-${d}`
-				}
-			},
+			formatDate,
 			openLocation() {
+				const {latitude, longitude,address} = this.factory.location
 				uni.openLocation({
-					latitude: this.factory.latitude,
-					longitude: this.factory.longitude,
+					latitude,
+					longitude,
 					name: this.factory.name,
-					address: this.factory.address,
+					address,
 					scale: 16
 				})
 			},
@@ -527,12 +455,29 @@
 	.cat-info {
 		display: flex;
 		align-items: center;
+		gap: 12rpx;
 	}
 
 	.cat-name {
 		font-size: 30rpx;
 		font-weight: 600;
 		color: #333;
+	}
+
+	.cat-status-tag {
+		font-size: 20rpx;
+		color: #ff4d4f;
+		background-color: #fff1f0;
+		border-color: #ffa39e;
+		padding: 4rpx 12rpx;
+		border-radius: 6rpx;
+		font-weight: 400;
+	}
+
+	.cat-status-tag.active {
+		color: #52c41a;
+		background-color: #f6ffed;
+		border: 1rpx solid #b7eb8f;
 	}
 
 	.cat-price-wrap {
@@ -695,9 +640,12 @@
 	.poster-cat-item {
 		display: flex;
 		align-items: center;
+		justify-content: center;
 		background-color: #f0f7ff;
 		padding: 12rpx 20rpx;
 		border-radius: 10rpx;
+		width: calc(50% - 8rpx);
+		box-sizing: border-box;
 	}
 
 	.poster-cat-name {

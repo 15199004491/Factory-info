@@ -61,7 +61,9 @@
 					</view>
 				</view>
 				<view class="item-bottom">
-					<view class="category-text">{{ item.categories.join(' / ') }}</view>
+					<view class="card-tags">
+						<text class="cat-tag" v-for="(cat, catIdx) in item.categories" :key="catIdx">{{ cat.name || cat }}</text>
+					</view>
 					<text class="date">{{ formatDateTime(item.createTime) }}</text>
 				</view>
 			</view>
@@ -151,13 +153,25 @@
 				try {
 					const res = await factoryApi.getList(params)
 					const list = (res && res.list) ? res.list : (Array.isArray(res) ? res : [])
-					this.factoryList = list.map(item => ({
-						id: item.Id,
-						name: item.name,
-						identification: item.identification,
-						createTime: item.update_time || item.create_time || item.createtime || 0,
-						categories: Array.isArray(item.categories) ? item.categories : (item.categories || '').split(',').filter(Boolean)
-					}))
+					this.factoryList = list.map(item => {
+						let categoryNames = []
+						const raw = item.categories || item.category || item.category_list || ''
+						if (Array.isArray(raw)) {
+							categoryNames = raw.map(c => {
+								if (typeof c === 'string') return c
+								return c.name || c.category || ''
+							}).filter(Boolean)
+						} else if (typeof raw === 'string') {
+							categoryNames = raw.split(',').filter(Boolean)
+						}
+						return {
+							id: item.Id,
+							name: item.name,
+							identification: item.identification,
+							createTime: item.update_time || item.create_time || item.createtime || 0,
+							categories: categoryNames
+						}
+					})
 				} catch (e) {
 					this.factoryList = []
 				}
@@ -488,14 +502,20 @@
 		align-items: center;
 	}
 
-	.category-text {
-		font-size: 22rpx;
-		color: #bbb;
+	.card-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12rpx;
 		flex: 1;
 		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+	}
+
+	.cat-tag {
+		font-size: 22rpx;
+		padding: 4rpx 14rpx;
+		background: linear-gradient(135deg, #52c41a, #389e0d);
+		color: #fff;
+		border-radius: 6rpx;
 	}
 
 	.date {

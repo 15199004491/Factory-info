@@ -51,7 +51,7 @@
 		<view class="submit-area">
 			<view class="submit-row">
 				<view class="submit-btn btn-free" @tap="onSubmit">
-					<text class="submit-btn-label">立即入驻</text>
+					<text class="submit-btn-label">{{ isEdit ? '立即提交' : '立即入驻' }}</text>
 				</view>
 			</view>
 		</view>
@@ -224,7 +224,7 @@
 						id: this.factoryId || undefined,
 						name: this.form.name.trim(),
 						mobile: this.form.mobile,
-						location: JSON.stringify(this.form.location),
+						location: this.form.location,
 						license: licenseUrl
 					}
 

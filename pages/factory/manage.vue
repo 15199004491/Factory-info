@@ -37,6 +37,7 @@
 
 <script>
 	import { factoryApi } from '@/utils/request.js'
+	import { formatDate } from '@/utils/date.js'
 
 	export default {
 		data() {
@@ -83,57 +84,6 @@
 				} catch (e) {
 					this.factoryList = []
 				}
-				if (this.factoryList.length === 0) {
-					this.factoryList = this.getMockList()
-				}
-			},
-			getMockList() {
-				const now = new Date()
-				const fmt = (d) => {
-					const y = d.getFullYear()
-					const m = String(d.getMonth() + 1).padStart(2, '0')
-					const day = String(d.getDate()).padStart(2, '0')
-					return `${y}-${m}-${day}`
-				}
-				const addDays = (date, days) => {
-					const d = new Date(date)
-					d.setDate(d.getDate() + days)
-					return d
-				}
-				return [
-					{
-						id: 'mock1',
-						name: '兰州新区诚信机械加工厂',
-						address: '甘肃省兰州市兰州新区昆仑大道中段 1688 号',
-						identification: 1,
-						createdAt: fmt(addDays(now, -60)),
-						validityEnd: fmt(addDays(now, 180))
-					},
-					{
-						id: 'mock2',
-						name: '七里河区顺达五金制品厂',
-						address: '甘肃省兰州市七里河区西津西路 399 号',
-						identification: 0,
-						createdAt: fmt(addDays(now, -180)),
-						validityEnd: fmt(addDays(now, 15))
-					},
-					{
-						id: 'mock3',
-						name: '城关区金鑫钣金加工厂',
-						address: '甘肃省兰州市城关区东岗东路 256 号',
-						identification: 2,
-						createdAt: fmt(addDays(now, -365)),
-						validityEnd: fmt(addDays(now, -10))
-					},
-					{
-						id: 'mock4',
-						name: '安宁区宏达精密铸造厂',
-						address: '甘肃省兰州市安宁区安宁东路 888 号',
-						identification: null,
-						createdAt: fmt(addDays(now, -3)),
-						validityEnd: ''
-					}
-				]
 			},
 			getValidityInfo(item) {
 				const info = {
@@ -167,31 +117,7 @@
 				}
 				return info
 			},
-			formatDate(dateStr) {
-				if (!dateStr) return ''
-				const date = new Date(dateStr.replace(/-/g, '/'))
-				const now = new Date()
-				const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-				const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-				const diffDays = Math.floor((todayStart - dateStart) / (24 * 60 * 60 * 1000))
-				const hh = String(date.getHours()).padStart(2, '0')
-				const mm = String(date.getMinutes()).padStart(2, '0')
-				const time = `${hh}:${mm}`
-
-				if (diffDays === 0) {
-					return `今天 ${time}`
-				} else if (diffDays === 1) {
-					return `昨天 ${time}`
-				} else if (diffDays < 7) {
-					const weekDays = ['日', '一', '二', '三', '四', '五', '六']
-					return `周${weekDays[date.getDay()]} ${time}`
-				} else {
-					const y = date.getFullYear()
-					const m = String(date.getMonth() + 1).padStart(2, '0')
-					const d = String(date.getDate()).padStart(2, '0')
-					return `${y}-${m}-${d}`
-				}
-			},
+			formatDate,
 			getStatusText(identification) {
 				if (identification === 1 || identification === '1') return '已认证'
 				if (identification === 0 || identification === '0') return '认证中'
@@ -246,7 +172,7 @@
 					success: async (res) => {
 						if (res.confirm) {
 							try {
-								await factoryApi.remove(item.id)
+								await factoryApi.deleteFactory(item.id)
 								this.factoryList.splice(index, 1)
 								uni.showToast({ title: '已删除', icon: 'success' })
 							} catch (e) {}
@@ -256,7 +182,7 @@
 			},
 			goDetail(item) {
 				uni.navigateTo({
-					url: '/pages/factory/detail?id=' + item.id
+					url: '/pages/factory/detail?Id=' + item.id
 				})
 			}
 		}

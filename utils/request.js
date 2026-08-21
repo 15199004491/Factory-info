@@ -59,9 +59,9 @@ export const factoryApi = {
     getSelf: () => request('/farm/Factory/factorySelf', { open_id: getOpenid() }),
     getDetail: (Id) => request('/farm/Factory/factoryDetail', { Id }),
     addFactory: (d) => request('/farm/Factory/addFactory', { ...d, open_id: getOpenid() }, 'POST'),
-    remove: (Id) => request('/farm/Factory/deleteFactory', { Id }, 'POST'),
+    deleteFactory: (Id) => request('/farm/Factory/deleteFactory', { Id, open_id: getOpenid() }, 'POST'),
     verifyFactory: (Id, license, id_card) => request('/farm/Factory/verifyFactory', { Id, license, id_card,open_id: getOpenid() }, 'POST'),
-    publishFactory: (Id) => request('/farm/Factory/publishFactory', { Id }, 'POST'),
+    publishFactory: (d) => request('/farm/Factory/publishFactoryInfo', { ...d, open_id: getOpenid() }, 'POST'),
 };
 
 export const rentApi = {
