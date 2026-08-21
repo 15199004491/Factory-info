@@ -114,29 +114,104 @@
 				userLat: 0,
 				userLng: 0,
 				firstLoaded: false,
+				locationDenied: false,
 				factoryList: []
 			}
 		},
-		onLoad() {
-			this.getLocation()
-		},
 		onShow() {
-			if (this.firstLoaded) {
-				this.loadList()
-			}
+			this.loadList()
 		},
 		methods: {
-			getLocation() {
+			promptEnableLocation() {
+				uni.showModal({
+					title: '开启位置权限',
+					content: '需要获取您的位置信息才能按距离筛选，请在设置中开启位置权限',
+					confirmText: '去设置',
+					cancelText: '取消',
+					success: (res) => {
+						if (res.confirm) {
+							uni.openSetting({
+								success: (settingRes) => {
+									if (settingRes.authSetting && settingRes.authSetting['scope.userLocation']) {
+										this.locationDenied = false
+										uni.showLoading({ title: '获取位置中...' })
+										uni.getLocation({
+											type: 'gcj02',
+											success: (res) => {
+												this.userLat = res.latitude
+												this.userLng = res.longitude
+												this.locationDenied = false
+												const userInfo = uni.getStorageSync('user_info') || {}
+												userInfo.lat = res.latitude
+												userInfo.lng = res.longitude
+												uni.setStorageSync('user_info', userInfo)
+												uni.setStorageSync('user_location', {
+													lat: res.latitude,
+													lng: res.longitude,
+													time: Date.now()
+												})
+												this.showMenu = true
+											},
+											fail: () => {
+												this.locationDenied = true
+												uni.showToast({ title: '获取位置失败', icon: 'none' })
+											},
+											complete: () => {
+												uni.hideLoading()
+											}
+										})
+									} else {
+										uni.showToast({ title: '未开启位置权限', icon: 'none' })
+									}
+								},
+								fail: () => {
+									uni.showToast({ title: '请手动开启位置权限', icon: 'none' })
+								}
+							})
+						}
+					}
+				})
+			},
+			ensureLocationForFilter() {
+				if (this.userLat && this.userLng) {
+					this.showMenu = true
+					return
+				}
+				const savedLocation = uni.getStorageSync('user_location')
+				if (savedLocation && savedLocation.lat && savedLocation.lng) {
+					this.userLat = savedLocation.lat
+					this.userLng = savedLocation.lng
+					this.showMenu = true
+					return
+				}
+				if (this.locationDenied) {
+					this.promptEnableLocation()
+					return
+				}
+				uni.showLoading({ title: '获取位置中...' })
 				uni.getLocation({
 					type: 'gcj02',
 					success: (res) => {
 						this.userLat = res.latitude
 						this.userLng = res.longitude
+						this.locationDenied = false
+						const userInfo = uni.getStorageSync('user_info') || {}
+						userInfo.lat = res.latitude
+						userInfo.lng = res.longitude
+						uni.setStorageSync('user_info', userInfo)
+						uni.setStorageSync('user_location', {
+							lat: res.latitude,
+							lng: res.longitude,
+							time: Date.now()
+						})
+						this.showMenu = true
 					},
-					fail: () => {},
+					fail: () => {
+						this.locationDenied = true
+						uni.showToast({ title: '需要位置权限才能按距离筛选', icon: 'none' })
+					},
 					complete: () => {
-						this.firstLoaded = true
-						this.loadList()
+						uni.hideLoading()
 					}
 				})
 			},
@@ -178,7 +253,7 @@
 			},
 			formatDateTime,
 			toggleMenu() {
-				this.showMenu = !this.showMenu
+				this.showMenu? this.showMenu = false : this.ensureLocationForFilter()
 			},
 			onPickerChange(e) {
 				this.pickerValue = e.detail.value

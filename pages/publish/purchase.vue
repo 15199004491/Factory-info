@@ -162,16 +162,51 @@
 					const data = await purchaseApi.purchaseDetail({ Id: this.editingId })
 					this.form = {
 						title: data.title || '',
-						region: data.region || data.area || '',
+						region: data.region || data.area_name || data.area || '',
 						mobile: data.mobile || '',
 						description: data.description || data.explain || '',
-						categories: data.items ? data.items.map(item => ({
-							name: item.name || '',
-							price: item.price || '',
-							unit: item.unit || '公斤'
-						})) : []
+						categories: this.parseCategories(data)
 					}
-				} catch (e) {}
+				} catch (e) {
+					console.error('loadDetail error', e)
+				}
+			},
+			parseCategories(data) {
+				let raw = null
+				const candidates = ['items', 'categories', 'category_list', 'list', 'goods', 'purchase_list', 'category', 'data']
+				for (const key of candidates) {
+					if (Array.isArray(data[key])) {
+						raw = data[key]
+						break
+					}
+				}
+				if (!raw && data.info) {
+					for (const key of candidates) {
+						if (Array.isArray(data.info[key])) {
+							raw = data.info[key]
+							break
+						}
+					}
+				}
+				if (!raw && data.factory) {
+					for (const key of candidates) {
+						if (Array.isArray(data.factory[key])) {
+							raw = data.factory[key]
+							break
+						}
+					}
+				}
+				if (!raw) return []
+				return raw.map(item => {
+					if (typeof item === 'string') {
+						return { name: item, price: '', unit: '公斤' }
+					}
+					const name = item.name || item.category || item.title || ''
+					const rawPrice = item.price || ''
+					const price = rawPrice !== '' ? this.formatPrice(rawPrice) : ''
+					const unit = item.unit || item.unit_name || '公斤'
+					return { name, price, unit }
+				}).filter(c => c.name)
 			},
 			openRegionPicker() {
 				this.showRegionPicker = true

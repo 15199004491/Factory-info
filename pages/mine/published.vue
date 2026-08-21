@@ -60,6 +60,7 @@
 
 <script>
 	import { secondHouseApi, rentApi, purchaseApi } from '@/utils/request.js'
+	import { formatDate } from '@/utils/date.js'
 
 	export default {
 		data() {
@@ -129,7 +130,7 @@
 					decoration: item.decoration || '',
 					price: item.price,
 					description: item.explain || item.description || '',
-					createTime: item.create_time || item.createTime || ''
+					createTime: formatDate(item.update_time || item.create_time || item.createTime || 0)
 				}))
 			},
 			formatRentList(data) {
@@ -147,7 +148,7 @@
 					price: item.price,
 					tagType: item.tagType || 'entire',
 					description: item.description || item.explain || '',
-					createTime: item.create_time || item.createTime || ''
+					createTime: formatDate(item.update_time || item.create_time || item.createTime || 0)
 				}))
 			},
 			formatPurchaseList(data) {
@@ -162,7 +163,7 @@
 						categories: cats.map(function(c) { return typeof c === 'string' ? c : (c.name || '') }),
 						price: cats.length && cats[0].price ? cats[0].price : '',
 						description: item.description || item.explain || '',
-						createTime: item.create_time || item.createTime || ''
+						createTime: formatDate(item.update_time || item.create_time || item.createTime || 0)
 					}
 				})
 			},

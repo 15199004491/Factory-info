@@ -174,7 +174,7 @@
 						quantity: item.quantity || '',
 						expectedPrice: item.expected_price || item.price || '',
 						region: item.region || item.area || '',
-						time: formatDate(item.create_time || item.createTime || item.createtime || 0)
+						time: formatDate(item.update_time || item.create_time || item.createTime || item.createtime || 0)
 					}
 				})
 			},

@@ -90,7 +90,7 @@
 				<view class="poster-card">
 					<view class="poster-header">
 						<view class="poster-factory-name">{{ factory.name }}</view>
-						<view class="poster-verified-badge" v-if="factory.verified">已认证</view>
+						<view class="poster-verified-badge" v-if="factory.verified">✓ 已认证</view>
 					</view>
 					<view class="poster-address">
 						<text class="poster-address-icon">📍</text>
@@ -177,7 +177,11 @@
 				}
 				this.loading = true
 				try {
-					this.factory = await factoryApi.getDetail(this.factoryId)
+					const data = await factoryApi.getDetail(this.factoryId)
+					this.factory = {
+						...data,
+						verified: data.identification === 1 || data.identification === '1'
+					}
 					this.categories = this.parseCategories(this.factory.category)
 				} catch (e) {
 					console.error('loadDetail错误:', e)
@@ -296,14 +300,14 @@
 
 	.verified-tag {
 		font-size: 22rpx;
-		color: #fff;
-		background-color: rgba(255, 255, 255, 0.25);
-		border: 1rpx solid rgba(255, 255, 255, 0.5);
+		color: #8b4513;
+		background: linear-gradient(135deg, #ffd700, #ffb347);
 		padding: 6rpx 16rpx;
 		border-radius: 20rpx;
 		margin-left: 16rpx;
 		flex-shrink: 0;
-		font-weight: 500;
+		font-weight: 600;
+		box-shadow: 0 2rpx 8rpx rgba(255, 179, 71, 0.5);
 	}
 
 	.address-row {
@@ -591,12 +595,14 @@
 
 	.poster-verified-badge {
 		font-size: 20rpx;
-		color: #fff;
-		background: linear-gradient(135deg, #3c9cff, #1890ff);
-		padding: 4rpx 12rpx;
-		border-radius: 6rpx;
+		color: #8b4513;
+		background: linear-gradient(135deg, #ffd700, #ffb347);
+		padding: 4rpx 14rpx;
+		border-radius: 20rpx;
 		margin-left: 12rpx;
 		flex-shrink: 0;
+		font-weight: 600;
+		box-shadow: 0 2rpx 6rpx rgba(255, 179, 71, 0.4);
 	}
 
 	.poster-address {
@@ -638,13 +644,12 @@
 	}
 
 	.poster-cat-item {
-		display: flex;
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		background-color: #f0f7ff;
-		padding: 12rpx 20rpx;
+		padding: 12rpx 24rpx;
 		border-radius: 10rpx;
-		width: calc(50% - 8rpx);
 		box-sizing: border-box;
 	}
 

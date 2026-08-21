@@ -380,7 +380,7 @@
 						notice: this.factoryNotice,
 						categories: this.categories.map(cat => ({
 							name: cat.name,
-							price: parseFloat(cat.price),
+							price: this.formatPrice(cat.price),
 							unit: cat.unit,
 							status: cat.status === 'active' ? 1 : 0,
 							remark: cat.remark

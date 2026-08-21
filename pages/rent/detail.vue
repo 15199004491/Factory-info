@@ -2,15 +2,12 @@
 	<view class="page">
 		<view class="detail-header">
 			<image class="detail-image" :src="house.image" mode="aspectFill" />
-			<view class="tag-row">
-				<text class="tag-item" :class="house.tagType === 'shared' ? 'tag-shared' : 'tag-entire'">{{ house.tag }}</text>
-			</view>
 		</view>
 
 		<view class="detail-section">
 			<view class="price-row">
 				<text class="detail-price">{{ house.price }}</text>
-				<text class="detail-unit">/月</text>
+				<text class="detail-unit">元/月</text>
 			</view>
 			<text class="detail-title">{{ house.title }}</text>
 			<text class="detail-desc">{{ house.desc }}</text>
@@ -20,6 +17,10 @@
 			<view class="info-item">
 				<text class="info-label">面积</text>
 				<text class="info-value">{{ house.acreage }}</text>
+			</view>
+			<view class="info-item">
+				<text class="info-label">户型</text>
+				<text class="info-value">{{ house.shape }}</text>
 			</view>
 			<view class="info-item">
 				<text class="info-label">楼层</text>
@@ -37,22 +38,9 @@
 				<text class="location-label">小区</text>
 				<text class="location-value">{{ house.name }}</text>
 			</view>
-			<view class="location-row location-row-link" @tap="onOpenMap">
-				<view class="location-left">
-					<text class="location-label">地区</text>
-					<text class="location-value">{{ house.area }}</text>
-				</view>
-				<u-icon name="map" size="20" color="#3c9cff"></u-icon>
-			</view>
-			<view class="map-wrap" @tap="onOpenMap">
-				<map
-					class="detail-map"
-					:latitude="house.latitude"
-					:longitude="house.longitude"
-					:markers="mapMarkers"
-					scale="16"
-					show-location
-				></map>
+			<view class="location-row">
+				<text class="location-label">地区</text>
+				<text class="location-value">{{ house.area }}</text>
 			</view>
 		</view>
 
@@ -90,32 +78,17 @@
 					tagType: '',
 					image: '',
 					acreage: '',
+					shape: '',
 					floor: '',
 					payment: '',
 					name: '',
 					area: '',
-					latitude: 0,
-					longitude: 0,
 					explain: '',
 					mobile: ''
 				}
 			}
 		},
-		computed: {
-			mapMarkers() {
-				if (this.house.latitude && this.house.longitude) {
-					return [{
-						id: 1,
-						latitude: this.house.latitude,
-						longitude: this.house.longitude,
-						title: this.house.name,
-						width: 32,
-						height: 32
-					}]
-				}
-				return []
-			}
-		},
+		computed: {},
 		onLoad(options) {
 			if (options.id) {
 				this.houseId = parseInt(options.id)
@@ -130,17 +103,16 @@
 						id: data.Id || data.id,
 						title: data.title,
 						desc: `${data.acreage || ''}㎡ · ${data.floor || ''}`,
-						price: (data.price || '') + '元/月',
+						price: data.price,
 						tag: data.tagType === 'shared' ? '合租' : '整租',
 						tagType: data.tagType || 'entire',
 						image: data.rent_image || data.image || '',
 						acreage: (data.acreage || '') + '㎡',
+						shape: data.shape || '',
 						floor: data.floor || '',
-						payment: data.payment || '',
+						payment: data.pay_type || '',
 						name: data.name || data.community || '',
-						area: data.area || data.region || '',
-						latitude: data.latitude || 0,
-						longitude: data.longitude || 0,
+						area: data.area_name || data.area || data.region || '',
 						explain: data.explain || data.description || '',
 						mobile: data.mobile || ''
 					}
@@ -158,11 +130,6 @@
 						icon: 'none'
 					})
 				}
-			},
-			onOpenMap() {
-				uni.navigateTo({
-					url: '/pages/second/map?latitude=' + this.house.latitude + '&longitude=' + this.house.longitude + '&title=' + encodeURIComponent(this.house.name)
-				})
 			}
 		}
 	}
@@ -253,7 +220,7 @@
 	}
 
 	.info-item {
-		width: 33.33%;
+		width: 25%;
 		display: flex;
 		flex-direction: column;
 		padding: 20rpx 0;
@@ -286,27 +253,6 @@
 		align-items: center;
 		padding: 16rpx 0;
 		border-bottom: 1rpx solid #f5f5f5;
-	}
-
-	.location-row-link {
-		cursor: pointer;
-	}
-
-	.map-wrap {
-		margin-top: 20rpx;
-		border-radius: 12rpx;
-		overflow: hidden;
-	}
-
-	.detail-map {
-		width: 100%;
-		height: 360rpx;
-	}
-
-	.location-left {
-		display: flex;
-		flex: 1;
-		flex-direction: column;
 	}
 
 	.location-label {
