@@ -1,9 +1,9 @@
 <template>
 	<view class="img-wrap">
 		<image
-			v-if="src"
+			v-if="fullSrc"
 			class="img-preview"
-			:src="src"
+			:src="fullSrc"
 			:mode="mode"
 			@tap="onTap"
 		/>
@@ -14,6 +14,7 @@
 </template>
 
 <script>
+	import { formatCosUrl } from '@/utils/config.js'
 	export default {
 		name: 'imagePreview',
 		props: {
@@ -34,13 +35,20 @@
 				default: false
 			}
 		},
+		computed: {
+			fullSrc() {
+				return formatCosUrl(this.src)
+			}
+		},
 		methods: {
 			onTap(e) {
-				if (!this.src) return
+				if (!this.fullSrc) return
 				if (!this.previewable) return
 				e && e.stopPropagation && e.stopPropagation()
-				const urls = this.previewList.length > 0 ? this.previewList : [this.src]
-				const current = this.src
+				const urls = this.previewList.length > 0
+					? this.previewList.map(i => formatCosUrl(i)).filter(Boolean)
+					: [this.fullSrc]
+				const current = this.fullSrc
 				uni.previewImage({
 					urls,
 					current

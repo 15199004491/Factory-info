@@ -1,11 +1,4 @@
-const COS_BUCKET = 'house-factory-1468042561'
-const COS_REGION = 'ap-shanghai'
-const COS_BASE_URL = 'https://' + COS_BUCKET + '.cos.' + COS_REGION + '.myqcloud.com'
-
-const COS_SECRET_ID = 'AKIDayqVzFG4f1A4mMhx0oNhlaAWyDDyXrxp'
-const COS_SECRET_KEY = 'YsxrSq01y7FNSSRJ5kLqHfu2zkRyVpwq'
-
-import { BASE_URL } from './config.js'
+import { BASE_URL, COS_BUCKET, COS_REGION, COS_BASE_URL, COS_SECRET_ID, COS_SECRET_KEY, getCosSignature } from './config.js'
 import { userApi } from './request.js'
 
 const MAX_SIZE_FACTORY = 1 * 1024 * 1024
@@ -108,185 +101,6 @@ export async function checkTextSafe(msg, { showToast = true } = {}) {
 	}
 }
 
-function safeAdd(x, y) {
-	var lsw = (x & 0xFFFF) + (y & 0xFFFF)
-	var msw = (x >> 16) + (y >> 16) + (lsw >> 16)
-	return (msw << 16) | (lsw & 0xFFFF)
-}
-
-function bitRol(num, cnt) {
-	return (num << cnt) | (num >>> (32 - cnt))
-}
-
-function sha1Core(block, len) {
-	block[len >> 5] |= 0x80 << (24 - len % 32)
-	block[((len + 64 >> 9) << 4) + 15] = len
-
-	var w = new Array(80)
-	var a = 1732584193
-	var b = -271733879
-	var c = -1732584194
-	var d = 271733878
-	var e = -1009589776
-
-	for (var i = 0; i < block.length; i += 16) {
-		var olda = a
-		var oldb = b
-		var oldc = c
-		var oldd = d
-		var olde = e
-
-		for (var j = 0; j < 80; j++) {
-			if (j < 16) w[j] = block[i + j]
-			else w[j] = bitRol(w[j-3] ^ w[j-8] ^ w[j-14] ^ w[j-16], 1)
-
-			var t = safeAdd(safeAdd(bitRol(a, 5),
-				(j < 20 ? (b & c | (~b) & d) :
-				 j < 40 ? (b ^ c ^ d) :
-				 j < 60 ? (b & c | b & d | c & d) :
-				 (b ^ c ^ d))),
-				safeAdd(safeAdd(e, w[j]),
-					j < 20 ? 1518500249 :
-					j < 40 ? 1859775393 :
-					j < 60 ? -1894007588 :
-					-899497514))
-
-			e = d
-			d = c
-			c = bitRol(b, 30)
-			b = a
-			a = t
-		}
-
-		a = safeAdd(a, olda)
-		b = safeAdd(b, oldb)
-		c = safeAdd(c, oldc)
-		d = safeAdd(d, oldd)
-		e = safeAdd(e, olde)
-	}
-	return [a, b, c, d, e]
-}
-
-function strToBlks(str) {
-	var nblk = ((str.length + 8) >> 6) + 1
-	var blks = new Array(nblk * 16)
-	for (var i = 0; i < nblk * 16; i++) blks[i] = 0
-	for (var i = 0; i < str.length; i++) {
-		blks[i >> 2] |= str.charCodeAt(i) << (24 - (i % 4) * 8)
-	}
-	blks[i >> 2] |= 0x80 << (24 - (i % 4) * 8)
-	blks[nblk * 16 - 1] = str.length * 8
-	return blks
-}
-
-function bytesToBlks(bytes) {
-	var len = bytes.length
-	var nblk = ((len + 8) >> 6) + 1
-	var blks = new Array(nblk * 16)
-	for (var i = 0; i < nblk * 16; i++) blks[i] = 0
-	for (var i = 0; i < len; i++) {
-		blks[i >> 2] |= bytes[i] << (24 - (i % 4) * 8)
-	}
-	blks[i >> 2] |= 0x80 << (24 - (i % 4) * 8)
-	blks[nblk * 16 - 1] = len * 8
-	return blks
-}
-
-function sha1Bytes(bytes) {
-	return sha1Core(bytesToBlks(bytes), bytes.length * 8)
-}
-
-function sha1(s) {
-	return hexArr(sha1Core(strToBlks(s), s.length * 8))
-}
-
-function hexArr(binarray) {
-	var str = ''
-	for (var i = 0; i < binarray.length * 4; i++) {
-		str += ((binarray[i >> 2] >> (24 - i % 4 * 8)) & 0xFF).toString(16).padStart(2, '0')
-	}
-	return str
-}
-
-function strToBytes(str) {
-	var bytes = []
-	for (var i = 0; i < str.length; i++) {
-		var c = str.charCodeAt(i)
-		if (c < 0x80) {
-			bytes.push(c)
-		} else if (c < 0x800) {
-			bytes.push(0xC0 | (c >> 6))
-			bytes.push(0x80 | (c & 0x3F))
-		} else {
-			bytes.push(0xE0 | (c >> 12))
-			bytes.push(0x80 | ((c >> 6) & 0x3F))
-			bytes.push(0x80 | (c & 0x3F))
-		}
-	}
-	return bytes
-}
-
-function hmacSha1(keyStr, dataStr) {
-	var key = strToBytes(keyStr)
-	var data = strToBytes(dataStr)
-
-	if (key.length > 64) {
-		var kh = sha1Core(bytesToBlks(key), key.length * 8)
-		key = new Array(20)
-		for (var i = 0; i < 5; i++) {
-			key[i*4] = (kh[i] >> 24) & 0xFF
-			key[i*4+1] = (kh[i] >> 16) & 0xFF
-			key[i*4+2] = (kh[i] >> 8) & 0xFF
-			key[i*4+3] = kh[i] & 0xFF
-		}
-	}
-	while (key.length < 64) key.push(0)
-
-	var o_key_pad = new Array(64)
-	var i_key_pad = new Array(64)
-	for (var i = 0; i < 64; i++) {
-		o_key_pad[i] = key[i] ^ 0x5c
-		i_key_pad[i] = key[i] ^ 0x36
-	}
-
-	var innerData = i_key_pad.concat(data)
-	var inner = sha1Bytes(innerData)
-	var innerBytes = new Array(20)
-	for (var i = 0; i < 5; i++) {
-		innerBytes[i*4] = (inner[i] >> 24) & 0xFF
-		innerBytes[i*4+1] = (inner[i] >> 16) & 0xFF
-		innerBytes[i*4+2] = (inner[i] >> 8) & 0xFF
-		innerBytes[i*4+3] = inner[i] & 0xFF
-	}
-
-	var outerData = o_key_pad.concat(innerBytes)
-	var outer = sha1Bytes(outerData)
-	return hexArr(outer)
-}
-
-function getCosSignature(key, method) {
-	var now = Math.floor(Date.now() / 1000)
-	var expireSeconds = 300
-	var signTime = now + ';' + (now + expireSeconds)
-	var keyTime = signTime
-
-	var httpString = method.toLowerCase() + '\n/' + key + '\n\nhost=' + COS_BUCKET + '.cos.' + COS_REGION + '.myqcloud.com\n'
-	var httpStringSha1 = sha1(httpString)
-
-	var stringToSign = 'sha1\n' + signTime + '\n' + httpStringSha1 + '\n'
-
-	var signKeyHex = hmacSha1(COS_SECRET_KEY, keyTime)
-	var signature = hmacSha1(signKeyHex, stringToSign)
-
-	return 'q-sign-algorithm=sha1'
-		+ '&q-ak=' + COS_SECRET_ID
-		+ '&q-sign-time=' + signTime
-		+ '&q-key-time=' + keyTime
-		+ '&q-header-list=host'
-		+ '&q-url-param-list='
-		+ '&q-signature=' + signature
-}
-
 function getImageInfo(filePath) {
 	return new Promise((resolve, reject) => {
 		uni.getImageInfo({
@@ -375,6 +189,46 @@ function canvasCompress(filePath, maxSizeBytes) {
 	})
 }
 
+function base64ToArrayBuffer(base64) {
+	var binaryString
+	try {
+		if (typeof atob === 'function') {
+			binaryString = atob(base64)
+		} else {
+			binaryString = base64DecodePolyfill(base64)
+		}
+	} catch (e) {
+		throw new Error('base64解码失败:' + (e.message || '数据格式错误'))
+	}
+	var len = binaryString.length
+	var bytes = new Uint8Array(len)
+	for (var i = 0; i < len; i++) {
+		bytes[i] = binaryString.charCodeAt(i)
+	}
+	var buf = bytes.buffer
+	buf._uint8view = bytes
+	return buf
+}
+
+function base64DecodePolyfill(base64) {
+	var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+	var result = ''
+	var i = 0
+	while (i < base64.length) {
+		var c1 = chars.indexOf(base64.charAt(i++))
+		var c2 = chars.indexOf(base64.charAt(i++))
+		var c3 = chars.indexOf(base64.charAt(i++))
+		var c4 = chars.indexOf(base64.charAt(i++))
+		var b1 = (c1 << 2) | (c2 >> 4)
+		var b2 = ((c2 & 0x0F) << 4) | (c3 >> 2)
+		var b3 = ((c3 & 0x03) << 6) | c4
+		result += String.fromCharCode(b1)
+		if (c3 !== -1 && base64.charAt(i - 2) !== '=') result += String.fromCharCode(b2)
+		if (c4 !== -1 && base64.charAt(i - 1) !== '=') result += String.fromCharCode(b3)
+	}
+	return result
+}
+
 function uploadToCOS(filePath, dir) {
 	return new Promise((resolve, reject) => {
 		var filename = Date.now() + '_' + Math.random().toString(36).slice(2) + '.jpg'
@@ -386,37 +240,84 @@ function uploadToCOS(filePath, dir) {
 		var fs = wx.getFileSystemManager()
 		fs.readFile({
 			filePath: filePath,
+			encoding: 'base64',
 			success: function(res) {
-				uni.request({
+				var base64Str = res.data
+				if (!base64Str || typeof base64Str !== 'string' || base64Str.length < 4) {
+					reject(new Error('读取图片文件为空，请重新选择图片'))
+					return
+				}
+				var binaryData
+				try {
+					binaryData = base64ToArrayBuffer(base64Str)
+				} catch (e) {
+					reject(e)
+					return
+				}
+				if (!binaryData || (binaryData.byteLength != null && binaryData.byteLength === 0)) {
+					reject(new Error('读取图片文件为空，请重新选择图片'))
+					return
+				}
+				var requestFn = (typeof wx !== 'undefined' && wx.request) ? wx.request : uni.request
+				requestFn({
 					url: url + '?' + signature,
 					method: 'PUT',
-					data: res.data,
+					data: binaryData,
 					header: {
 						'Content-Type': 'image/jpeg',
 						'Host': host
 					},
 					timeout: 60000,
-					success: function(res) {
-						if (res.statusCode === 200 || res.statusCode === 204) {
-							var fileUrl = COS_BASE_URL + '/' + key
-							resolve({ url: fileUrl, key: key })
+					success: function(putRes) {
+						if (putRes.statusCode === 200 || putRes.statusCode === 204) {
+							requestFn({
+								url: url,
+								method: 'HEAD',
+								timeout: 15000,
+								success: function(headRes) {
+									if (headRes.statusCode !== 404) {
+										resolve({ url: url, key: key })
+									} else {
+										reject(new Error('上传未生效，请检查存储桶配置后重试'))
+									}
+								},
+								fail: function(headErr) {
+									reject(new Error('上传校验失败:' + ((headErr && headErr.errMsg) || '网络错误')))
+								}
+							})
 						} else {
-							console.error('COS upload failed:', res.statusCode, res.data)
-							reject(new Error('上传失败，HTTP状态码: ' + res.statusCode))
+							console.error('COS upload failed:', putRes.statusCode, putRes.data)
+							var errMsg = '上传失败(HTTP:' + putRes.statusCode + ')'
+							if (putRes.data && typeof putRes.data === 'string') {
+								try {
+									var errJson = JSON.parse(putRes.data)
+									if (errJson.Message || errJson.message) errMsg += ': ' + (errJson.Message || errJson.message)
+								} catch (e) {
+									if (putRes.data.length < 200) errMsg += ' ' + putRes.data
+								}
+							}
+							reject(new Error(errMsg))
 						}
 					},
 					fail: function(err) {
 						console.error('COS upload failed:', err)
-						reject(err)
+						reject(new Error(((err && err.errMsg) || '上传网络请求失败')))
 					}
 				})
 			},
 			fail: function(err) {
 				console.error('Read file failed:', err)
-				reject(err)
+				reject(new Error('读取图片失败:' + ((err && err.errMsg) || '文件无法访问')))
 			}
 		})
 	})
+}
+
+export function isLocalTempPath(p) {
+	if (!p || typeof p !== 'string') return false
+	if (/^https?:\/\//i.test(p)) return false
+	if (p.indexOf(COS_BASE_URL) === 0) return false
+	return true
 }
 
 export async function uploadImages(images, options = {}) {
@@ -428,9 +329,13 @@ export async function uploadImages(images, options = {}) {
 	for (let i = 0; i < images.length; i++) {
 		const tempPath = images[i]
 		try {
+			if (!isLocalTempPath(tempPath)) {
+				results.push(tempPath)
+				continue
+			}
 			const compressedPath = await compressImage(tempPath, maxSizeBytes)
 			const uploadResult = await uploadToCOS(compressedPath, dir)
-			results.push(uploadResult.url)
+			results.push(uploadResult.key || tempPath)
 		} catch (e) {
 			console.error('图片上传失败:', e)
 			throw e
@@ -440,15 +345,17 @@ export async function uploadImages(images, options = {}) {
 }
 
 export async function uploadFactoryLicense(tempPath, dir = 'license') {
+	if (!isLocalTempPath(tempPath)) return tempPath
 	const result = await compressImage(tempPath, MAX_SIZE_FACTORY)
 	const uploadResult = await uploadToCOS(result, dir)
-	return uploadResult.url
+	return uploadResult.key || uploadResult.url
 }
 
 export async function uploadFactoryIdCard(tempPath) {
+	if (!isLocalTempPath(tempPath)) return tempPath
 	const result = await compressImage(tempPath, MAX_SIZE_FACTORY)
 	const uploadResult = await uploadToCOS(result, 'id_card')
-	return uploadResult.url
+	return uploadResult.key || uploadResult.url
 }
 
 export async function uploadSecondImages(images) {

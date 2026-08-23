@@ -20,19 +20,16 @@
 			<view class="form-card">
 				<view class="form-item upload-item">
 					<text class="form-label">营业执照</text>
-					<view class="upload-wrap">
-						<view class="license-preview" v-if="licenseImage" @tap="onPreviewLicense">
-							<image class="license-image" :src="licenseImage" mode="aspectFill" />
-							<view class="license-remove" @tap.stop="onRemoveLicense">
-								<text class="remove-icon">×</text>
-							</view>
-						</view>
-						<view class="license-add" v-else @tap="onChooseLicense">
-							<text class="add-icon">+</text>
-							<text class="add-text">上传营业执照</text>
-						</view>
-					</view>
-					<text class="upload-tip">请上传清晰完整的营业执照原件照片</text>
+					<uploader-single
+						ref="uploaderLicense"
+						v-model="licenseImage"
+						shape="license"
+						add-text="上传营业执照"
+						tip="请上传清晰完整的营业执照原件照片"
+						choose-toast="上传成功"
+						remove-confirm="确定要删除营业执照吗？"
+						@change="onLicenseChange"
+					/>
 				</view>
 			</view>
 		</view>
@@ -44,19 +41,16 @@
 			<view class="form-card">
 				<view class="form-item upload-item">
 					<text class="form-label">企业法人身份证照片</text>
-					<view class="upload-wrap">
-						<view class="license-preview" v-if="idCardImage" @tap="onPreviewIdCard">
-							<image class="license-image" :src="idCardImage" mode="aspectFill" />
-							<view class="license-remove" @tap.stop="onRemoveIdCard">
-								<text class="remove-icon">×</text>
-							</view>
-						</view>
-						<view class="license-add" v-else @tap="onChooseIdCard">
-							<text class="add-icon">+</text>
-							<text class="add-text">上传法人身份证</text>
-						</view>
-					</view>
-					<text class="upload-tip">请上传清晰完整的身份证原件照片</text>
+					<uploader-single
+						ref="uploaderIdCard"
+						v-model="idCardImage"
+						shape="license"
+						add-text="上传法人身份证"
+						tip="请上传清晰完整的身份证原件照片"
+						choose-toast="上传成功"
+						remove-confirm="确定要删除身份证照片吗？"
+						@change="onIdCardChange"
+					/>
 				</view>
 			</view>
 		</view>
@@ -81,8 +75,12 @@
 
 <script>
 	import { factoryApi } from '@/utils/request.js'
-	import '@/utils/upload.js'
+	import uploaderSingle from '@/components/uploader-single/uploader-single.vue'
+	import { isLocalTempPath } from '@/utils/upload.js'
 	export default {
+		components: {
+			uploaderSingle
+		},
 		data() {
 			return {
 				factoryId: null,
@@ -143,75 +141,11 @@
 					}
 				} catch (e) {}
 			},
-			onChooseLicense() {
-				uni.chooseImage({
-					count: 1,
-					sizeType: ['compressed'],
-					sourceType: ['album', 'camera'],
-					success: async (res) => {
-						const tempPath = res.tempFilePaths[0]
-						uni.showLoading({ title: '校验中...' })
-						const ok = await uni.checkImageSafe(tempPath)
-						uni.hideLoading()
-						if (ok) {
-							this.licenseImage = tempPath
-							uni.showToast({ title: '上传成功', icon: 'success' })
-						}
-					}
-				})
+			onLicenseChange(val) {
+				this.licenseImage = val || ''
 			},
-			onPreviewLicense() {
-				if (!this.licenseImage) return
-				uni.previewImage({
-					urls: [this.licenseImage],
-					current: this.licenseImage
-				})
-			},
-			onChooseIdCard() {
-				uni.chooseImage({
-					count: 1,
-					sizeType: ['compressed'],
-					sourceType: ['album', 'camera'],
-					success: async (res) => {
-						const tempPath = res.tempFilePaths[0]
-						uni.showLoading({ title: '校验中...' })
-						const ok = await uni.checkImageSafe(tempPath)
-						uni.hideLoading()
-						if (ok) {
-							this.idCardImage = tempPath
-							uni.showToast({ title: '上传成功', icon: 'success' })
-						}
-					}
-				})
-			},
-			onPreviewIdCard() {
-				if (!this.idCardImage) return
-				uni.previewImage({
-					urls: [this.idCardImage],
-					current: this.idCardImage
-				})
-			},
-			onRemoveLicense() {
-				uni.showModal({
-					title: '提示',
-					content: '确定要删除营业执照吗？',
-					success: (res) => {
-						if (res.confirm) {
-							this.licenseImage = ''
-						}
-					}
-				})
-			},
-			onRemoveIdCard() {
-				uni.showModal({
-					title: '提示',
-					content: '确定要删除身份证照片吗？',
-					success: (res) => {
-						if (res.confirm) {
-							this.idCardImage = ''
-						}
-					}
-				})
+			onIdCardChange(val) {
+				this.idCardImage = val || ''
 			},
 			onViewAgreement(autoAgree = false) {
 				uni.showModal({
@@ -232,9 +166,17 @@
 			},
 			onSubmit() {
 				if (this.isSubmitting) return
+				const refLicense = (this.$refs.uploaderLicense && this.$refs.uploaderLicense.currentSrc) || ''
+				if (refLicense && !this.licenseImage) {
+					this.licenseImage = refLicense
+				}
 				if (!this.licenseImage) {
 					uni.showToast({ title: '请先上传营业执照', icon: 'none' })
 					return
+				}
+				const refIdCard = (this.$refs.uploaderIdCard && this.$refs.uploaderIdCard.currentSrc) || ''
+				if (refIdCard && !this.idCardImage) {
+					this.idCardImage = refIdCard
 				}
 				if (!this.idCardImage) {
 					uni.showToast({ title: '请先上传法人身份证照片', icon: 'none' })
@@ -245,24 +187,23 @@
 					return
 				}
 				this.isSubmitting = true
-				uni.showLoading({ title: '提交中...', mask: true })
+				uni.showLoading({ title: '提交中...', mask: true, timeout: 6000 })
 				this.doSubmit()
 			},
 			async doSubmit() {
 				try {
 					let licenseUrl = this.licenseImage
-					if (licenseUrl && !licenseUrl.startsWith('http')) {
+					if (licenseUrl && isLocalTempPath(licenseUrl)) {
 						licenseUrl = await uni.uploadFactoryLicense(licenseUrl)
 					}
 
 					let idCardUrl = this.idCardImage
-					if (idCardUrl && !idCardUrl.startsWith('http')) {
+					if (idCardUrl && isLocalTempPath(idCardUrl)) {
 						idCardUrl = await uni.uploadFactoryIdCard(idCardUrl)
 					}
 
 					await factoryApi.verifyFactory(this.factoryId, licenseUrl, idCardUrl)
 					uni.hideLoading()
-					this.isSubmitting = false
 
 					this.identification = 0
 
@@ -276,8 +217,9 @@
 					})
 				} catch (e) {
 					uni.hideLoading()
-					this.isSubmitting = false
 					uni.showToast({ title: '提交失败', icon: 'none' })
+				} finally {
+					this.isSubmitting = false
 				}
 			}
 		}

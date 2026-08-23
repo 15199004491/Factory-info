@@ -6,7 +6,7 @@ uni.showLoading = function(options = {}) {
 		clearTimeout(_loadingTimer)
 		_loadingTimer = null
 	}
-	const timeout = options.timeout || 3000
+	const timeout = options.timeout || 6000
 	_loadingTimer = setTimeout(() => {
 		uni.hideLoading()
 	}, timeout)

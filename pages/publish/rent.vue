@@ -3,12 +3,12 @@
 		<view class="form-list">
 			<view class="form-item">
 				<text class="form-label">标题</text>
-				<input class="form-input" v-model="form.title" maxlength="30" placeholder="例：阳光花园 3室2厅整租" placeholder-class="form-placeholder" />
+				<input class="form-input" v-model="form.title" maxlength="20" placeholder="例：阳光花园 3室2厅整租" placeholder-class="form-placeholder" />
 			</view>
 
 			<view class="form-item">
 				<text class="form-label">小区</text>
-				<input class="form-input" v-model="form.name" maxlength="30" placeholder="请输入小区名称" placeholder-class="form-placeholder" />
+				<input class="form-input" v-model="form.name" maxlength="20" placeholder="请输入小区名称" placeholder-class="form-placeholder" />
 			</view>
 
 			<view class="form-item form-item-link" @tap="openRegionPicker">
@@ -22,7 +22,7 @@
 			<view class="form-item">
 				<text class="form-label">面积</text>
 				<view class="input-with-unit">
-					<input class="form-input" v-model="form.acreage" type="digit" maxlength="20" placeholder="请输入面积" placeholder-class="form-placeholder" />
+					<input class="form-input" v-model="form.acreage" type="number" maxlength="10" placeholder="请输入面积" placeholder-class="form-placeholder" />
 					<text class="input-unit">㎡</text>
 				</view>
 			</view>
@@ -35,26 +35,31 @@
 				</view>
 			</view>
 
-			<view class="form-item form-item-link" @tap="openPicker('payment')">
+			<view class="form-item form-item-link" @tap="openPicker('pay_type')">
 				<text class="form-label">付款方式</text>
 				<view class="form-input-wrap">
-					<text class="form-value" :class="{ 'form-placeholder-text': !form.payment }">{{ form.payment || '请选择付款方式' }}</text>
+					<text class="form-value" :class="{ 'form-placeholder-text': !form.pay_type }">{{ form.pay_type || '请选择付款方式' }}</text>
 					<u-icon name="arrow-down" size="14" color="#999"></u-icon>
 				</view>
 			</view>
 
 			<view class="form-item">
 				<text class="form-label">月租(元)</text>
-				<input class="form-input" v-model="form.price" type="digit" maxlength="20" placeholder="例：2800" placeholder-class="form-placeholder" />
+				<input class="form-input" v-model="form.price" type="number" maxlength="6" placeholder="例：2800" placeholder-class="form-placeholder" />
+			</view>
+
+			<view class="form-item">
+				<text class="form-label">联系电话</text>
+				<input class="form-input" v-model="form.mobile" type="number" maxlength="15" placeholder="请输入联系电话" placeholder-class="form-placeholder" />
 			</view>
 
 			<view class="form-item">
 				<text class="form-label">租赁方式</text>
 				<view class="tag-select">
-					<view class="tag-option" :class="{ active: form.tagType === 'entire' }" @tap="form.tagType = 'entire'">
+					<view class="tag-option" :class="{ active: form.tag_type === 'entire' }" @tap="form.tag_type = 'entire'">
 						<text class="tag-text">整租</text>
 					</view>
-					<view class="tag-option" :class="{ active: form.tagType === 'shared' }" @tap="form.tagType = 'shared'">
+					<view class="tag-option" :class="{ active: form.tag_type === 'shared' }" @tap="form.tag_type = 'shared'">
 						<text class="tag-text">合租</text>
 					</view>
 				</view>
@@ -62,20 +67,12 @@
 
 			<view class="form-item">
 				<text class="form-label">房源图片</text>
-				<view class="image-upload">
-					<view class="image-list">
-						<view class="image-item" v-for="(img, idx) in form.images" :key="idx">
-							<image class="upload-image" :src="img" mode="aspectFill" />
-							<view class="image-delete" @tap="removeImage(idx)">
-								<text class="delete-icon">×</text>
-							</view>
-						</view>
-						<view class="image-add" @tap="chooseImage" v-if="form.images.length < 1">
-							<text class="add-icon">+</text>
-						</view>
-					</view>
-					<text class="upload-tip">最多上传1张图片</text>
-				</view>
+				<uploader-single
+					ref="uploaderRent"
+					v-model="form.rent_image"
+					tip="选填，上传后能提高浏览量"
+					@change="onImageChanged"
+				/>
 			</view>
 
 			<view class="form-item form-item-textarea">
@@ -85,8 +82,8 @@
 		</view>
 
 		<view class="submit-bar">
-			<view class="submit-btn" @tap="onSubmit">
-				<text class="submit-btn-text">立即发布</text>
+			<view class="submit-btn" :class="{ disabled: submitting }" @tap="onSubmit">
+				<text class="submit-btn-text">{{ submitting ? '提交中...' : (editingId ? '保存修改' : '立即发布') }}</text>
 			</view>
 		</view>
 
@@ -118,13 +115,15 @@
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import regionPicker from '@/components/region-picker/region-picker.vue'
+	import uploaderSingle from '@/components/uploader-single/uploader-single.vue'
 	import { rentApi } from '@/utils/request.js'
 	import { uploadImages } from '@/utils/upload.js'
 
 	export default {
 		components: {
 			uIcon,
-			regionPicker
+			regionPicker,
+			uploaderSingle
 		},
 		data() {
 			return {
@@ -135,19 +134,22 @@
 				pickerValue: [0],
 				pickerTempIndex: 0,
 				floorOptions: [],
-				paymentOptions: ['押0付一', '押一付一', '押一付三', '季付', '半年付', '年付'],
+				pay_typeOptions: ['押0付一', '押一付一', '押一付三', '季付', '半年付', '年付'],
 				pickerOptions: [],
 				editingId: null,
+				imageChanged: false,
+				submitting: false,
 				form: {
 					title: '',
 					name: '',
 					area: '',
 					acreage: '',
 					floor: '',
-					payment: '',
+					pay_type: '',
 					price: '',
-					tagType: 'entire',
-					images: [],
+					mobile: '',
+					tag_type: 'entire',
+					rent_image: '',
 					explain: ''
 				}
 			}
@@ -170,19 +172,13 @@
 			async loadDetail() {
 				try {
 					const data = await rentApi.rentDetail({ Id: this.editingId })
-					this.form = {
-						title: data.title || '',
-						name: data.name || data.community || '',
-						area: data.area || data.region || '',
-						acreage: data.acreage || data.area || '',
-						floor: data.floor || '',
-						payment: data.payment || '',
-						price: data.price || '',
-						tagType: data.tagType || 'entire',
-						images: data.rent_image ? [data.rent_image] : (Array.isArray(data.images) ? data.images : []),
-						explain: data.explain || data.description || ''
-					}
+					this.form = data
+					this.imageChanged = false
 				} catch (e) {}
+			},
+			onImageChanged(val) {
+				this.form.rent_image = val || ''
+				this.imageChanged = true
 			},
 			openRegionPicker() {
 				this.showRegionPicker = true
@@ -196,10 +192,10 @@
 			},
 			openPicker(type) {
 				this.pickerType = type
-				if (type === 'payment') {
+				if (type === 'pay_type') {
 					this.pickerTitle = '选择付款方式'
-					this.pickerOptions = this.paymentOptions
-					const idx = Math.max(0, this.paymentOptions.indexOf(this.form.payment))
+					this.pickerOptions = this.pay_typeOptions
+					const idx = Math.max(0, this.pay_typeOptions.indexOf(this.form.pay_type))
 					this.pickerValue = [idx]
 					this.pickerTempIndex = idx
 				} else {
@@ -219,34 +215,15 @@
 			},
 			confirmPicker() {
 				const value = this.pickerOptions[this.pickerTempIndex]
-				if (this.pickerType === 'payment') {
-					this.form.payment = value
+				if (this.pickerType === 'pay_type') {
+					this.form.pay_type = value
 				} else {
 					this.form.floor = value
 				}
 				this.showPicker = false
 			},
-			chooseImage() {
-				var self = this
-				uni.chooseImage({
-					count: 1,
-					sizeType: ['compressed'],
-					sourceType: ['album', 'camera'],
-					success: async function(res) {
-						const tempPath = res.tempFilePaths[0]
-						uni.showLoading({ title: '校验中...' })
-						const ok = await uni.checkImageSafe(tempPath)
-						uni.hideLoading()
-						if (ok) {
-							self.form.images = [tempPath]
-						}
-					}
-				})
-			},
-			removeImage(idx) {
-				this.form.images.splice(idx, 1)
-			},
 			async onSubmit() {
+				if (this.submitting) return
 				if (!this.form.title) {
 					uni.showToast({ title: '请填写标题', icon: 'none' })
 					return
@@ -267,7 +244,7 @@
 					uni.showToast({ title: '请选择楼层', icon: 'none' })
 					return
 				}
-				if (!this.form.payment) {
+				if (!this.form.pay_type) {
 					uni.showToast({ title: '请选择付款方式', icon: 'none' })
 					return
 				}
@@ -275,8 +252,13 @@
 					uni.showToast({ title: '请填写月租', icon: 'none' })
 					return
 				}
+				const refImage = (this.$refs.uploaderRent && this.$refs.uploaderRent.currentSrc) || ''
+				if (refImage && !this.form.rent_image) {
+					this.form.rent_image = refImage
+				}
 
-				uni.showLoading({ title: '提交中...' })
+				this.submitting = true
+				uni.showLoading({ title: '校验中...', mask: true, timeout: 6000 })
 
 				const msg = [
 					this.form.title,
@@ -288,25 +270,15 @@
 				const textOk = await uni.checkTextSafe(msg)
 				if (!textOk) {
 					uni.hideLoading()
+					this.submitting = false
 					return
 				}
 
 				try {
-					let rentImage = ''
-					if (this.form.images && this.form.images.length) {
-						let imageUrls = this.form.images.slice()
-						const tmpUrls = imageUrls.filter(img => img.indexOf('tmp') !== -1)
-						if (tmpUrls.length) {
-							const uploaded = await uploadImages(tmpUrls, { dir: 'rent-house' })
-							let idx = 0
-							imageUrls = imageUrls.map(img => {
-								if (img.indexOf('tmp') !== -1) {
-									return uploaded[idx++]
-								}
-								return img
-							})
-						}
-						rentImage = imageUrls[0] || ''
+					let rentImage = this.form.rent_image || ''
+					if (rentImage) {
+						const uploaded = await uploadImages([rentImage], { dir: 'rent-house' })
+						rentImage = uploaded[0] || ''
 					}
 
 					const postData = {
@@ -316,9 +288,10 @@
 						area: this.form.area,
 						acreage: this.form.acreage,
 						floor: this.form.floor,
-						payment: this.form.payment,
+						pay_type: this.form.pay_type,
 						price: this.form.price,
-						tagType: this.form.tagType,
+						mobile: this.form.mobile,
+						tag_type: this.form.tag_type,
 						rent_image: rentImage,
 						explain: this.form.explain
 					}
@@ -329,8 +302,11 @@
 						uni.navigateBack()
 					}, 1000)
 				} catch (e) {
+					console.error('租房提交失败:', e)
 					uni.hideLoading()
-					uni.showToast({ title: '提交失败', icon: 'none' })
+					uni.showToast({ title: (e && e.message) ? '提交失败:' + e.message : '提交失败', icon: 'none' })
+				} finally {
+					this.submitting = false
 				}
 			}
 		}
@@ -592,6 +568,11 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+
+	.submit-btn.disabled {
+		background: #b7c7da;
+		pointer-events: none;
 	}
 
 	.submit-btn-text {

@@ -13,6 +13,7 @@
 					placeholder-class="search-placeholder"
 					confirm-type="search"
 					@confirm="onSearch"
+					maxlength="10"
 				/>
 			</view>
 			<view class="search-btn" @tap="onSearch">
@@ -109,7 +110,6 @@
 					})
 					this.total = data.total || 0
 					this.houseList = this.formatList(data.list || [])
-					console.log('this.houseList--',this.houseList)
 					this.checkNoMore()
 				} catch (e) {
 					this.houseList = []

@@ -67,7 +67,6 @@ export const factoryApi = {
 export const rentApi = {
     addRent: (params) => request('/farm/Rent/addRent', { ...params, open_id: getOpenid() }, 'POST'),
     rentDetail: (params) => request('/farm/Rent/rentDetail', params),
-    topRent: (params) => request('/farm/Rent/topRent', params, 'POST'),
     rentList: (params) => request('/farm/Rent/rentList', params),
     rentSelf: () => request('/farm/Rent/rentSelf', { open_id: getOpenid() }),
     deleteRent: (params) => request('/farm/Rent/deleteRent', params, 'POST'),

@@ -3,7 +3,12 @@
 		"autoscan": true,
 		"custom": {
 			"^u-(.*)": "uview-plus/components/u-$1/u-$1.vue",
-			"^up-(.*)": "uview-plus/components/u-$1/u-$1.vue"
+			"^up-(.*)": "uview-plus/components/u-$1/u-$1.vue",
+			"^region-picker": "@/components/region-picker/region-picker.vue",
+			"^image-placeholder": "@/components/image-placeholder/image-placeholder.vue",
+			"^safe-bottom": "@/components/safe-bottom/safe-bottom.vue",
+			"^tab-bar": "@/components/tab-bar/tab-bar.vue",
+			"^uploader-single": "@/components/uploader-single/uploader-single.vue"
 		}
 	},
 	"pages": [

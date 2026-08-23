@@ -62,8 +62,8 @@
 				if (userData) {
 					this.isLogin = true
 					this.userInfo = {
-						nickName: userData.nickname || userData.nickName || '用户',
-						avatarUrl: userData.avatar || userData.avatarUrl || '',
+						nickName: userData.nick_name || '用户',
+						avatarUrl: userData.avatar_url || '',
 						...userData
 					}
 				} else {
@@ -76,9 +76,9 @@
 					const userData = await auth.login()
 					this.isLogin = true
 					this.userInfo = {
-						nickName: userData.nickname || userData.nickName || '用户',
-						avatarUrl: userData.avatar || userData.avatarUrl || '',
-						...userData
+						...userData,
+						nickName: userData.nickname || userData.nickName || userData.nick_name || '用户',
+						avatarUrl: userData.avatar_url || userData.avatar || userData.avatarUrl || ''
 					}
 				} catch (e) {
 					console.error('登录失败', e)

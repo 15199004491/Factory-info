@@ -13,6 +13,7 @@
 					placeholder-class="search-placeholder"
 					confirm-type="search"
 					@confirm="onSearch"
+					maxlength="10"
 				/>
 			</view>
 			<view class="search-btn" @tap="onSearch">
@@ -32,7 +33,7 @@
 				@tap="onRentTap(item)"
 			>
 				<view class="rent-image-wrap">
-					<image class="rent-image" :src="item.image" mode="aspectFill" />
+					<image-placeholder class="rent-image" :src="item.image" mode="aspectFill" />
 				</view>
 				<view class="rent-info">
 					<text class="rent-title">{{ item.title }}</text>
@@ -57,6 +58,8 @@
 
 		<region-picker
 			:visible="showRegionPicker"
+			:current="currentRegion"
+			:showAll="true"
 			@confirm="onRegionConfirm"
 			@cancel="onRegionCancel"
 		/>
@@ -71,7 +74,8 @@
 	export default {
 		components: {
 			uIcon,
-			regionPicker
+			regionPicker,
+			imagePlaceholder: () => import('@/components/image-placeholder/image-placeholder.vue')
 		},
 		data() {
 			return {
@@ -143,9 +147,9 @@
 					title: item.title,
 					desc: `${item.acreage || ''}㎡ · ${item.floor || ''}`,
 					price: (item.price || '') + '元/月',
-					tag: item.tagType === 'shared' ? '合租' : '整租',
-					tagType: item.tagType || 'entire',
-					image: item.rent_image || item.image || ''
+					tag: item.tag_type === 'shared' ? '合租' : '整租',
+					tagType: item.tag_type || 'entire',
+					image: item.rent_image || item.rentImage || item.image || item.img || ''
 				}))
 			},
 			checkNoMore() {

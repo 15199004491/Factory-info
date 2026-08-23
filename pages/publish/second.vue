@@ -3,12 +3,12 @@
 		<view class="form-list">
 			<view class="form-item">
 				<text class="form-label">标题</text>
-				<input class="form-input" v-model="form.title" maxlength="30" placeholder="例：阳光花园 3室2厅" placeholder-class="form-placeholder" />
+				<input class="form-input" v-model="form.title" maxlength="20" placeholder="例：阳光花园 3室2厅" placeholder-class="form-placeholder" />
 			</view>
 
 			<view class="form-item">
 				<text class="form-label">小区</text>
-				<input class="form-input" v-model="form.community" maxlength="30" placeholder="请输入小区名称" placeholder-class="form-placeholder" />
+				<input class="form-input" v-model="form.name" maxlength="10" placeholder="请输入小区名称" placeholder-class="form-placeholder" />
 			</view>
 
 			<view class="form-item form-item-link" @tap="openRegionPicker">
@@ -19,10 +19,10 @@
 				</view>
 			</view>
 
-			<view class="form-item form-item-link" @tap="openPicker('houseType')">
+			<view class="form-item form-item-link" @tap="openPicker('type')">
 				<text class="form-label">户型</text>
 				<view class="form-input-wrap">
-					<text class="form-value" :class="{ 'form-placeholder-text': !form.houseType }">{{ form.houseType || '请选择户型' }}</text>
+					<text class="form-value" :class="{ 'form-placeholder-text': !form.shape }">{{ form.shape || '请选择户型' }}</text>
 					<u-icon name="arrow-down" size="14" color="#999"></u-icon>
 				</view>
 			</view>
@@ -45,41 +45,33 @@
 
 			<view class="form-item">
 				<text class="form-label">售价(万)</text>
-				<input class="form-input" v-model="form.price" type="number" maxlength="20" placeholder="例：128" placeholder-class="form-placeholder" />
+				<input class="form-input" v-model="form.price" type="number" maxlength="10" placeholder="例：128" placeholder-class="form-placeholder" />
 			</view>
 
 			<view class="form-item">
 				<text class="form-label">联系电话</text>
-				<input class="form-input" v-model="form.phone" type="number" maxlength="20" placeholder="请输入联系电话" placeholder-class="form-placeholder" />
+				<input class="form-input" v-model="form.phone" type="number" maxlength="15" placeholder="请输入联系电话" placeholder-class="form-placeholder" />
 			</view>
 
 			<view class="form-item">
 				<text class="form-label">房源图片</text>
-				<view class="image-upload">
-					<view class="image-list">
-						<view class="image-item" v-for="(img, idx) in form.images" :key="idx">
-							<image class="upload-image" :src="img" mode="aspectFill" />
-							<view class="image-delete" @tap="removeImage(idx)">
-								<text class="delete-icon">×</text>
-							</view>
-						</view>
-						<view class="image-add" @tap="chooseImage" v-if="form.images.length < 1">
-							<text class="add-icon">+</text>
-						</view>
-					</view>
-					<text class="upload-tip">最多上传1张图片</text>
-				</view>
+				<uploader-single
+					ref="uploaderSecond"
+					v-model="form.second_image"
+					tip="选填，上传后能提高浏览量"
+					@change="onImageChanged"
+				/>
 			</view>
 
 			<view class="form-item form-item-textarea">
 				<text class="form-label">房源描述</text>
-				<textarea class="form-textarea" v-model="form.description" maxlength="200" placeholder="请详细描述房源信息" placeholder-class="form-placeholder"></textarea>
+				<textarea class="form-textarea" v-model="form.explain" maxlength="200" placeholder="请详细描述房源信息" placeholder-class="form-placeholder"></textarea>
 			</view>
 		</view>
 
 		<view class="submit-bar">
-			<view class="submit-btn" @tap="onSubmit">
-				<text class="submit-btn-text">立即发布</text>
+			<view class="submit-btn" :class="{ disabled: submitting }" @tap="onSubmit">
+				<text class="submit-btn-text">{{ submitting ? '提交中...' : (isEdit ? '保存修改' : '立即发布') }}</text>
 			</view>
 		</view>
 
@@ -111,16 +103,19 @@
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import regionPicker from '@/components/region-picker/region-picker.vue'
+	import uploaderSingle from '@/components/uploader-single/uploader-single.vue'
 	import { secondHouseApi, userApi } from '@/utils/request.js'
-	import { uploadSecondImages } from '@/utils/upload.js'
+	import { uploadImages } from '@/utils/upload.js'
 
 	export default {
 		components: {
 			uIcon,
-			regionPicker
+			regionPicker,
+			uploaderSingle
 		},
 		data() {
 			return {
+				submitting: false,
 				showRegionPicker: false,
 				showPicker: false,
 				pickerType: '',
@@ -129,19 +124,20 @@
 				pickerOptions: [],
 				pickerTempIndex: 0,
 				editingId: null,
-				houseTypeOptions: ['1室1厅', '1室2厅', '2室1厅', '2室2厅', '2室3厅', '3室1厅', '3室2厅', '3室3厅', '4室2厅', '4室3厅', '5室2厅', '5室3厅'],
+				typeOptions: ['1室1厅', '1室2厅', '2室1厅', '2室2厅', '2室3厅', '3室1厅', '3室2厅', '3室3厅', '4室2厅', '4室3厅', '5室2厅', '5室3厅'],
 				floorOptions: [],
+				imageChanged: false,
 				form: {
 					title: '',
-					community: '',
+					name: '',
 					region: '',
-					houseType: '',
+					shape: '',
 					area: '',
 					floor: '',
 					price: '',
 					phone: '',
-					images: [],
-					description: ''
+					second_image: '',
+					explain: ''
 				}
 			}
 		},
@@ -163,19 +159,13 @@
 			async loadDetail() {
 				try {
 					const data = await secondHouseApi.getDetail(this.editingId)
-					this.form = {
-						title: data.title || '',
-						community: data.community || '',
-						region: data.region || '',
-						houseType: data.house_type || '',
-						area: data.area || '',
-						floor: data.floor || '',
-						price: data.price || '',
-						phone: data.phone || '',
-						images: Array.isArray(data.images) ? data.images : [],
-						description: data.description || ''
-					}
+					this.form = data
+					this.imageChanged = false
 				} catch (e) {}
+			},
+			onImageChanged(val) {
+				this.form.second_image = val || ''
+				this.imageChanged = true
 			},
 			openRegionPicker() {
 				this.showRegionPicker = true
@@ -187,12 +177,12 @@
 			onRegionCancel() {
 				this.showRegionPicker = false
 			},
-			openPicker(type) {
-				this.pickerType = type
-				if (type === 'houseType') {
+			openPicker(shape) {
+				this.pickerType = shape
+				if (shape === 'type') {
 					this.pickerTitle = '选择户型'
-					this.pickerOptions = this.houseTypeOptions
-					const idx = Math.max(0, this.houseTypeOptions.indexOf(this.form.houseType))
+					this.pickerOptions = this.typeOptions
+					const idx = Math.max(0, this.typeOptions.indexOf(this.form.shape))
 					this.pickerValue = [idx]
 					this.pickerTempIndex = idx
 				} else {
@@ -212,39 +202,20 @@
 			},
 			confirmPicker() {
 				const value = this.pickerOptions[this.pickerTempIndex]
-				if (this.pickerType === 'houseType') {
-					this.form.houseType = value
+				if (this.pickerType === 'type') {
+					this.form.shape = value
 				} else {
 					this.form.floor = value
 				}
 				this.showPicker = false
 			},
-			chooseImage() {
-				var self = this
-				uni.chooseImage({
-					count: 1,
-					sizeType: ['compressed'],
-					sourceType: ['album', 'camera'],
-					success: async function(res) {
-						const tempPath = res.tempFilePaths[0]
-						uni.showLoading({ title: '校验中...' })
-						const ok = await uni.checkImageSafe(tempPath)
-						uni.hideLoading()
-						if (ok) {
-							self.form.images = [tempPath]
-						}
-					}
-				})
-			},
-			removeImage(idx) {
-				this.form.images.splice(idx, 1)
-			},
 			async onSubmit() {
+				if (this.submitting) return
 				if (!this.form.title) {
 					uni.showToast({ title: '请填写标题', icon: 'none' })
 					return
 				}
-				if (!this.form.community) {
+				if (!this.form.name) {
 					uni.showToast({ title: '请填写小区名称', icon: 'none' })
 					return
 				}
@@ -252,7 +223,7 @@
 					uni.showToast({ title: '请选择地区', icon: 'none' })
 					return
 				}
-				if (!this.form.houseType) {
+				if (!this.form.shape) {
 					uni.showToast({ title: '请选择户型', icon: 'none' })
 					return
 				}
@@ -272,54 +243,52 @@
 					uni.showToast({ title: '请填写联系电话', icon: 'none' })
 					return
 				}
+				const refImage = (this.$refs.uploaderSecond && this.$refs.uploaderSecond.currentSrc) || ''
+				if (refImage && !this.form.second_image) {
+					this.form.second_image = refImage
+				}
 
-				uni.showLoading({ title: '提交中...' })
+				this.submitting = true
+				uni.showLoading({ title: '校验中...', mask: true, timeout: 6000 })
 
 				const msg = [
 					this.form.title,
-					this.form.community,
+					this.form.name,
 					this.form.region,
-					this.form.houseType,
-					this.form.description
+					this.form.shape,
+					this.form.explain
 				].filter(Boolean).join(' ')
 
 				const textOk = await uni.checkTextSafe(msg)
 				if (!textOk) {
 					uni.hideLoading()
+					this.submitting = false
 					return
 				}
 
 				try {
-					let secondImage = ''
-					if (this.form.images && this.form.images.length) {
-						let imageUrls = this.form.images.slice()
-						const tmpUrls = imageUrls.filter(img => img.indexOf('tmp') !== -1)
-						if (tmpUrls.length) {
-							const uploaded = await uni.uploadSecondImages(tmpUrls)
-							let idx = 0
-							imageUrls = imageUrls.map(img => {
-								if (img.indexOf('tmp') !== -1) {
-									return uploaded[idx++]
-								}
-								return img
-							})
-						}
-						secondImage = imageUrls[0] || ''
+					let secondImage = this.form.second_image || ''
+					if (secondImage) {
+						console.log('上传二手房图片到COS:', secondImage)
+						const uploaded = await uploadImages([secondImage], { dir: 'second-house' })
+						secondImage = uploaded[0] || ''
+						console.log('二手房图片上传成功:', secondImage)
 					}
 
 					const postData = {
 						id: this.editingId || undefined,
 						title: this.form.title,
-						name: this.form.community,
-						shape: this.form.houseType,
+						name: this.form.name,
+						shape: this.form.shape,
 						acreage: this.form.area,
 						floor: this.form.floor,
 						price: this.form.price,
 						mobile: this.form.phone,
 						second_image: secondImage,
-						explain: this.form.description,
+						explain: this.form.explain,
 						area: this.form.region,
 					}
+					console.log('提交二手房数据:', postData)
 					await secondHouseApi.addHouse(postData)
 					uni.hideLoading()
 					uni.showToast({ title: this.editingId ? '修改成功' : '发布成功', icon: 'success' })
@@ -327,8 +296,11 @@
 						uni.navigateBack()
 					}, 1000)
 				} catch (e) {
+					console.error('二手房提交失败:', e)
 					uni.hideLoading()
-					uni.showToast({ title: '提交失败', icon: 'none' })
+					uni.showToast({ title: (e && e.message) ? '提交失败:' + e.message : '提交失败', icon: 'none' })
+				} finally {
+					this.submitting = false
 				}
 			}
 		}
@@ -573,6 +545,11 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+
+	.submit-btn.disabled {
+		background: #b7c7da;
+		pointer-events: none;
 	}
 
 	.submit-btn-text {

@@ -113,6 +113,9 @@
 				if (this.detail.mobile) {
 					uni.makePhoneCall({
 						phoneNumber: this.detail.mobile
+					}).catch(err => {
+						if (err && err.errMsg && /cancel/i.test(err.errMsg)) return
+						if (err && err.errMsg) console.warn('拨号失败:', err.errMsg)
 					})
 				} else {
 					uni.showToast({

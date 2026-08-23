@@ -1,13 +1,19 @@
 <template>
 	<view class="page">
 		<view class="detail-header">
-			<image class="detail-image" :src="house.image" mode="aspectFill" />
+			<image-placeholder class="detail-image" :src="house.image" mode="aspectFill" :previewable="true" />
 		</view>
 
 		<view class="detail-section">
 			<view class="price-row">
-				<text class="detail-price">{{ house.price }}</text>
-				<text class="detail-unit">元/月</text>
+				<view class="price-left">
+					<text class="detail-price">{{ house.price }}</text>
+					<text class="detail-unit">元/月</text>
+				</view>
+				<view class="visitor-pill">
+					<text class="visitor-num">{{ visitors }}</text>
+					<text class="visitor-label">人看过</text>
+				</view>
 			</view>
 			<text class="detail-title">{{ house.title }}</text>
 			<text class="detail-desc">{{ house.desc }}</text>
@@ -19,8 +25,8 @@
 				<text class="info-value">{{ house.acreage }}</text>
 			</view>
 			<view class="info-item">
-				<text class="info-label">户型</text>
-				<text class="info-value">{{ house.shape }}</text>
+				<text class="info-label">租赁方式</text>
+				<text class="info-value">{{ house.tag }}</text>
 			</view>
 			<view class="info-item">
 				<text class="info-label">楼层</text>
@@ -46,7 +52,10 @@
 
 		<view class="detail-section">
 			<text class="section-title">房源描述</text>
-			<text class="detail-content">{{ house.explain }}</text>
+			<text v-if="house.explain" class="detail-content">{{ house.explain }}</text>
+			<view v-else class="empty-desc">
+				<text class="empty-desc-text">暂无信息</text>
+			</view>
 		</view>
 
 		<view class="bottom-bar">
@@ -63,10 +72,12 @@
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import { rentApi } from '@/utils/request.js'
+	import { formatCosUrl } from '@/utils/config.js'
 
 	export default {
 		components: {
-			uIcon
+			uIcon,
+			imagePlaceholder: () => import('@/components/image-placeholder/image-placeholder.vue')
 		},
 		data() {
 			return {
@@ -107,9 +118,9 @@
 						title: data.title,
 						desc: `${data.acreage || ''}㎡ · ${data.floor || ''}`,
 						price: data.price,
-						tag: data.tagType === 'shared' ? '合租' : '整租',
-						tagType: data.tagType || 'entire',
-						image: data.rent_image || data.image || '',
+						tag: data.tag_type === 'shared' ? '合租' : '整租',
+						tagType: data.tag_type || 'entire',
+						image: data.rent_image || data.rentImage || data.image || data.img || '',
 						acreage: (data.acreage || '') + '㎡',
 						shape: data.shape || '',
 						floor: data.floor || '',
@@ -126,6 +137,9 @@
 				if (this.house.mobile) {
 					uni.makePhoneCall({
 						phoneNumber: this.house.mobile
+					}).catch(err => {
+						if (err && err.errMsg && /cancel/i.test(err.errMsg)) return
+						if (err && err.errMsg) console.warn('拨号失败:', err.errMsg)
 					})
 				} else {
 					uni.showToast({
@@ -135,11 +149,13 @@
 				}
 			},
 			onShareAppMessage() {
-				return {
-					title: this.house.title || '租房详情',
-					path: '/pages/rent/detail?id=' + this.houseId,
-					imageUrl: this.house.image || ''
+				const imgUrl = formatCosUrl(this.house.image)
+				const share = {
+					title: this.house.name || this.house.title || '租房房源',
+					path: '/pages/rent/detail?id=' + this.houseId
 				}
+				if (imgUrl) share.imageUrl = imgUrl
+				return share
 			}
 		}
 	}
@@ -195,8 +211,31 @@
 
 	.price-row {
 		display: flex;
-		align-items: baseline;
+		align-items: center;
+		justify-content: space-between;
 		margin-bottom: 16rpx;
+	}
+
+	.price-left {
+		display: flex;
+		align-items: baseline;
+	}
+
+	.visitor-pill {
+		display: inline-flex;
+		align-items: center;
+		padding: 6rpx 0;
+	}
+
+	.visitor-num {
+		font-size: 24rpx;
+		color: #999;
+	}
+
+	.visitor-label {
+		font-size: 24rpx;
+		color: #999;
+		margin-left: 4rpx;
 	}
 
 	.detail-price {
@@ -279,6 +318,20 @@
 		font-size: 28rpx;
 		color: #666;
 		line-height: 1.8;
+	}
+
+	.empty-desc {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 60rpx 0;
+	}
+
+	.empty-desc-text {
+		font-size: 26rpx;
+		color: #999;
+		margin-top: 16rpx;
 	}
 
 	.bottom-bar {

@@ -52,7 +52,10 @@
 
 		<view class="detail-section">
 			<text class="section-title">房源描述</text>
-			<text class="detail-content">{{ house.description }}</text>
+			<text v-if="house.description" class="detail-content">{{ house.description }}</text>
+			<view v-else class="empty-desc">
+				<text class="empty-desc-text">暂无信息</text>
+			</view>
 		</view>
 
 		<view class="bottom-bar">
@@ -70,6 +73,7 @@
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import imagePlaceholder from '@/components/image-placeholder/image-placeholder.vue'
 	import { secondHouseApi } from '@/utils/request.js'
+	import { formatCosUrl } from '@/utils/config.js'
 
 	export default {
 		components: {
@@ -148,6 +152,9 @@
 				if (this.house.mobile) {
 					uni.makePhoneCall({
 						phoneNumber: this.house.mobile
+					}).catch(err => {
+						if (err && err.errMsg && /cancel/i.test(err.errMsg)) return
+						if (err && err.errMsg) console.warn('拨号失败:', err.errMsg)
 					})
 				} else {
 					uni.showToast({
@@ -162,11 +169,13 @@
 				})
 			},
 			onShareAppMessage() {
-				return {
-					title: this.house.title || '二手房详情',
-					path: '/pages/second/detail?id=' + this.houseId,
-					imageUrl: this.house.second_image || ''
+				const imgUrl = formatCosUrl(this.house.second_image)
+				const share = {
+					title: this.house.name || this.house.title || '二手房房源',
+					path: '/pages/second/detail?id=' + this.houseId
 				}
+				if (imgUrl) share.imageUrl = imgUrl
+				return share
 			}
 		}
 	}
@@ -322,6 +331,20 @@
 		font-size: 28rpx;
 		color: #666;
 		line-height: 1.8;
+	}
+
+	.empty-desc {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 60rpx 0;
+	}
+
+	.empty-desc-text {
+		font-size: 26rpx;
+		color: #999;
+		margin-top: 16rpx;
 	}
 
 	.bottom-bar {

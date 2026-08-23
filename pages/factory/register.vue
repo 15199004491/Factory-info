@@ -31,27 +31,23 @@
 			<view class="form-card">
 				<view class="form-item">
 					<text class="form-label">营业执照</text>
-					<view class="license-upload">
-						<view class="license-preview" v-if="form.license" @tap="onPreviewLicense">
-							<image class="license-image" :src="form.license" mode="aspectFill" />
-							<view class="license-remove" @tap.stop="onRemoveLicense">
-								<text class="remove-icon">×</text>
-							</view>
-						</view>
-						<view class="license-add" v-else @tap="onChooseLicense">
-							<text class="add-icon">+</text>
-							<text class="add-text">上传营业执照</text>
-						</view>
-					</view>
-					<text class="upload-tip">请上传清晰的营业执照照片</text>
+					<uploader-single
+						ref="uploaderLicense"
+						v-model="form.license"
+						shape="license"
+						add-text="上传营业执照"
+						tip="请上传清晰的营业执照照片"
+						remove-confirm="确定要删除营业执照吗？"
+						@change="onLicenseChange"
+					/>
 				</view>
 			</view>
 		</view>
 
 		<view class="submit-area">
 			<view class="submit-row">
-				<view class="submit-btn btn-free" @tap="onSubmit">
-					<text class="submit-btn-label">{{ isEdit ? '立即提交' : '立即入驻' }}</text>
+				<view class="submit-btn btn-free" :class="{ disabled: submitting }" @tap="onSubmit">
+					<text class="submit-btn-label">{{ submitting ? '提交中...' : (isEdit ? '立即提交' : '立即入驻') }}</text>
 				</view>
 			</view>
 		</view>
@@ -60,13 +56,18 @@
 
 <script>
 	import { factoryApi, userApi } from '@/utils/request.js'
-	import '@/utils/upload.js'
+	import uploaderSingle from '@/components/uploader-single/uploader-single.vue'
+	import { isLocalTempPath } from '@/utils/upload.js'
 
 	export default {
+		components: {
+			uploaderSingle
+		},
 		data() {
 			return {
 				isEdit: false,
 				factoryId: null,
+				submitting: false,
 				form: {
 					name: '',
 					mobile: '',
@@ -141,42 +142,11 @@
 					}
 				})
 			},
-			async onChooseLicense() {
-				uni.chooseImage({
-					count: 1,
-					sizeType: ['compressed'],
-					sourceType: ['album', 'camera'],
-					success: async (res) => {
-						const tempPath = res.tempFilePaths[0]
-						uni.showLoading({ title: '校验中...' })
-						const ok = await uni.checkImageSafe(tempPath)
-						uni.hideLoading()
-						if (ok) {
-							this.form.license = tempPath
-						}
-					}
-				})
-			},
-			onPreviewLicense() {
-				if (this.form.license) {
-					uni.previewImage({
-						urls: [this.form.license],
-						current: this.form.license
-					})
-				}
-			},
-			onRemoveLicense() {
-				uni.showModal({
-					title: '提示',
-					content: '确定要删除营业执照吗？',
-					success: (res) => {
-						if (res.confirm) {
-							this.form.license = ''
-						}
-					}
-				})
+			onLicenseChange(val) {
+				this.form.license = val || ''
 			},
 			async onSubmit() {
+				if (this.submitting) return
 				if (!this.form.name.trim()) {
 					uni.showToast({ title: '请输入加工厂名称', icon: 'none' })
 					return
@@ -193,10 +163,17 @@
 					uni.showToast({ title: '请选择加工厂地址', icon: 'none' })
 					return
 				}
+				const refLicense = (this.$refs.uploaderLicense && this.$refs.uploaderLicense.currentSrc) || ''
+				if (refLicense && !this.form.license) {
+					this.form.license = refLicense
+				}
 				if (!this.isEdit && !this.form.license) {
 					uni.showToast({ title: '请上传营业执照', icon: 'none' })
 					return
 				}
+
+				this.submitting = true
+				uni.showLoading({ title: '校验中...', mask: true, timeout: 6000 })
 
 				const msg = [
 					this.form.name,
@@ -207,16 +184,16 @@
 				try {
 					const result = await userApi.msgCheck(msg)
 					if (result.errcode !== 0) {
+						uni.hideLoading()
+						this.submitting = false
 						uni.showToast({ title: '内容包含敏感信息', icon: 'none' })
 						return
 					}
 				} catch (e) {}
 
 				try {
-					uni.showLoading({ title: '提交中...' })
-
 					let licenseUrl = this.form.license
-					if (licenseUrl && !licenseUrl.startsWith('http')) {
+					if (licenseUrl && isLocalTempPath(licenseUrl)) {
 						licenseUrl = await uni.uploadFactoryLicense(licenseUrl)
 					}
 
@@ -230,14 +207,16 @@
 
 					postData.id = this.factoryId || undefined
 					await factoryApi.addFactory(postData)
+					uni.hideLoading()
 					uni.showToast({ title: this.isEdit ? '保存成功' : '入驻成功', icon: 'success' })
 					setTimeout(() => {
 						uni.navigateBack()
 					}, 1000)
 				} catch (e) {
+					uni.hideLoading()
 					uni.showToast({ title: '提交失败', icon: 'none' })
 				} finally {
-					uni.hideLoading()
+					this.submitting = false
 				}
 			}
 		}
@@ -438,5 +417,11 @@
 	.btn-free {
 		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
 		box-shadow: 0 8rpx 24rpx rgba(60, 156, 255, 0.35);
+	}
+
+	.submit-btn.disabled {
+		background: #b7c7da;
+		pointer-events: none;
+		box-shadow: none;
 	}
 </style>
