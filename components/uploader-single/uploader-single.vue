@@ -74,9 +74,13 @@
 							try {
 								const ok = await uni.checkImageSafe(tempPath)
 								uni.hideLoading()
-								if (!ok) return
+								if (!ok) {
+									uni.showToast({ title: '图片违规不可用，请重新选择', icon: 'none' })
+									return
+								}
 							} catch (e) {
 								uni.hideLoading()
+								uni.showToast({ title: '图片校验失败，请重试', icon: 'none' })
 								return
 							}
 						}

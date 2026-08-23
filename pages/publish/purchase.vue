@@ -4,7 +4,7 @@
 			<view class="form-card">
 				<view class="form-item">
 					<text class="form-label">标题</text>
-					<input class="form-input" v-model="form.title" maxlength="30" placeholder="例：大量收购玉米小麦" placeholder-class="form-placeholder" />
+					<input class="form-input" v-model="form.title" maxlength="20" placeholder="例：大量收购玉米小麦" placeholder-class="form-placeholder" />
 				</view>
 				<view class="form-item form-item-link" @tap="openRegionPicker">
 					<text class="form-label">所在地区</text>
@@ -36,6 +36,9 @@
 								<text class="cat-price-unit">元/{{ cat.unit }}</text>
 							</view>
 						</view>
+						<view class="cat-remark" v-if="cat.remark">
+							<text class="cat-remark-text">{{ cat.remark }}</text>
+						</view>
 						<view class="cat-actions">
 							<view class="cat-action-btn" @tap="onEditCategory(idx)">
 								<text class="cat-action-text">编辑</text>
@@ -56,18 +59,21 @@
 			<view class="form-card">
 				<view class="form-item">
 					<text class="form-label">联系电话</text>
-					<input class="form-input" v-model="form.mobile" type="number" maxlength="11" placeholder="请输入联系电话" placeholder-class="form-placeholder" />
+					<input class="form-input" v-model="form.mobile" type="number" maxlength="15" placeholder="请输入联系电话" placeholder-class="form-placeholder" />
 				</view>
 				<view class="form-item form-item-textarea">
 					<text class="form-label">详细说明</text>
-					<textarea class="form-textarea" v-model="form.description" maxlength="200" placeholder="请详细说明收购要求、品质标准等" placeholder-class="form-placeholder"></textarea>
+					<view class="textarea-wrap">
+						<textarea class="form-textarea" v-model="form.description" maxlength="200" placeholder="请详细说明收购要求、品质标准等" placeholder-class="form-placeholder"></textarea>
+						<text class="textarea-count">{{ form.description.length }}/200</text>
+					</view>
 				</view>
 			</view>
 		</view>
 
 		<view class="submit-bar">
-			<view class="submit-btn" @tap="onSubmit">
-				<text class="submit-btn-text">立即发布</text>
+			<view class="submit-btn" :class="{ disabled: submitting }" @tap="onSubmit">
+				<text class="submit-btn-text">{{ submitting ? '提交中...' : (editingId ? '保存修改' : '立即发布') }}</text>
 			</view>
 		</view>
 
@@ -90,7 +96,7 @@
 					<view class="form-row">
 						<text class="form-label">收购价格</text>
 						<view class="price-row">
-							<input class="form-input price-input" v-model="formData.price" type="digit" placeholder="请输入价格" placeholder-class="form-placeholder" @input="onPriceInput" @blur="onPriceBlur" />
+							<input class="form-input price-input" maxlength="10" v-model="formData.price" type="digit" placeholder="请输入价格" placeholder-class="form-placeholder" @input="onPriceInput" @blur="onPriceBlur" />
 							<text class="price-unit-label">元</text>
 							<picker class="unit-picker" :value="unitIndex" :range="unitOptions" @change="onUnitChange">
 								<view class="unit-select">
@@ -98,6 +104,13 @@
 									<text class="unit-arrow">▼</text>
 								</view>
 							</picker>
+						</view>
+					</view>
+					<view class="form-row">
+						<text class="form-label">备注</text>
+						<view class="textarea-wrap remark-wrap">
+							<textarea class="form-textarea modal-remark" v-model="formData.remark" maxlength="100" placeholder="请输入品类备注（如品质要求、收购说明等）" placeholder-class="form-placeholder"></textarea>
+							<text class="textarea-count">{{ (formData.remark || '').length }}/100</text>
 						</view>
 					</view>
 				</view>
@@ -131,6 +144,7 @@
 				editingIndex: -1,
 				unitOptions: ['公斤', '吨'],
 				editingId: null,
+				submitting: false,
 				form: {
 					title: '',
 					region: '',
@@ -141,7 +155,8 @@
 				formData: {
 					name: '',
 					price: '',
-					unit: '公斤'
+					unit: '公斤',
+					remark: ''
 				}
 			}
 		},
@@ -199,13 +214,14 @@
 				if (!raw) return []
 				return raw.map(item => {
 					if (typeof item === 'string') {
-						return { name: item, price: '', unit: '公斤' }
+						return { name: item, price: '', unit: '公斤', remark: '' }
 					}
 					const name = item.name || item.category || item.title || ''
 					const rawPrice = item.price || ''
 					const price = rawPrice !== '' ? this.formatPrice(rawPrice) : ''
 					const unit = item.unit || item.unit_name || '公斤'
-					return { name, price, unit }
+					const remark = item.remark || item.note || item.desc || ''
+					return { name, price, unit, remark }
 				}).filter(c => c.name)
 			},
 			openRegionPicker() {
@@ -224,7 +240,7 @@
 					return
 				}
 				this.editingIndex = -1
-				this.formData = { name: '', price: '', unit: '公斤' }
+				this.formData = { name: '', price: '', unit: '公斤', remark: '' }
 				this.showModal = true
 			},
 			onEditCategory(idx) {
@@ -233,7 +249,8 @@
 				this.formData = {
 					name: cat.name,
 					price: cat.price,
-					unit: cat.unit
+					unit: cat.unit,
+					remark: cat.remark || ''
 				}
 				this.showModal = true
 			},
@@ -275,7 +292,7 @@
 					this.formData.price = val.toFixed(2)
 				}
 			},
-			saveCategory() {
+			saveCategory: async function() {
 				if (!this.formData.name.trim()) {
 					uni.showToast({ title: '请输入品类名称', icon: 'none' })
 					return
@@ -284,19 +301,28 @@
 					uni.showToast({ title: '请输入收购价格', icon: 'none' })
 					return
 				}
+
+				uni.showLoading({ title: '校验中...', mask: true, timeout: 6000 })
+				const checkText = [this.formData.name, this.formData.remark].filter(Boolean).join(' ')
+				const textOk = await uni.checkTextSafe(checkText)
+				uni.hideLoading()
+				if (!textOk) return
+
 				const price = this.formatPrice(this.formData.price)
 
 				if (this.editingIndex >= 0) {
 					this.form.categories.splice(this.editingIndex, 1, {
 						name: this.formData.name.trim(),
 						price,
-						unit: this.formData.unit
+						unit: this.formData.unit,
+						remark: this.formData.remark || ''
 					})
 				} else {
 					this.form.categories.push({
 						name: this.formData.name.trim(),
 						price,
-						unit: this.formData.unit
+						unit: this.formData.unit,
+						remark: this.formData.remark || ''
 					})
 				}
 				this.showModal = false
@@ -308,12 +334,9 @@
 				return isNaN(val) ? price : val.toFixed(2)
 			},
 			async onSubmit() {
+				if (this.submitting) return
 				if (!this.form.title) {
 					uni.showToast({ title: '请填写标题', icon: 'none' })
-					return
-				}
-				if (this.form.categories.length === 0) {
-					uni.showToast({ title: '请至少添加一个品类', icon: 'none' })
 					return
 				}
 				if (!this.form.region) {
@@ -324,8 +347,19 @@
 					uni.showToast({ title: '请填写联系电话', icon: 'none' })
 					return
 				}
+				const confirmed = await new Promise(resolve => {
+					uni.showModal({
+						title: '确认联系电话',
+						content: `请确认手机号 ${this.form.mobile} 是否正确？\n用于买家联系，发布后可在管理页修改。`,
+						confirmText: '确认无误',
+						cancelText: '立即修改',
+						success: res => resolve(res.confirm),
+						fail: () => resolve(false)
+					})
+				})
 
-				uni.showLoading({ title: '提交中...' })
+				this.submitting = true
+				uni.showLoading({ title: '校验中...', mask: true, timeout: 6000 })
 
 				const msg = [
 					this.form.title,
@@ -337,8 +371,19 @@
 				const textOk = await uni.checkTextSafe(msg)
 				if (!textOk) {
 					uni.hideLoading()
+					this.submitting = false
 					return
 				}
+
+				uni.hideLoading()
+
+				
+				if (!confirmed) {
+					this.submitting = false
+					return
+				}
+
+				uni.showLoading({ title: '提交中...', mask: true, timeout: 6000 })
 
 				try {
 					const postData = {
@@ -350,7 +395,8 @@
 						categories: this.form.categories.map(c => ({
 							name: c.name,
 							price: c.price,
-							unit: c.unit
+							unit: c.unit,
+							remark: c.remark || ''
 						}))
 					}
 					console.log('postData--', postData)
@@ -362,7 +408,9 @@
 					}, 1000)
 				} catch (e) {
 					uni.hideLoading()
-					uni.showToast({ title: '提交失败', icon: 'none' })
+					uni.showToast({ title: (e && e.message) ? '提交失败:' + e.message : '提交失败', icon: 'none' })
+				} finally {
+					this.submitting = false
 				}
 			}
 		}
@@ -473,6 +521,16 @@
 		margin-left: 4rpx;
 	}
 
+	.cat-remark {
+		margin-bottom: 16rpx;
+	}
+
+	.cat-remark-text {
+		font-size: 24rpx;
+		color: #666;
+		line-height: 1.5;
+	}
+
 	.cat-actions {
 		display: flex;
 		gap: 16rpx;
@@ -559,14 +617,31 @@
 		cursor: pointer;
 	}
 
+	.textarea-wrap {
+		position: relative;
+		width: 100%;
+	}
 	.form-textarea {
 		width: 100%;
 		min-height: 180rpx;
 		font-size: 28rpx;
 		color: #333;
-		padding: 16rpx;
+		padding: 16rpx 0 48rpx;
 		background-color: #f9f9f9;
 		border-radius: 8rpx;
+	}
+	.form-textarea.modal-remark {
+		min-height: 100rpx;
+		height: 100rpx;
+		padding: 12rpx 0 36rpx;
+	}
+	.textarea-count {
+		position: absolute;
+		right: 4rpx;
+		bottom: 12rpx;
+		font-size: 22rpx;
+		color: #999;
+		line-height: 1;
 	}
 
 	.form-placeholder {
@@ -592,6 +667,11 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+
+	.submit-btn.disabled {
+		background: #b7c7da;
+		pointer-events: none;
 	}
 
 	.submit-btn-text {

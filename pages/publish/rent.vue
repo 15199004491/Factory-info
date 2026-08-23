@@ -117,7 +117,7 @@
 	import regionPicker from '@/components/region-picker/region-picker.vue'
 	import uploaderSingle from '@/components/uploader-single/uploader-single.vue'
 	import { rentApi } from '@/utils/request.js'
-	import { uploadImages } from '@/utils/upload.js'
+	import { uploadImages, isLocalTempPath } from '@/utils/upload.js'
 
 	export default {
 		components: {
@@ -174,6 +174,11 @@
 					const data = await rentApi.rentDetail({ Id: this.editingId })
 					this.form = data
 					this.imageChanged = false
+					this.$nextTick(() => {
+						if (this.$refs.uploaderRent) {
+							this.$refs.uploaderRent.currentSrc = data.rent_image
+						}
+					})
 				} catch (e) {}
 			},
 			onImageChanged(val) {
@@ -276,9 +281,10 @@
 
 				try {
 					let rentImage = this.form.rent_image || ''
-					if (rentImage) {
+					if (rentImage && this.imageChanged) {
 						const uploaded = await uploadImages([rentImage], { dir: 'rent-house' })
 						rentImage = uploaded[0] || ''
+						console.log('租房图片处理完成: 最终结果=', rentImage)
 					}
 
 					const postData = {
@@ -458,6 +464,8 @@
 		font-size: 28rpx;
 		color: #333;
 		padding: 16rpx 0;
+		background-color: #f9f9f9;
+		border-radius: 8rpx;
 	}
 
 	.tag-select {

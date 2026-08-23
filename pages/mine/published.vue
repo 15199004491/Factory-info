@@ -88,6 +88,7 @@
 			}
 		},
 		onShow() {
+			this.loadedTabs[this.activeTab] = false
 			this.loadTab(this.activeTab)
 		},
 		methods: {

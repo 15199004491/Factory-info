@@ -6,127 +6,152 @@ const COS_BASE_URL = 'https://' + COS_BUCKET + '.cos.' + COS_REGION + '.myqcloud
 const COS_SECRET_ID = 'AKIDayqVzFG4f1A4mMhx0oNhlaAWyDDyXrxp'
 const COS_SECRET_KEY = 'YsxrSq01y7FNSSRJ5kLqHfu2zkRyVpwq'
 
-function sha1Core(block, len) {
-	var w = []
-	var a = 1732584193, b = -271733879, c = -1732584194, d = 271733878, e = -1009589776
-	for (var i = 0; i < block.length; i++) {
-		w[i] = block[i]
+function utf8Encode(str) {
+	var out = [], p = 0
+	for (var i = 0; i < str.length; i++) {
+		var c = str.charCodeAt(i)
+		if (c < 0x80) {
+			out[p++] = c
+		} else if (c < 0x800) {
+			out[p++] = 0xc0 | (c >> 6)
+			out[p++] = 0x80 | (c & 0x3f)
+		} else if (c < 0xd800 || c >= 0xe000) {
+			out[p++] = 0xe0 | (c >> 12)
+			out[p++] = 0x80 | ((c >> 6) & 0x3f)
+			out[p++] = 0x80 | (c & 0x3f)
+		} else {
+			i++
+			var c2 = str.charCodeAt(i)
+			var cp = 0x10000 + (((c & 0x3ff) << 10) | (c2 & 0x3ff))
+			out[p++] = 0xf0 | (cp >> 18)
+			out[p++] = 0x80 | ((cp >> 12) & 0x3f)
+			out[p++] = 0x80 | ((cp >> 6) & 0x3f)
+			out[p++] = 0x80 | (cp & 0x3f)
+		}
 	}
-	for (; i < 80; i++) {
-		var n = w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]
-		w[i] = (n << 1) | (n >>> 31)
-	}
-	for (var j = 0; j < 80; j += 5) {
-		var t = (((a << 5) | (a >>> 27)) + e + w[j] + 1518500249 + ((b & c) | ((~b) & d))) << 0
-		e = d; d = c; c = ((b << 30) | (b >>> 2)) << 0; b = a; a = t
-		t = (((a << 5) | (a >>> 27)) + e + w[j + 1] + 1859775393 + (b ^ c ^ d)) << 0
-		e = d; d = c; c = ((b << 30) | (b >>> 2)) << 0; b = a; a = t
-		t = (((a << 5) | (a >>> 27)) + e + w[j + 2] + -1894007588 + ((b & c) | (b & d) | (c & d))) << 0
-		e = d; d = c; c = ((b << 30) | (b >>> 2)) << 0; b = a; a = t
-		t = (((a << 5) | (a >>> 27)) + e + w[j + 3] + -899497514 + (b ^ c ^ d)) << 0
-		e = d; d = c; c = ((b << 30) | (b >>> 2)) << 0; b = a; a = t
-		t = (((a << 5) | (a >>> 27)) + e + w[j + 4] + 660828471 + ((b & c) | ((~b) & d))) << 0
-		e = d; d = c; c = ((b << 30) | (b >>> 2)) << 0; b = a; a = t
-	}
-	a += 1732584193; b += -271733879; c += -1732584194; d += 271733878; e += -1009589776
-	var blks = [len, 0, a, b, c, d, e]
-	return blks
+	return out
 }
-function bytesToBlks(bytes) {
+
+function toHex32(num) {
+	var hex = ''
+	for (var s = 28; s >= 0; s -= 4) {
+		hex += ((num >>> s) & 0x0f).toString(16)
+	}
+	return hex
+}
+
+function sha1Bytes(bytes) {
 	var len = bytes.length
+	var bitLenHi = Math.floor(len / 0x20000000)
+	var bitLenLo = (len * 8) | 0
 	var blkLen = Math.ceil((len + 9) / 64) * 16
 	var blks = new Array(blkLen)
 	for (var i = 0; i < blkLen; i++) blks[i] = 0
 	for (i = 0; i < len; i++) {
-		blks[i >> 2] |= (bytes[i] & 0xff) << (24 - (i % 4) * 8)
+		blks[i >> 2] |= (bytes[i] & 0xff) << (24 - ((i & 3) << 3))
 	}
-	blks[i >> 2] |= 0x80 << (24 - (i % 4) * 8)
-	blks[blkLen - 2] = len * 8 >>> 32
-	blks[blkLen - 1] = (len * 8) | 0
-	return blks
-}
-function strToBlks(s) {
-	var bytes = []
-	for (var i = 0; i < s.length; i++) {
-		var c = s.charCodeAt(i)
-		if (c < 0x80) { bytes.push(c) }
-		else if (c < 0x800) { bytes.push(0xc0 | (c >> 6)); bytes.push(0x80 | (c & 0x3f)) }
-		else if (c < 0xd800 || c >= 0xe000) { bytes.push(0xe0 | (c >> 12)); bytes.push(0x80 | ((c >> 6) & 0x3f)); bytes.push(0x80 | (c & 0x3f)) }
-		else { i++; var c2 = s.charCodeAt(i); bytes.push(0xf0 | (((c & 0x3ff) >> 18) + 1)); bytes.push(0x80 | (((c >> 12) & 0x3f) | ((c2 & 0x3ff) >> 18) & 0x3f)); bytes.push(0x80 | (((c2 >> 12) & 0x3f) | ((c & 0x3f) >> 6))); bytes.push(0x80 | (c2 & 0x3f)) }
+	blks[i >> 2] |= 0x80 << (24 - ((i & 3) << 3))
+	blks[blkLen - 2] = bitLenHi
+	blks[blkLen - 1] = bitLenLo
+
+	var h0 = 0x67452301, h1 = 0xefcdab89, h2 = 0x98badcfe, h3 = 0x10325476, h4 = 0xc3d2e1f0
+	var w = new Array(80)
+
+	for (var blkStart = 0; blkStart < blkLen; blkStart += 16) {
+		for (var t = 0; t < 16; t++) w[t] = blks[blkStart + t] | 0
+		for (t = 16; t < 80; t++) {
+			var xw = w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16]
+			w[t] = ((xw << 1) | (xw >>> 31)) | 0
+		}
+		var a = h0, b = h1, c = h2, d = h3, e = h4
+		var f, k, tmp
+		for (t = 0; t < 20; t++) {
+			f = (b & c) | ((~b) & d)
+			k = 0x5a827999
+			tmp = (((a << 5) | (a >>> 27)) + f + e + k + w[t]) | 0
+			e = d; d = c; c = ((b << 30) | (b >>> 2)) | 0; b = a; a = tmp
+		}
+		for (t = 20; t < 40; t++) {
+			f = b ^ c ^ d
+			k = 0x6ed9eba1
+			tmp = (((a << 5) | (a >>> 27)) + f + e + k + w[t]) | 0
+			e = d; d = c; c = ((b << 30) | (b >>> 2)) | 0; b = a; a = tmp
+		}
+		for (t = 40; t < 60; t++) {
+			f = (b & c) | (b & d) | (c & d)
+			k = 0x8f1bbcdc
+			tmp = (((a << 5) | (a >>> 27)) + f + e + k + w[t]) | 0
+			e = d; d = c; c = ((b << 30) | (b >>> 2)) | 0; b = a; a = tmp
+		}
+		for (t = 60; t < 80; t++) {
+			f = b ^ c ^ d
+			k = 0xca62c1d6
+			tmp = (((a << 5) | (a >>> 27)) + f + e + k + w[t]) | 0
+			e = d; d = c; c = ((b << 30) | (b >>> 2)) | 0; b = a; a = tmp
+		}
+		h0 = (h0 + a) | 0; h1 = (h1 + b) | 0; h2 = (h2 + c) | 0; h3 = (h3 + d) | 0; h4 = (h4 + e) | 0
 	}
-	return bytesToBlks(bytes)
+	return toHex32(h0) + toHex32(h1) + toHex32(h2) + toHex32(h3) + toHex32(h4)
 }
-function sha1(s) {
-	var blks = sha1Core(strToBlks(s), 0)
-	var hexTbl = '0123456789abcdef'
-	var s2 = ''
-	for (var i = 2; i < blks.length; i++) {
-		for (var j = 7; j >= 0; j--) { s2 += hexTbl.charAt((blks[i] >> (j * 4)) & 0x0f) }
+
+function sha1(str) {
+	return sha1Bytes(utf8Encode(str))
+}
+
+function hexToBytes(hexStr) {
+	var out = []
+	for (var i = 0; i < hexStr.length; i += 2) {
+		out.push(parseInt(hexStr.substr(i, 2), 16))
 	}
-	return s2
+	return out
 }
-function hexToBytes(hex) {
-	var bytes = []
-	for (var i = 0; i < hex.length; i += 2) bytes.push(parseInt(hex.substr(i, 2), 16))
-	return bytes
-}
+
 function hmacSha1(keyStr, dataStr) {
-	var keyBytes = []
-	for (var i = 0; i < keyStr.length; i++) {
-		var c = keyStr.charCodeAt(i)
-		if (c < 0x80) { keyBytes.push(c) }
-		else if (c < 0x800) { keyBytes.push(0xc0 | (c >> 6)); keyBytes.push(0x80 | (c & 0x3f)) }
-		else { keyBytes.push(0xe0 | (c >> 12)); keyBytes.push(0x80 | ((c >> 6) & 0x3f)); keyBytes.push(0x80 | (c & 0x3f)) }
-	}
+	var keyBytes = utf8Encode(keyStr)
 	if (keyBytes.length > 64) {
-		var hx = sha1(keyStr)
-		keyBytes = hexToBytes(hx)
+		keyBytes = hexToBytes(sha1Bytes(keyBytes))
 	}
 	while (keyBytes.length < 64) keyBytes.push(0)
-	var inner = []
-	var outer = []
-	for (var k = 0; k < 64; k++) {
-		inner.push(keyBytes[k] ^ 0x36)
-		outer.push(keyBytes[k] ^ 0x5c)
+	var iKeyPad = new Array(64)
+	var oKeyPad = new Array(64)
+	for (var i = 0; i < 64; i++) {
+		iKeyPad[i] = keyBytes[i] ^ 0x36
+		oKeyPad[i] = keyBytes[i] ^ 0x5c
 	}
-	var innerStr = ''
-	for (var i2 = 0; i2 < inner.length; i2++) innerStr += String.fromCharCode(inner[i2])
-	var innerHash = sha1Core(strToBlks(innerStr + dataStr), 0)
-	var hexTbl2 = '0123456789abcdef'
-	var innerHex = ''
-	for (var i3 = 2; i3 < innerHash.length; i3++) {
-		for (var j2 = 7; j2 >= 0; j2--) innerHex += hexTbl2.charAt((innerHash[i3] >> (j2 * 4)) & 0x0f)
-	}
-	var innerBytes = hexToBytes(innerHex)
-	var outerStr2 = ''
-	for (var i4 = 0; i4 < outer.length; i4++) outerStr2 += String.fromCharCode(outer[i4])
-	var mid = new Array(innerBytes.length + 64)
-	var oi = 0
-	for (var i5 = 0; i5 < outer.length; i5++) mid[oi++] = outer[i5]
-	for (var i6 = 0; i6 < innerBytes.length; i6++) mid[oi++] = innerBytes[i6]
-	var blks = bytesToBlks(mid.slice(0, oi))
-	var finalHash = sha1Core(blks, (outerStr2.length + innerBytes.length) * 8)
-	var finalHex = ''
-	for (var i7 = 2; i7 < finalHash.length; i7++) {
-		for (var j3 = 7; j3 >= 0; j3--) finalHex += hexTbl2.charAt((finalHash[i7] >> (j3 * 4)) & 0x0f)
-	}
-	return finalHex
+	var dataBytes = utf8Encode(dataStr)
+	var innerMsg = iKeyPad.concat(dataBytes)
+	var innerDigest = sha1Bytes(innerMsg)
+	var innerBytes = hexToBytes(innerDigest)
+	var outerMsg = oKeyPad.concat(innerBytes)
+	return sha1Bytes(outerMsg)
 }
 
 function getCosSignature(key, method, expireSeconds) {
 	method = (method || 'get').toLowerCase()
 	var expire = expireSeconds || (7 * 24 * 3600)
 	var now = Math.floor(Date.now() / 1000)
-	var signTime = now + ';' + (now + expire)
-	var keyTime = signTime
-	var httpString = method + '\n/' + key.replace(/^\/+/, '') + '\n\nhost=' + COS_BUCKET + '.cos.' + COS_REGION + '.myqcloud.com\n'
+	var keyTime = now + ';' + (now + expire)
+	var uriPath = '/' + String(key || '').replace(/^\/+/, '')
+	var hostHeader = COS_BUCKET + '.cos.' + COS_REGION + '.myqcloud.com'
+
+	var httpString = method + '\n' + uriPath + '\n\n' + 'host=' + hostHeader + '\n'
 	var httpStringSha1 = sha1(httpString)
-	var stringToSign = 'sha1\n' + signTime + '\n' + httpStringSha1 + '\n'
-	var signKeyHex = hmacSha1(COS_SECRET_KEY, keyTime)
-	var signature = hmacSha1(signKeyHex, stringToSign)
+	var stringToSign = 'sha1\n' + keyTime + '\n' + httpStringSha1 + '\n'
+
+	var signKey = hmacSha1(COS_SECRET_KEY, keyTime)
+	var signature = hmacSha1(signKey, stringToSign)
+
+	console.log('[COS签名]')
+	console.log('  KeyTime:', keyTime)
+	console.log('  HttpString:', JSON.stringify(httpString))
+	console.log('  HttpString(SHA1):', httpStringSha1)
+	console.log('  StringToSign:', JSON.stringify(stringToSign))
+	console.log('  SignKey:', signKey)
+	console.log('  Signature:', signature)
+
 	return 'q-sign-algorithm=sha1'
 		+ '&q-ak=' + COS_SECRET_ID
-		+ '&q-sign-time=' + signTime
+		+ '&q-sign-time=' + keyTime
 		+ '&q-key-time=' + keyTime
 		+ '&q-header-list=host'
 		+ '&q-url-param-list='
@@ -142,7 +167,7 @@ function cosKeyFromUrl(url) {
 	return url.replace(/^\/+/, '')
 }
 
-const USE_COS_SIGNED_URL = false  // 公有读私有写桶 = 关；只有桶是私有读写才临时开
+const USE_COS_SIGNED_URL = false
 
 function formatCosUrl(src, opts) {
 	if (!src) return ''

@@ -15,7 +15,7 @@ function checkImage(filePath) {
 		if (token) {
 			header['Token'] = token
 		}
-		wx.uploadFile({
+		uni.uploadFile({
 			url: BASE_URL + '/farm/Wxuser/imgSecCheck',
 			method: 'POST',
 			filePath: filePath,
@@ -32,7 +32,7 @@ function checkImage(filePath) {
 						if (result.errcode === 0 || result.errcode === undefined) {
 							resolve(true)
 						} else {
-							resolve(false)
+							reject(new Error(json.msg || '校验失败(code:' + json.code + ')'))
 						}
 					} else {
 						reject(new Error(json.msg || '校验失败(code:' + json.code + ')'))
@@ -53,7 +53,7 @@ export async function checkImageSafe(filePath, { showToast = true } = {}) {
 		const ok = await checkImage(filePath)
 		if (!ok) {
 			if (showToast) {
-				uni.showToast({ title: '图片包含违规内容', icon: 'none' })
+				uni.showToast({ title: '图片违规不可用', icon: 'none' })
 			}
 			return false
 		}
@@ -61,9 +61,9 @@ export async function checkImageSafe(filePath, { showToast = true } = {}) {
 	} catch (e) {
 		console.error('图片校验失败:', e)
 		if (showToast) {
-			uni.showToast({ title: '校验异常:' + (e.message || '失败'), icon: 'none' })
+			uni.showToast({ title: '图片校验失败，请重试', icon: 'none' })
 		}
-		return true
+		return false
 	}
 }
 
@@ -229,6 +229,18 @@ function base64DecodePolyfill(base64) {
 	return result
 }
 
+function getFileSystemManager() {
+	// #ifdef MP-WEIXIN
+	return wx.getFileSystemManager()
+	// #endif
+	// #ifdef H5
+	return null
+	// #endif
+	// #ifndef MP-WEIXIN
+	return uni.getFileSystemManager ? uni.getFileSystemManager() : null
+	// #endif
+}
+
 function uploadToCOS(filePath, dir) {
 	return new Promise((resolve, reject) => {
 		var filename = Date.now() + '_' + Math.random().toString(36).slice(2) + '.jpg'
@@ -237,11 +249,18 @@ function uploadToCOS(filePath, dir) {
 		var signature = getCosSignature(key, 'put')
 		var host = COS_BUCKET + '.cos.' + COS_REGION + '.myqcloud.com'
 
-		var fs = wx.getFileSystemManager()
+		console.log('uploadToCOS 开始: 本地文件=', filePath, ' 目标COS key=', key)
+
+		var fs = getFileSystemManager()
+		if (!fs || !fs.readFile) {
+			reject(new Error('当前环境不支持读取文件，无法上传到COS'))
+			return
+		}
 		fs.readFile({
 			filePath: filePath,
 			encoding: 'base64',
 			success: function(res) {
+				console.log('uploadToCOS 读取文件成功, base64长度=', (res.data || '').length)
 				var base64Str = res.data
 				if (!base64Str || typeof base64Str !== 'string' || base64Str.length < 4) {
 					reject(new Error('读取图片文件为空，请重新选择图片'))
@@ -258,8 +277,8 @@ function uploadToCOS(filePath, dir) {
 					reject(new Error('读取图片文件为空，请重新选择图片'))
 					return
 				}
-				var requestFn = (typeof wx !== 'undefined' && wx.request) ? wx.request : uni.request
-				requestFn({
+				console.log('uploadToCOS 开始PUT上传, 字节长度=', binaryData.byteLength || 'unknown')
+				uni.request({
 					url: url + '?' + signature,
 					method: 'PUT',
 					data: binaryData,
@@ -269,13 +288,16 @@ function uploadToCOS(filePath, dir) {
 					},
 					timeout: 60000,
 					success: function(putRes) {
+						console.log('uploadToCOS PUT完成, statusCode=', putRes.statusCode)
 						if (putRes.statusCode === 200 || putRes.statusCode === 204) {
-							requestFn({
+							uni.request({
 								url: url,
 								method: 'HEAD',
 								timeout: 15000,
 								success: function(headRes) {
+									console.log('uploadToCOS HEAD校验完成, statusCode=', headRes.statusCode)
 									if (headRes.statusCode !== 404) {
+										console.log('uploadToCOS 成功! 返回 key=', key)
 										resolve({ url: url, key: key })
 									} else {
 										reject(new Error('上传未生效，请检查存储桶配置后重试'))
@@ -315,32 +337,38 @@ function uploadToCOS(filePath, dir) {
 
 export function isLocalTempPath(p) {
 	if (!p || typeof p !== 'string') return false
-	if (/^https?:\/\//i.test(p)) return false
-	if (p.indexOf(COS_BASE_URL) === 0) return false
-	return true
+	if (/^(wxfile:|file:|blob:|wxLocalResource:|data:)/i.test(p)) return true
+	if (/^http:\/\/tmp\//i.test(p)) return true
+	return false
 }
 
 export async function uploadImages(images, options = {}) {
 	const maxSizeBytes = options.maxSize || MAX_SIZE_SECOND
 	const dir = options.dir || 'second-house'
-	console.log('上传图片到目录:', dir)
+	console.log('uploadImages 开始, 共', images.length, '张图片, 目标目录=', dir, '最大大小=', maxSizeBytes)
 	const results = []
 
 	for (let i = 0; i < images.length; i++) {
 		const tempPath = images[i]
+		console.log('uploadImages 处理第', i + 1, '张: 路径=', tempPath, ' 是本地临时路径=', isLocalTempPath(tempPath))
 		try {
 			if (!isLocalTempPath(tempPath)) {
+				console.log('uploadImages 第', i + 1, '张不是本地路径，跳过上传, 直接使用原值')
 				results.push(tempPath)
 				continue
 			}
+			console.log('uploadImages 第', i + 1, '张开始压缩...')
 			const compressedPath = await compressImage(tempPath, maxSizeBytes)
+			console.log('uploadImages 第', i + 1, '张压缩完成, 压缩后路径=', compressedPath)
 			const uploadResult = await uploadToCOS(compressedPath, dir)
+			console.log('uploadImages 第', i + 1, '张COS上传成功, key=', uploadResult.key)
 			results.push(uploadResult.key || tempPath)
 		} catch (e) {
-			console.error('图片上传失败:', e)
+			console.error('uploadImages 第', i + 1, '张处理失败:', e)
 			throw e
 		}
 	}
+	console.log('uploadImages 全部处理完成, 结果:', results)
 	return results
 }
 

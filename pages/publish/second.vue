@@ -14,7 +14,7 @@
 			<view class="form-item form-item-link" @tap="openRegionPicker">
 				<text class="form-label">地区</text>
 				<view class="form-input-wrap">
-					<text class="form-value" :class="{ 'form-placeholder-text': !form.region }">{{ form.region || '请选择地区' }}</text>
+					<text class="form-value" :class="{ 'form-placeholder-text': !form.area }">{{ form.area || '请选择地区' }}</text>
 					<u-icon name="arrow-down" size="14" color="#999"></u-icon>
 				</view>
 			</view>
@@ -30,7 +30,7 @@
 			<view class="form-item">
 				<text class="form-label">面积</text>
 				<view class="input-with-unit">
-					<input class="form-input" v-model="form.area" type="digit" maxlength="20" placeholder="请输入面积" placeholder-class="form-placeholder" />
+					<input class="form-input" v-model="form.acreage" type="digit" maxlength="20" placeholder="请输入面积" placeholder-class="form-placeholder" />
 					<text class="input-unit">㎡</text>
 				</view>
 			</view>
@@ -50,7 +50,7 @@
 
 			<view class="form-item">
 				<text class="form-label">联系电话</text>
-				<input class="form-input" v-model="form.phone" type="number" maxlength="15" placeholder="请输入联系电话" placeholder-class="form-placeholder" />
+				<input class="form-input" v-model="form.mobile" type="number" maxlength="15" placeholder="请输入联系电话" placeholder-class="form-placeholder" />
 			</view>
 
 			<view class="form-item">
@@ -65,7 +65,10 @@
 
 			<view class="form-item form-item-textarea">
 				<text class="form-label">房源描述</text>
-				<textarea class="form-textarea" v-model="form.explain" maxlength="200" placeholder="请详细描述房源信息" placeholder-class="form-placeholder"></textarea>
+				<view class="textarea-wrap">
+					<textarea class="form-textarea" v-model="form.explain" maxlength="200" placeholder="请详细描述房源信息" placeholder-class="form-placeholder"></textarea>
+					<text class="textarea-count">{{ form.explain.length }}/200</text>
+				</view>
 			</view>
 		</view>
 
@@ -105,7 +108,7 @@
 	import regionPicker from '@/components/region-picker/region-picker.vue'
 	import uploaderSingle from '@/components/uploader-single/uploader-single.vue'
 	import { secondHouseApi, userApi } from '@/utils/request.js'
-	import { uploadImages } from '@/utils/upload.js'
+	import { uploadImages, isLocalTempPath } from '@/utils/upload.js'
 
 	export default {
 		components: {
@@ -130,12 +133,12 @@
 				form: {
 					title: '',
 					name: '',
-					region: '',
-					shape: '',
 					area: '',
+					shape: '',
+					acreage: '',
 					floor: '',
 					price: '',
-					phone: '',
+					mobile: '',
 					second_image: '',
 					explain: ''
 				}
@@ -161,7 +164,14 @@
 					const data = await secondHouseApi.getDetail(this.editingId)
 					this.form = data
 					this.imageChanged = false
-				} catch (e) {}
+					this.$nextTick(() => {
+						if (this.$refs.uploaderSecond) {
+							this.$refs.uploaderSecond.currentSrc = data.second_image
+						}
+					})
+				} catch (e) {
+					console.error('加载二手房详情失败:', e)
+				}
 			},
 			onImageChanged(val) {
 				this.form.second_image = val || ''
@@ -171,7 +181,7 @@
 				this.showRegionPicker = true
 			},
 			onRegionConfirm(label) {
-				this.form.region = label
+				this.form.area = label
 				this.showRegionPicker = false
 			},
 			onRegionCancel() {
@@ -219,7 +229,7 @@
 					uni.showToast({ title: '请填写小区名称', icon: 'none' })
 					return
 				}
-				if (!this.form.region) {
+				if (!this.form.area) {
 					uni.showToast({ title: '请选择地区', icon: 'none' })
 					return
 				}
@@ -227,7 +237,7 @@
 					uni.showToast({ title: '请选择户型', icon: 'none' })
 					return
 				}
-				if (!this.form.area) {
+				if (!this.form.acreage) {
 					uni.showToast({ title: '请填写面积', icon: 'none' })
 					return
 				}
@@ -239,7 +249,7 @@
 					uni.showToast({ title: '请填写售价', icon: 'none' })
 					return
 				}
-				if (!this.form.phone) {
+				if (!this.form.mobile) {
 					uni.showToast({ title: '请填写联系电话', icon: 'none' })
 					return
 				}
@@ -254,7 +264,8 @@
 				const msg = [
 					this.form.title,
 					this.form.name,
-					this.form.region,
+					this.form.area,
+					this.form.acreage,
 					this.form.shape,
 					this.form.explain
 				].filter(Boolean).join(' ')
@@ -268,11 +279,11 @@
 
 				try {
 					let secondImage = this.form.second_image || ''
-					if (secondImage) {
+					if (secondImage && this.imageChanged) {
 						console.log('上传二手房图片到COS:', secondImage)
 						const uploaded = await uploadImages([secondImage], { dir: 'second-house' })
 						secondImage = uploaded[0] || ''
-						console.log('二手房图片上传成功:', secondImage)
+						console.log('二手房图片处理完成: 最终结果=', secondImage)
 					}
 
 					const postData = {
@@ -280,13 +291,13 @@
 						title: this.form.title,
 						name: this.form.name,
 						shape: this.form.shape,
-						acreage: this.form.area,
+						acreage: this.form.acreage,
 						floor: this.form.floor,
 						price: this.form.price,
-						mobile: this.form.phone,
+						mobile: this.form.mobile,
 						second_image: secondImage,
 						explain: this.form.explain,
-						area: this.form.region,
+						area: this.form.area,
 					}
 					console.log('提交二手房数据:', postData)
 					await secondHouseApi.addHouse(postData)
@@ -453,12 +464,26 @@
 		margin-left: 10rpx;
 	}
 
+	.textarea-wrap {
+		position: relative;
+		width: 100%;
+	}
 	.form-textarea {
 		width: 100%;
 		min-height: 180rpx;
 		font-size: 28rpx;
 		color: #333;
-		padding: 16rpx 0;
+		padding: 16rpx 0 48rpx 0;
+		background-color: #f9f9f9;
+		border-radius: 8rpx;
+	}
+	.textarea-count {
+		position: absolute;
+		right: 4rpx;
+		bottom: 12rpx;
+		font-size: 22rpx;
+		color: #999;
+		line-height: 1;
 	}
 
 	.image-upload {
