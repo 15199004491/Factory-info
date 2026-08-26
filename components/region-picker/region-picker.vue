@@ -10,7 +10,7 @@
 					<text class="sheet-title">选择地区</text>
 				</view>
 				<view class="sheet-header-right">
-					<view class="sheet-btn sheet-all" v-if="showAll" @tap="onAll">全部</view>
+					<view class="sheet-btn sheet-all" v-if="showAll" @tap="onAll">重置</view>
 					<view class="sheet-btn sheet-confirm" @tap="onConfirm">确定</view>
 				</view>
 			</view>

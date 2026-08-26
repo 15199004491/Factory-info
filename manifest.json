@@ -61,7 +61,8 @@
             }
         },
         "requiredPrivateInfos" : [
-            "chooseLocation"
+            "chooseLocation",
+            "getLocation"
         ]
     },
     "mp-alipay" : {

@@ -12,7 +12,7 @@
 					placeholder="搜索收购信息"
 					placeholder-class="search-placeholder"
 					confirm-type="search"
-					:maxlength="20"
+					:maxlength="10"
 					@confirm="onSearch"
 				/>
 			</view>

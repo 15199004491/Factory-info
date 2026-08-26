@@ -23,7 +23,7 @@
 		<view class="filter-mask" v-if="showMenu" @tap="toggleMenu"></view>
 		<view class="filter-sheet" :class="{ 'filter-sheet-show': showMenu }">
 			<view class="sheet-header">
-				<text class="sheet-title">选择地区</text>
+				<text class="sheet-title">筛选距离</text>
 				<view class="sheet-confirm" @tap="confirmFilter">
 					<text class="sheet-confirm-text">确定</text>
 				</view>
@@ -73,6 +73,42 @@
 			<text class="empty-text">暂无数据</text>
 		</view>
 
+		<view class="feedback-float" @tap="openFeedback">
+			<view class="fb-float-icon">
+				<u-icon name="email" size="22" color="#666"></u-icon>
+			</view>
+			<text class="feedback-label">意见箱</text>
+		</view>
+
+		<view class="feedback-mask" v-if="showFeedback" @tap="closeFeedback">
+			<view class="feedback-sheet" :class="{ 'feedback-sheet-show': showFeedback }" @tap.stop>
+				<view class="fb-header">
+					<text class="fb-title">意见反馈</text>
+					<view class="fb-close" @tap="closeFeedback">
+						<u-icon name="close" size="16" color="#999"></u-icon>
+					</view>
+				</view>
+				<view class="fb-body">
+					<textarea
+						class="fb-textarea"
+						v-model="feedbackContent"
+						maxlength="200"
+						placeholder="请输入您的意见或建议，帮助我们做得更好～"
+						placeholder-class="fb-placeholder"
+						auto-height
+					/>
+					<view class="fb-count">
+						<text class="fb-count-text">{{ feedbackContent.length }}/200</text>
+					</view>
+				</view>
+				<view class="fb-footer">
+					<view class="fb-submit" :class="{ disabled: !canSubmitFeedback || submittingFeedback }" @tap="submitFeedback">
+						<text class="fb-submit-text">{{ submittingFeedback ? '提交中...' : '提交反馈' }}</text>
+					</view>
+				</view>
+			</view>
+		</view>
+
 		<tab-bar :currentIndex="0"></tab-bar>
 	</view>
 </template>
@@ -81,7 +117,7 @@
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import uInput from 'uview-plus/components/u-input/u-input.vue'
 	import tabBar from '@/components/tab-bar/tab-bar.vue'
-	import { factoryApi } from '@/utils/request.js'
+	import { factoryApi, feedbackApi } from '@/utils/request.js'
 	import { formatDateTime } from '../../utils/date.js'
 
 	export default {
@@ -115,105 +151,47 @@
 				userLng: 0,
 				firstLoaded: false,
 				locationDenied: false,
-				factoryList: []
+				factoryList: [],
+				showFeedback: false,
+				feedbackContent: '',
+				submittingFeedback: false
+			}
+		},
+		computed: {
+			canSubmitFeedback() {
+				const s = (this.feedbackContent || '').trim()
+				return s.length >= 5 && s.length <= 200
 			}
 		},
 		onShow() {
 			this.loadList()
 		},
 		methods: {
-			promptEnableLocation() {
-				uni.showModal({
-					title: '开启位置权限',
-					content: '需要获取您的位置信息才能按距离筛选，请在设置中开启位置权限',
-					confirmText: '去设置',
-					cancelText: '取消',
-					success: (res) => {
-						if (res.confirm) {
-							uni.openSetting({
-								success: (settingRes) => {
-									if (settingRes.authSetting && settingRes.authSetting['scope.userLocation']) {
-										this.locationDenied = false
-										uni.showLoading({ title: '获取位置中...' })
-										uni.getLocation({
-											type: 'gcj02',
-											success: (res) => {
-												this.userLat = res.latitude
-												this.userLng = res.longitude
-												this.locationDenied = false
-												const userInfo = uni.getStorageSync('user_info') || {}
-												userInfo.lat = res.latitude
-												userInfo.lng = res.longitude
-												uni.setStorageSync('user_info', userInfo)
-												uni.setStorageSync('user_location', {
-													lat: res.latitude,
-													lng: res.longitude,
-													time: Date.now()
-												})
-												this.showMenu = true
-											},
-											fail: () => {
-												this.locationDenied = true
-												uni.showToast({ title: '获取位置失败', icon: 'none' })
-											},
-											complete: () => {
-												uni.hideLoading()
-											}
-										})
-									} else {
-										uni.showToast({ title: '未开启位置权限', icon: 'none' })
-									}
-								},
-								fail: () => {
-									uni.showToast({ title: '请手动开启位置权限', icon: 'none' })
-								}
-							})
-						}
-					}
-				})
-			},
-			ensureLocationForFilter() {
+			async ensureLocationForFilter() {
 				if (this.userLat && this.userLng) {
 					this.showMenu = true
 					return
 				}
-				const savedLocation = uni.getStorageSync('user_location')
-				if (savedLocation && savedLocation.lat && savedLocation.lng) {
-					this.userLat = savedLocation.lat
-					this.userLng = savedLocation.lng
+				const saved = this.$location.getSaved()
+				if (saved) {
+					this.userLat = saved.lat
+					this.userLng = saved.lng
 					this.showMenu = true
 					return
 				}
-				if (this.locationDenied) {
-					this.promptEnableLocation()
-					return
-				}
-				uni.showLoading({ title: '获取位置中...' })
-				uni.getLocation({
-					type: 'gcj02',
-					success: (res) => {
-						this.userLat = res.latitude
-						this.userLng = res.longitude
-						this.locationDenied = false
-						const userInfo = uni.getStorageSync('user_info') || {}
-						userInfo.lat = res.latitude
-						userInfo.lng = res.longitude
-						uni.setStorageSync('user_info', userInfo)
-						uni.setStorageSync('user_location', {
-							lat: res.latitude,
-							lng: res.longitude,
-							time: Date.now()
-						})
-						this.showMenu = true
-					},
-					fail: () => {
+				try {
+					const res = await this.$location.ensureAndGet({
+						tipText: '需要位置权限才能按距离筛选'
+					})
+					this.userLat = res.lat
+					this.userLng = res.lng
+					this.locationDenied = false
+					this.showMenu = true
+				} catch (e) {
+					if (e && e.message === 'location_permission_denied') {
 						this.locationDenied = true
-						uni.showToast({ title: '需要位置权限才能按距离筛选', icon: 'none' })
-					},
-					complete: () => {
-						uni.hideLoading()
 					}
-				})
+				}
 			},
 			async loadList() {
 				const distanceVal = this.distanceOptions[0][this.pickerValue[0]].value
@@ -274,6 +252,36 @@
 				return {
 					title: '邀请加工厂入驻，帮更多农户找到优质收购商',
 					path: '/pages/factory/factory'
+				}
+			},
+			openFeedback() {
+				this.feedbackContent = ''
+				this.showFeedback = true
+			},
+			closeFeedback() {
+				if (this.submittingFeedback) return
+				this.showFeedback = false
+			},
+			async submitFeedback() {
+				if (!this.canSubmitFeedback) {
+					uni.showToast({ title: '请输入至少5个字的反馈内容', icon: 'none' })
+					return
+				}
+				if (this.submittingFeedback) return
+				this.submittingFeedback = true
+				uni.showLoading({ title: '提交中...', mask: true })
+				try {
+					await feedbackApi.submit({ content: this.feedbackContent.trim() })
+					uni.hideLoading()
+					uni.showToast({ title: '感谢您的反馈！', icon: 'success' })
+					this.showFeedback = false
+					this.feedbackContent = ''
+				} catch (e) {
+					uni.hideLoading()
+					const msg = (e && (e.msg || e.message)) || '提交失败，请稍后重试'
+					uni.showToast({ title: msg, icon: 'none' })
+				} finally {
+					this.submittingFeedback = false
 				}
 			},
 			goDetail(item) {
@@ -604,5 +612,139 @@
 	.empty-text {
 		font-size: 28rpx;
 		color: #999;
+	}
+
+	.feedback-float {
+		position: fixed;
+		right: 24rpx;
+		bottom: calc(170rpx + env(safe-area-inset-bottom));
+		width: 120rpx;
+		height: 120rpx;
+		z-index: 50;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		background-color: #ffffff;
+		border: 2rpx solid #e5e7eb;
+		border-radius: 20rpx;
+		box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
+	}
+
+	.fb-float-icon {
+		line-height: 1;
+		margin-bottom: 6rpx;
+	}
+
+	.feedback-label {
+		font-size: 20rpx;
+		color: #666;
+		font-weight: 500;
+		line-height: 1;
+	}
+
+	.feedback-mask {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.5);
+		z-index: 99;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.feedback-sheet {
+		position: relative;
+		width: 620rpx;
+		background-color: #fff;
+		border-radius: 24rpx;
+		z-index: 100;
+		opacity: 0;
+		transform: scale(0.9);
+		transition: all 0.25s ease;
+		overflow: hidden;
+	}
+
+	.feedback-sheet-show {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	.fb-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 32rpx 32rpx 20rpx;
+		border-bottom: 1rpx solid #f0f0f0;
+	}
+
+	.fb-title {
+		font-size: 32rpx;
+		font-weight: 600;
+		color: #333;
+	}
+
+	.fb-close {
+		padding: 8rpx;
+	}
+
+	.fb-body {
+		padding: 28rpx 32rpx 8rpx;
+	}
+
+	.fb-textarea {
+		width: 100%;
+		min-height: 220rpx;
+		max-height: 360rpx;
+		font-size: 28rpx;
+		color: #333;
+		line-height: 1.6;
+		background-color: #f7f8fa;
+		border-radius: 12rpx;
+		padding: 20rpx 24rpx;
+		box-sizing: border-box;
+	}
+
+	.fb-placeholder {
+		color: #c0c4cc;
+	}
+
+	.fb-count {
+		display: flex;
+		justify-content: flex-end;
+		margin-top: 12rpx;
+	}
+
+	.fb-count-text {
+		font-size: 22rpx;
+		color: #bbb;
+	}
+
+	.fb-footer {
+		padding: 20rpx 32rpx 32rpx;
+	}
+
+	.fb-submit {
+		background: linear-gradient(135deg, #3c9cff 0%, #1890ff 100%);
+		border-radius: 44rpx;
+		padding: 26rpx 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 6rpx 18rpx rgba(60, 156, 255, 0.35);
+	}
+
+	.fb-submit.disabled {
+		background: #b7c4d8;
+		box-shadow: none;
+	}
+
+	.fb-submit-text {
+		font-size: 30rpx;
+		font-weight: 500;
+		color: #fff;
 	}
 </style>

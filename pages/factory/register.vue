@@ -24,31 +24,9 @@
 			</view>
 		</view>
 
-		<view class="form-section">
-			<view class="section-title">
-				<text class="title-text">营业资质</text>
-			</view>
-			<view class="form-card">
-				<view class="form-item">
-					<text class="form-label">营业执照</text>
-					<uploader-single
-						ref="uploaderLicense"
-						v-model="form.license"
-						shape="license"
-						add-text="上传营业执照"
-						tip="请上传清晰的营业执照照片"
-						remove-confirm="确定要删除营业执照吗？"
-						@change="onLicenseChange"
-					/>
-				</view>
-			</view>
-		</view>
-
-		<view class="submit-area">
-			<view class="submit-row">
-				<view class="submit-btn btn-free" :class="{ disabled: submitting }" @tap="onSubmit">
-					<text class="submit-btn-label">{{ submitting ? '提交中...' : (isEdit ? '立即提交' : '立即入驻') }}</text>
-				</view>
+		<view class="bottom-bar">
+			<view class="action-btn submit-btn" :class="{ disabled: submitting }" @tap="onNextStep">
+				<text class="btn-label">{{ submitting ? '提交中...' : (isEdit ? '立即提交' : '下一步') }}</text>
 			</view>
 		</view>
 	</view>
@@ -56,13 +34,8 @@
 
 <script>
 	import { factoryApi, userApi } from '@/utils/request.js'
-	import uploaderSingle from '@/components/uploader-single/uploader-single.vue'
-	import { isLocalTempPath } from '@/utils/upload.js'
 
 	export default {
-		components: {
-			uploaderSingle
-		},
 		data() {
 			return {
 				isEdit: false,
@@ -70,13 +43,13 @@
 				submitting: false,
 				form: {
 					name: '',
-					mobile: '',
+					mobile: 15199004491,
+					showMobile: true,
 					location: {
 						address: '',
-						latitude: 0,
-						longitude: 0
-					},
-					license: ''
+						latitude: 39.908823,
+						longitude: 116.397470
+					}
 				}
 			}
 		},
@@ -89,6 +62,11 @@
 			}
 		},
 		methods: {
+			fixCoord(val, defaultVal) {
+				const num = Number(val)
+				if (isNaN(num) || num < -180 || num > 180) return defaultVal
+				return num
+			},
 			async loadFactoryData() {
 				try {
 					const data = await factoryApi.getDetail(this.factoryId)
@@ -107,12 +85,12 @@
 					this.form = {
 						name: data.name || '',
 						mobile: data.mobile || '',
+						showMobile: data.showMobile !== undefined ? !!data.showMobile : true,
 						location: {
 							address: locationObj ? locationObj.address : (data.address || ''),
-							latitude: locationObj ? locationObj.latitude : (data.latitude || 0),
-							longitude: locationObj ? locationObj.longitude : (data.longitude || 0)
-						},
-						license: data.license || ''
+							latitude: this.fixCoord(parseFloat(locationObj ? locationObj.latitude : (data.latitude || 39.908823)), 39.908823),
+							longitude: this.fixCoord(parseFloat(locationObj ? locationObj.longitude : (data.longitude || 116.397470)), 116.397470)
+						}
 					}
 				} catch (e) {}
 			},
@@ -129,46 +107,80 @@
 				}
 			},
 			onChooseLocation() {
-				uni.chooseLocation({
-					success: (res) => {
-						this.form.location = {
-							address: res.address || res.name,
-							latitude: res.latitude,
-							longitude: res.longitude
+				const latitude = Number(this.form.location.latitude)
+				const longitude = Number(this.form.location.longitude)
+				const address = this.form.location.address || ''
+				const hasLocation = address && latitude && longitude && latitude !== 0 && longitude !== 0
+
+				const doChoose = () => {
+					const opts = {
+						success: (res) => {
+							this.form.location.address = res.address
+							this.form.location.latitude = res.latitude
+							this.form.location.longitude = res.longitude
+						},
+						fail: () => {
+							uni.showToast({ title: '选择位置失败', icon: 'none' })
 						}
-					},
-					fail: (err) => {
-						console.error('chooseLocation fail:', err)
 					}
-				})
+					if (latitude && longitude && latitude !== 0 && longitude !== 0) {
+						opts.latitude = latitude
+						opts.longitude = longitude
+					}
+					uni.chooseLocation(opts)
+				}
+
+				if (hasLocation) {
+					uni.showActionSheet({
+						itemList: ['在地图中查看', '重新选择地址'],
+						success: (res) => {
+							if (res.tapIndex === 0) {
+								this.$location.open(latitude, longitude, {
+									name: this.form.name || '加工厂地址',
+									address
+								})
+							} else if (res.tapIndex === 1) {
+								doChoose()
+							}
+						}
+					})
+				} else {
+					doChoose()
+				}
 			},
-			onLicenseChange(val) {
-				this.form.license = val || ''
+			goCertify() {
+				this.onNextStep()
 			},
 			async onSubmit() {
-				if (this.submitting) return
+				this.onNextStep()
+			},
+			validateForm() {
 				if (!this.form.name.trim()) {
 					uni.showToast({ title: '请输入加工厂名称', icon: 'none' })
-					return
+					return false
 				}
 				if (this.form.name.trim().length > 20) {
 					uni.showToast({ title: '加工厂名称不能超过20字', icon: 'none' })
-					return
+					return false
 				}
 				if (!this.form.mobile) {
 					uni.showToast({ title: '请获取联系电话', icon: 'none' })
-					return
+					return false
 				}
 				if (!this.form.location.address) {
 					uni.showToast({ title: '请选择加工厂地址', icon: 'none' })
-					return
+					return false
 				}
-				const refLicense = (this.$refs.uploaderLicense && this.$refs.uploaderLicense.currentSrc) || ''
-				if (refLicense && !this.form.license) {
-					this.form.license = refLicense
-				}
-				if (!this.isEdit && !this.form.license) {
-					uni.showToast({ title: '请上传营业执照', icon: 'none' })
+				return true
+			},
+			async onNextStep() {
+				if (this.submitting) return
+				if (!this.validateForm()) return
+
+				const lat = this.form.location.latitude
+				const lng = this.form.location.longitude
+				if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+					uni.showToast({ title: '位置信息异常，请重新选择', icon: 'none' })
 					return
 				}
 
@@ -192,26 +204,40 @@
 				} catch (e) {}
 
 				try {
-					let licenseUrl = this.form.license
-					if (licenseUrl && isLocalTempPath(licenseUrl)) {
-						licenseUrl = await uni.uploadFactoryLicense(licenseUrl)
-					}
-
 					const postData = {
-						id: this.factoryId || undefined,
 						name: this.form.name.trim(),
 						mobile: this.form.mobile,
-						location: this.form.location,
-						license: licenseUrl
+						showMobile: this.form.showMobile,
+						location: this.form.location
 					}
 
-					postData.id = this.factoryId || undefined
-					await factoryApi.addFactory(postData)
+					let res
+					if (this.isEdit) {
+						postData.id = this.factoryId
+						res = await factoryApi.addFactory(postData)
+					} else {
+						res = await factoryApi.addFactory(postData)
+					}
 					uni.hideLoading()
-					uni.showToast({ title: this.isEdit ? '保存成功' : '入驻成功', icon: 'success' })
-					setTimeout(() => {
-						uni.navigateBack()
-					}, 1000)
+
+					if (this.isEdit) {
+						uni.showToast({ title: '保存成功', icon: 'success' })
+						setTimeout(() => {
+							uni.navigateBack()
+						}, 1000)
+					} else {
+						const newId = (res && (res.id || res.data && res.data.id)) || this.factoryId
+						uni.showToast({ title: '创建成功', icon: 'success' })
+						setTimeout(() => {
+							const params = []
+							if (newId) params.push('id=' + newId)
+							if (this.form.name) params.push('name=' + encodeURIComponent(this.form.name.trim()))
+							params.push('from=register')
+							uni.navigateTo({
+								url: '/pages/factory/certify' + (params.length ? '?' + params.join('&') : '')
+							})
+						}, 1000)
+					}
 				} catch (e) {
 					uni.hideLoading()
 					uni.showToast({ title: '提交失败', icon: 'none' })
@@ -288,6 +314,10 @@
 		color: #333;
 		line-height: 1.5;
 		width: 100%;
+		min-height: 44rpx;
+		display: flex;
+		align-items: center;
+		justify-content: flex-start;
 
 		&::after {
 			border: none;
@@ -315,111 +345,46 @@
 		color: #bbb;
 	}
 
-	.license-upload {
-		margin-top: 16rpx;
-	}
-
-	.license-preview {
-		position: relative;
-		width: 240rpx;
-		height: 160rpx;
-		border-radius: 12rpx;
-		overflow: hidden;
-	}
-
-	.license-image {
-		width: 100%;
-		height: 100%;
-	}
-
-	.license-remove {
-		position: absolute;
-		top: 0;
-		right: 0;
-		width: 56rpx;
-		height: 56rpx;
-		background-color: rgba(0, 0, 0, 0.55);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-bottom-left-radius: 12rpx;
-	}
-
-	.remove-icon {
-		color: #fff;
-		font-size: 36rpx;
-		line-height: 1;
-	}
-
-	.license-add {
-		width: 240rpx;
-		height: 160rpx;
-		border: 2rpx dashed #ccc;
-		border-radius: 12rpx;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		background-color: #fafafa;
-	}
-
-	.add-icon {
-		font-size: 48rpx;
-		color: #ccc;
-		line-height: 1;
-	}
-
-	.add-text {
-		font-size: 24rpx;
-		color: #999;
-		margin-top: 8rpx;
-	}
-
-	.upload-tip {
-		font-size: 24rpx;
-		color: #999;
-		margin-top: 12rpx;
-		display: block;
-	}
-
-	.submit-area {
+	.bottom-bar {
 		position: fixed;
 		left: 0;
 		right: 0;
 		bottom: 0;
-		padding: 24rpx 48rpx;
-		padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+		display: flex;
 		background-color: #fff;
+		padding: 20rpx 24rpx;
+		padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
 		box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
 	}
 
-	.submit-row {
-		display: flex;
-	}
-
-	.submit-btn {
+	.action-btn {
 		flex: 1;
 		display: flex;
-		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		padding: 28rpx 0;
-		margin: 0 12rpx;
-		border-radius: 12rpx;
+		margin: 0;
+		border-radius: 16rpx;
+		border: none;
+		line-height: 1;
 	}
 
-	.submit-btn-label {
-		font-size: 30rpx;
-		font-weight: 600;
-		color: #fff;
+	.action-btn::after {
+		border: none;
 	}
 
-	.btn-free {
+	.submit-btn {
 		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
 		box-shadow: 0 8rpx 24rpx rgba(60, 156, 255, 0.35);
 	}
 
-	.submit-btn.disabled {
+	.btn-label {
+		font-size: 30rpx;
+		color: #fff;
+		font-weight: 600;
+	}
+
+	.action-btn.disabled {
 		background: #b7c7da;
 		pointer-events: none;
 		box-shadow: none;

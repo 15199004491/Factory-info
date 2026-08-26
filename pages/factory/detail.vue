@@ -218,7 +218,14 @@
 			},
 			formatDate,
 			openLocation() {
-				const {latitude, longitude,address} = this.factory.location
+				const loc = this.factory.location || {}
+				const latitude = Number(loc.latitude)
+				const longitude = Number(loc.longitude)
+				const address = loc.address || this.factory.address || ''
+				if (!latitude || !longitude || latitude === 0 || longitude === 0) {
+					uni.showToast({ title: '位置信息无效，请联系管理员', icon: 'none' })
+					return
+				}
 				uni.openLocation({
 					latitude,
 					longitude,

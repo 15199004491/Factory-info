@@ -59,6 +59,7 @@ export const factoryApi = {
     getSelf: () => request('/farm/Factory/factorySelf', { open_id: getOpenid() }),
     getDetail: (Id) => request('/farm/Factory/factoryDetail', { Id }),
     addFactory: (d) => request('/farm/Factory/addFactory', { ...d, open_id: getOpenid() }, 'POST'),
+    editFactory: (d) => request('/farm/Factory/editFactory', { ...d, open_id: getOpenid() }, 'POST'),
     deleteFactory: (Id) => request('/farm/Factory/deleteFactory', { Id, open_id: getOpenid() }, 'POST'),
     verifyFactory: (Id, license, id_card) => request('/farm/Factory/verifyFactory', { Id, license, id_card,open_id: getOpenid() }, 'POST'),
     publishFactory: (d) => request('/farm/Factory/publishFactoryInfo', { ...d, open_id: getOpenid() }, 'POST'),
@@ -89,4 +90,8 @@ export const userApi = {
     getPhone: (code) => request('/farm/Wxuser/getuserphonenumber', { code }, 'POST'),
     msgCheck: (msg) => request('/farm/Wxuser/msgSecCheck', { msg }, 'POST'),
     imgSecCheck: (media) => request('/farm/Wxuser/imgSecCheck', media, 'POST'),
+};
+
+export const feedbackApi = {
+    submit: (params) => request('/farm/Wxuser/addSuggest', { ...params, open_id: getOpenid() }),
 };

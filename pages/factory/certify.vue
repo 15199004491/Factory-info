@@ -66,9 +66,19 @@
 		</view>
 
 		<view class="bottom-bar">
-			<view class="pay-btn" :class="{ disabled: isBtnDisabled }" @tap="onSubmit">
-				<text class="pay-text">{{ submitBtnText }}</text>
-			</view>
+			<template v-if="fromRegister">
+				<view class="action-btn action-skip" :class="{ disabled: isBtnDisabled }" @tap="onSkip">
+					<text class="btn-label">{{ isSubmitting ? '提交中...' : '跳过，以后再说' }}</text>
+				</view>
+				<view class="action-btn action-submit" :class="{ disabled: isBtnDisabled }" @tap="onSubmit">
+					<text class="btn-label">{{ submitBtnText }}</text>
+				</view>
+			</template>
+			<template v-else>
+				<view class="action-btn action-submit action-single" :class="{ disabled: isBtnDisabled }" @tap="onSubmit">
+					<text class="btn-label">{{ submitBtnText }}</text>
+				</view>
+			</template>
 		</view>
 	</view>
 </template>
@@ -85,6 +95,7 @@
 			return {
 				factoryId: null,
 				factoryName: '',
+				fromRegister: false,
 				licenseImage: '',
 				idCardImage: '',
 				agreed: false,
@@ -110,10 +121,13 @@
 			}
 			if (options.name) {
 				this.factoryName = decodeURIComponent(options.name)
-				uni.setNavigationBarTitle({
-					title: '加工厂认证'
-				})
 			}
+			if (options.from === 'register') {
+				this.fromRegister = true
+			}
+			uni.setNavigationBarTitle({
+				title: '加工厂认证'
+			})
 		},
 		methods: {
 			async loadFactoryInfo() {
@@ -125,16 +139,31 @@
 					if (data.id_card) {
 						this.idCardImage = data.id_card
 					}
+					this.$nextTick(() => {
+						if (this.$refs.uploaderLicense && this.licenseImage) {
+							this.$refs.uploaderLicense.currentSrc = this.licenseImage
+						}
+						if (this.$refs.uploaderIdCard && this.idCardImage) {
+							this.$refs.uploaderIdCard.currentSrc = this.idCardImage
+						}
+					})
 					if (data.identification !== undefined && data.identification !== null && data.identification !== '') {
 						this.identification = Number(data.identification)
 						if (this.identification === 1) {
+							const delta = this.fromRegister ? 2 : 1
+							const pages = getCurrentPages()
+							const safeDelta = Math.min(delta, pages.length - 1)
 							uni.showModal({
 								title: '认证成功',
 								content: '恭喜您，加工厂认证已通过！',
 								showCancel: false,
 								confirmText: '返回',
 								success: () => {
-									uni.navigateBack()
+									if (safeDelta <= 0) {
+										uni.navigateBack()
+									} else {
+										uni.navigateBack({ delta: safeDelta })
+									}
 								}
 							})
 						}
@@ -148,21 +177,33 @@
 				this.idCardImage = val || ''
 			},
 			onViewAgreement(autoAgree = false) {
-				uni.showModal({
+				const lines = [
+					'1. 用户同意提交真实有效的营业执照及法人身份信息。',
+					'2. 认证审核通过后，加工厂将获得认证标识和优先展示权益。',
+					'3. 平台有权对提交的资料进行审核，资料不实将取消认证资格。',
+					'4. 平台保留最终解释权。'
+				]
+				const modalOptions = {
 					title: '加工厂认证服务协议',
-					content: '1. 用户同意提交真实有效的营业执照及法人身份信息。\n2. 认证审核通过后，加工厂将获得认证标识和优先展示权益。\n3. 平台有权对提交的资料进行审核，资料不实将取消认证资格。\n4. 平台保留最终解释权。',
-					showCancel: !autoAgree,
-					confirmText: autoAgree ? '同意并认证' : '我知道了',
-					cancelText: '不同意',
-					success: (res) => {
-						if (res.confirm) {
-							this.agreed = true
-							if (autoAgree) {
-								this.onSubmit()
-							}
+					content: lines.join('\n'),
+					showCancel: autoAgree ? true : false,
+					confirmText: autoAgree ? '同意认证' : '我知道了'
+				}
+				if (autoAgree) {
+					modalOptions.cancelText = '不同意'
+				}
+				modalOptions.success = (res) => {
+					if (res.confirm) {
+						this.agreed = true
+						if (autoAgree) {
+							this.doAuthSubmit()
 						}
 					}
-				})
+				}
+				modalOptions.fail = (err) => {
+					console.error('showModal fail', err)
+				}
+				uni.showModal(modalOptions)
 			},
 			onSubmit() {
 				if (this.isSubmitting) return
@@ -186,9 +227,24 @@
 					this.onViewAgreement(true)
 					return
 				}
+				this.doAuthSubmit()
+			},
+			doAuthSubmit() {
+				if (this.isSubmitting) return
 				this.isSubmitting = true
 				uni.showLoading({ title: '提交中...', mask: true, timeout: 6000 })
 				this.doSubmit()
+			},
+			onSkip() {
+				if (this.isSubmitting) return
+				const delta = this.fromRegister ? 2 : 1
+				const pages = getCurrentPages()
+				const safeDelta = Math.min(delta, pages.length - 1)
+				if (safeDelta <= 0) {
+					uni.navigateBack()
+				} else {
+					uni.navigateBack({ delta: safeDelta })
+				}
 			},
 			async doSubmit() {
 				try {
@@ -207,12 +263,19 @@
 
 					this.identification = 0
 
+					const delta = this.fromRegister ? 2 : 1
+					const pages = getCurrentPages()
+					const safeDelta = Math.min(delta, pages.length - 1)
 					uni.showModal({
 						title: '提交成功',
 						content: '您的加工厂认证资料已提交，将在1-7个工作日内审核完毕',
 						showCancel: false,
 						success: () => {
-							uni.navigateBack()
+							if (safeDelta <= 0) {
+								uni.navigateBack()
+							} else {
+								uni.navigateBack({ delta: safeDelta })
+							}
 						}
 					})
 				} catch (e) {
@@ -437,32 +500,55 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		padding: 24rpx 48rpx;
-		padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+		display: flex;
+		padding: 20rpx 24rpx;
+		padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
 		background-color: #fff;
 		box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
 		z-index: 999;
 	}
 
-	.pay-btn {
-		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
-		border-radius: 12rpx;
-		padding: 28rpx 0;
+	.action-btn {
+		flex: 1;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		padding: 28rpx 0;
+		margin: 0 12rpx;
+		border-radius: 12rpx;
+	}
+
+	.action-btn::after {
+		border: none;
+	}
+
+	.action-submit {
+		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
 		box-shadow: 0 8rpx 24rpx rgba(60, 156, 255, 0.35);
 	}
 
-	.pay-btn.disabled {
-		background: linear-gradient(135deg, #b3d9ff, #c4e6ff);
-		box-shadow: none;
+	.action-skip {
+		background: #fff;
+		border: 2rpx solid #3c9cff;
+	}
+
+	.action-skip .btn-label {
+		color: #3c9cff;
+		font-size: 28rpx;
+	}
+
+	.btn-label {
+		font-size: 30rpx;
+		font-weight: 600;
+		color: #fff;
+	}
+
+	.action-btn.disabled {
+		opacity: 0.5;
 		pointer-events: none;
 	}
 
-	.pay-text {
-		font-size: 32rpx;
-		font-weight: 600;
-		color: #fff;
+	.action-single {
+		margin: 0;
 	}
 </style>
