@@ -80,6 +80,28 @@
 				</view>
 			</template>
 		</view>
+
+		<view class="agreement-mask" v-if="showAgreementModal" @tap="onAgreementClose">
+			<view class="agreement-modal" @tap.stop>
+				<view class="agreement-modal-title">
+					<text>加工厂认证服务协议</text>
+				</view>
+				<scroll-view scroll-y class="agreement-modal-content">
+					<view class="agreement-line">1. 用户同意提交真实有效的营业执照及法人身份信息。</view>
+					<view class="agreement-line">2. 认证审核通过后，加工厂将获得认证标识和优先展示权益。</view>
+					<view class="agreement-line">3. 平台有权对提交的资料进行审核，资料不实将取消认证资格。</view>
+					<view class="agreement-line">4. 平台保留最终解释权。</view>
+				</scroll-view>
+				<view class="agreement-modal-footer">
+					<view v-if="agreementAutoAgree" class="agreement-modal-btn agreement-modal-btn-cancel" @tap="onAgreementCancel">
+						<text>不同意</text>
+					</view>
+					<view class="agreement-modal-btn agreement-modal-btn-confirm" @tap="onAgreementConfirm">
+						<text>{{ agreementAutoAgree ? '同意认证' : '我知道了' }}</text>
+					</view>
+				</view>
+			</view>
+		</view>
 	</view>
 </template>
 
@@ -100,7 +122,9 @@
 				idCardImage: '',
 				agreed: false,
 				isSubmitting: false,
-				identification: null
+				identification: null,
+				showAgreementModal: false,
+				agreementAutoAgree: false
 			}
 		},
 		computed: {
@@ -177,33 +201,26 @@
 				this.idCardImage = val || ''
 			},
 			onViewAgreement(autoAgree = false) {
-				const lines = [
-					'1. 用户同意提交真实有效的营业执照及法人身份信息。',
-					'2. 认证审核通过后，加工厂将获得认证标识和优先展示权益。',
-					'3. 平台有权对提交的资料进行审核，资料不实将取消认证资格。',
-					'4. 平台保留最终解释权。'
-				]
-				const modalOptions = {
-					title: '加工厂认证服务协议',
-					content: lines.join('\n'),
-					showCancel: autoAgree ? true : false,
-					confirmText: autoAgree ? '同意认证' : '我知道了'
+				this.agreementAutoAgree = autoAgree
+				this.showAgreementModal = true
+			},
+			onAgreementClose() {
+				this.showAgreementModal = false
+				this.agreementAutoAgree = false
+			},
+			onAgreementCancel() {
+				this.showAgreementModal = false
+				this.agreementAutoAgree = false
+			},
+			onAgreementConfirm() {
+				this.showAgreementModal = false
+				this.agreed = true
+				if (this.agreementAutoAgree) {
+					this.agreementAutoAgree = false
+					this.doAuthSubmit()
+				} else {
+					this.agreementAutoAgree = false
 				}
-				if (autoAgree) {
-					modalOptions.cancelText = '不同意'
-				}
-				modalOptions.success = (res) => {
-					if (res.confirm) {
-						this.agreed = true
-						if (autoAgree) {
-							this.doAuthSubmit()
-						}
-					}
-				}
-				modalOptions.fail = (err) => {
-					console.error('showModal fail', err)
-				}
-				uni.showModal(modalOptions)
 			},
 			onSubmit() {
 				if (this.isSubmitting) return
@@ -550,5 +567,80 @@
 
 	.action-single {
 		margin: 0;
+	}
+
+	.agreement-mask {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 9999;
+	}
+
+	.agreement-modal {
+		width: 620rpx;
+		height: 70vh;
+		max-height: 70vh;
+		background-color: #fff;
+		border-radius: 24rpx;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.agreement-modal-title {
+		padding: 36rpx 32rpx 24rpx;
+		text-align: center;
+		font-size: 34rpx;
+		font-weight: 600;
+		color: #333;
+		border-bottom: 1rpx solid #f0f0f0;
+		flex-shrink: 0;
+	}
+
+	.agreement-modal-content {
+		flex: 1;
+		padding: 24rpx 32rpx;
+		min-height: 0;
+		box-sizing: border-box;
+		overflow-y: auto;
+	}
+
+	.agreement-line {
+		font-size: 28rpx;
+		color: #555;
+		line-height: 1.8;
+		text-align: left;
+		margin-bottom: 12rpx;
+	}
+
+	.agreement-modal-footer {
+		display: flex;
+		border-top: 1rpx solid #f0f0f0;
+		flex-shrink: 0;
+	}
+
+	.agreement-modal-btn {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 28rpx 0;
+		font-size: 30rpx;
+	}
+
+	.agreement-modal-btn-cancel {
+		color: #666;
+		border-right: 1rpx solid #f0f0f0;
+	}
+
+	.agreement-modal-btn-confirm {
+		color: #3c9cff;
+		font-weight: 600;
 	}
 </style>

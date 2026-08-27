@@ -13,6 +13,7 @@
 					placeholder-class="search-placeholder"
 					confirm-type="search"
 					@confirm="onSearch"
+					maxlength="10"
 				/>
 			</view>
 			<view class="search-btn" @tap="onSearch">
@@ -73,6 +74,10 @@
 			<text class="empty-text">暂无数据</text>
 		</view>
 
+		<view class="load-more" v-if="factoryList.length > 0">
+			<text class="load-more-text">没有更多数据了</text>
+		</view>
+
 		<view class="feedback-float" @tap="openFeedback">
 			<view class="fb-float-icon">
 				<u-icon name="email" size="22" color="#666"></u-icon>
@@ -96,6 +101,9 @@
 						placeholder="请输入您的意见或建议，帮助我们做得更好～"
 						placeholder-class="fb-placeholder"
 						auto-height
+						adjust-position="true"
+						cursor-spacing="120"
+						fixed="false"
 					/>
 					<view class="fb-count">
 						<text class="fb-count-text">{{ feedbackContent.length }}/200</text>
@@ -126,12 +134,6 @@
 			uInput,
 			tabBar
 		},
-		onShareAppMessage() {
-			return {
-				title: '加工厂信息 - 优质农产品收购平台',
-				path: '/pages/factory/factory'
-			}
-		},
 		data() {
 			return {
 				keyword: '',
@@ -149,6 +151,7 @@
 				],
 				userLat: 0,
 				userLng: 0,
+				total: 0,
 				firstLoaded: false,
 				locationDenied: false,
 				factoryList: [],
@@ -164,6 +167,7 @@
 			}
 		},
 		onShow() {
+			console.log('[factory] onShow 触发，开始 loadList')
 			this.loadList()
 		},
 		methods: {
@@ -203,8 +207,10 @@
 					page: 1,
 					limit: 1000
 				}
+				console.log('[factory] 调用 factoryApi.getList 参数:', JSON.stringify(params))
 				try {
 					const res = await factoryApi.getList(params)
+					console.log('[factory] factoryApi.getList 返回原始值:', res)
 					const list = (res && res.list) ? res.list : (Array.isArray(res) ? res : [])
 					this.factoryList = list.map(item => {
 						let categoryNames = []
@@ -225,8 +231,16 @@
 							categories: categoryNames
 						}
 					})
+					this.total = this.factoryList.length
+					console.log('[factory] 解析后 factoryList 数量:', this.factoryList.length)
 				} catch (e) {
+					console.error('[factory] 加载加工厂列表失败:', e)
 					this.factoryList = []
+					uni.showToast({
+						title: (e && e.msg) ? e.msg : '加载加工厂失败，请稍后重试',
+						icon: 'none',
+						duration: 2500
+					})
 				}
 			},
 			formatDateTime,
@@ -248,10 +262,19 @@
 			onSearch() {
 				this.loadList()
 			},
-			onShareAppMessage() {
-				return {
+			onShareAppMessage(res) {
+				const shareObj = {
 					title: '邀请加工厂入驻，帮更多农户找到优质收购商',
 					path: '/pages/factory/factory'
+				}
+				if (res && res.from === 'button') {
+					shareObj.title = '邀请加工厂入驻，帮更多农户找到优质收购商'
+				}
+				return shareObj
+			},
+			onShareTimeline() {
+				return {
+					title: '加工厂信息 - 优质农产品收购平台'
 				}
 			},
 			openFeedback() {
@@ -746,5 +769,24 @@
 		font-size: 30rpx;
 		font-weight: 500;
 		color: #fff;
+	}
+
+	.result-count {
+		padding: 20rpx 30rpx 10rpx;
+	}
+
+	.result-count-text {
+		font-size: 24rpx;
+		color: #999;
+	}
+
+	.load-more {
+		padding: 30rpx 30rpx 40rpx;
+		text-align: center;
+	}
+
+	.load-more-text {
+		font-size: 24rpx;
+		color: #999;
 	}
 </style>

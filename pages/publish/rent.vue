@@ -77,7 +77,7 @@
 
 			<view class="form-item form-item-textarea">
 				<text class="form-label">房源描述</text>
-				<textarea class="form-textarea" v-model="form.explain" maxlength="200" placeholder="请详细描述房源信息" placeholder-class="form-placeholder"></textarea>
+				<textarea class="form-textarea" v-model="form.explain" maxlength="200" placeholder="请详细描述房源信息" placeholder-class="form-placeholder" adjust-position="true" cursor-spacing="120" fixed="false"></textarea>
 			</view>
 		</view>
 

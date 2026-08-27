@@ -64,7 +64,7 @@
 				<view class="form-item form-item-textarea">
 					<text class="form-label">详细说明</text>
 					<view class="textarea-wrap">
-						<textarea class="form-textarea" v-model="form.description" maxlength="200" placeholder="请详细说明收购要求、品质标准等" placeholder-class="form-placeholder"></textarea>
+						<textarea class="form-textarea" v-model="form.description" maxlength="200" placeholder="请详细说明收购要求、品质标准等" placeholder-class="form-placeholder" adjust-position="true" cursor-spacing="120" fixed="false"></textarea>
 						<text class="textarea-count">{{ form.description.length }}/200</text>
 					</view>
 				</view>
@@ -109,7 +109,7 @@
 					<view class="form-row">
 						<text class="form-label">备注</text>
 						<view class="textarea-wrap remark-wrap">
-							<textarea class="form-textarea modal-remark" v-model="formData.remark" maxlength="100" placeholder="请输入品类备注（如品质要求、收购说明等）" placeholder-class="form-placeholder"></textarea>
+							<textarea class="form-textarea modal-remark" v-model="formData.remark" maxlength="100" placeholder="请输入品类备注（如品质要求、收购说明等）" placeholder-class="form-placeholder" adjust-position="true" cursor-spacing="120" fixed="false"></textarea>
 							<text class="textarea-count">{{ (formData.remark || '').length }}/100</text>
 						</view>
 					</view>
@@ -120,6 +120,24 @@
 					</view>
 					<view class="modal-btn btn-confirm" @tap="saveCategory">
 						<text>确定</text>
+					</view>
+				</view>
+			</view>
+		</view>
+
+		<view class="modal-mask" v-if="showConfirmMobile" @tap="onConfirmMobileCancel">
+			<view class="modal-content confirm-modal" @tap.stop>
+				<view class="confirm-modal-title">确认联系电话</view>
+				<view class="confirm-modal-content">
+					<text class="confirm-mobile-line">请确认手机号 {{ form.mobile }} 是否正确？</text>
+					<text class="confirm-desc-line">用于买家联系，发布后可在管理页修改。</text>
+				</view>
+				<view class="modal-actions">
+					<view class="modal-btn btn-cancel" @tap="onConfirmMobileCancel">
+						<text>立即修改</text>
+					</view>
+					<view class="modal-btn btn-confirm" @tap="onConfirmMobileOk">
+						<text>确认无误</text>
 					</view>
 				</view>
 			</view>
@@ -141,6 +159,8 @@
 			return {
 				showRegionPicker: false,
 				showModal: false,
+				showConfirmMobile: false,
+				confirmMobileCallback: null,
 				editingIndex: -1,
 				unitOptions: ['公斤', '吨'],
 				editingId: null,
@@ -333,31 +353,23 @@
 				const val = parseFloat(price)
 				return isNaN(val) ? price : val.toFixed(2)
 			},
-			async onSubmit() {
-				if (this.submitting) return
-				if (!this.form.title) {
-					uni.showToast({ title: '请填写标题', icon: 'none' })
-					return
+			onConfirmMobileOk() {
+				this.showConfirmMobile = false
+				if (this.confirmMobileCallback) {
+					const cb = this.confirmMobileCallback
+					this.confirmMobileCallback = null
+					cb(true)
 				}
-				if (!this.form.region) {
-					uni.showToast({ title: '请选择所在地区', icon: 'none' })
-					return
+			},
+			onConfirmMobileCancel() {
+				this.showConfirmMobile = false
+				if (this.confirmMobileCallback) {
+					const cb = this.confirmMobileCallback
+					this.confirmMobileCallback = null
+					cb(false)
 				}
-				if (!this.form.mobile) {
-					uni.showToast({ title: '请填写联系电话', icon: 'none' })
-					return
-				}
-				const confirmed = await new Promise(resolve => {
-					uni.showModal({
-						title: '确认联系电话',
-						content: `请确认手机号 ${this.form.mobile} 是否正确？\n用于买家联系，发布后可在管理页修改。`,
-						confirmText: '确认无误',
-						cancelText: '立即修改',
-						success: res => resolve(res.confirm),
-						fail: () => resolve(false)
-					})
-				})
-
+			},
+			doSubmit() {
 				this.submitting = true
 				uni.showLoading({ title: '校验中...', mask: true, timeout: 6000 })
 
@@ -368,24 +380,15 @@
 					this.form.description
 				].filter(Boolean).join(' ')
 
-				const textOk = await uni.checkTextSafe(msg)
-				if (!textOk) {
+				uni.checkTextSafe(msg).then(textOk => {
 					uni.hideLoading()
-					this.submitting = false
-					return
-				}
+					if (!textOk) {
+						this.submitting = false
+						return
+					}
 
-				uni.hideLoading()
+					uni.showLoading({ title: '提交中...', mask: true, timeout: 6000 })
 
-				
-				if (!confirmed) {
-					this.submitting = false
-					return
-				}
-
-				uni.showLoading({ title: '提交中...', mask: true, timeout: 6000 })
-
-				try {
 					const postData = {
 						id: this.editingId || undefined,
 						title: this.form.title,
@@ -400,18 +403,45 @@
 						}))
 					}
 					console.log('postData--', postData)
-					await purchaseApi.addPurchase(postData)
+					purchaseApi.addPurchase(postData).then(() => {
+						uni.hideLoading()
+						uni.showToast({ title: this.editingId ? '修改成功' : '发布成功', icon: 'success' })
+						setTimeout(() => {
+							uni.navigateBack()
+						}, 1000)
+					}).catch(e => {
+						uni.hideLoading()
+						uni.showToast({ title: (e && e.message) ? '提交失败:' + e.message : '提交失败', icon: 'none' })
+					}).finally(() => {
+						this.submitting = false
+					})
+				}).catch(() => {
 					uni.hideLoading()
-					uni.showToast({ title: this.editingId ? '修改成功' : '发布成功', icon: 'success' })
-					setTimeout(() => {
-						uni.navigateBack()
-					}, 1000)
-				} catch (e) {
-					uni.hideLoading()
-					uni.showToast({ title: (e && e.message) ? '提交失败:' + e.message : '提交失败', icon: 'none' })
-				} finally {
 					this.submitting = false
+				})
+			},
+			async onSubmit() {
+				if (this.submitting) return
+				if (!this.form.title) {
+					uni.showToast({ title: '请填写标题', icon: 'none' })
+					return
 				}
+				if (!this.form.region) {
+					uni.showToast({ title: '请选择所在地区', icon: 'none' })
+					return
+				}
+				if (!this.form.mobile) {
+					uni.showToast({ title: '请填写联系电话', icon: 'none' })
+					return
+				}
+				this.confirmMobileCallback = (confirmed) => {
+					if (!confirmed) {
+						this.submitting = false
+						return
+					}
+					this.doSubmit()
+				}
+				this.showConfirmMobile = true
 			}
 		}
 	}
@@ -799,5 +829,41 @@
 	.btn-confirm {
 		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
 		color: #fff;
+	}
+
+	.confirm-modal {
+		padding: 40rpx 32rpx 32rpx;
+	}
+
+	.confirm-modal-title {
+		font-size: 32rpx;
+		font-weight: 600;
+		color: #333;
+		text-align: center;
+		margin-bottom: 28rpx;
+	}
+
+	.confirm-modal-content {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		margin-bottom: 36rpx;
+	}
+
+	.confirm-mobile-line {
+		font-size: 28rpx;
+		color: #333;
+		line-height: 1.6;
+		text-align: left;
+		width: 100%;
+	}
+
+	.confirm-desc-line {
+		font-size: 26rpx;
+		color: #999;
+		line-height: 1.6;
+		text-align: left;
+		width: 100%;
+		margin-top: 12rpx;
 	}
 </style>

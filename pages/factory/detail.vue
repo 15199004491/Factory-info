@@ -5,7 +5,8 @@
 			<view class="header-top">
 				<view class="factory-title-row">
 					<text class="factory-name">{{ factory.name }}</text>
-					<text class="verified-tag" v-if="factory.verified">已认证</text>
+					<text class="verified-tag tag-success" v-if="factory.identification === 1">已认证</text>
+					<text class="verified-tag tag-unauth" v-else>未认证</text>
 				</view>
 				<view class="address-row" @tap="openLocation">
 					<u-icon name="map" size="14" color="rgba(255,255,255,0.85)"></u-icon>
@@ -33,6 +34,7 @@
 
 		<scroll-view scroll-y class="scroll-area" :show-scrollbar="false">
 			<view class="scroll-inner">
+
 				<view class="module-card">
 					<view class="section-header">
 						<view class="section-title-bar"></view>
@@ -102,22 +104,24 @@
 					</view>
 					<view class="poster-bottom">
 						<view class="poster-qrcode">
-							<canvas type="2d" id="qrCanvas" class="poster-qr-canvas" :style="{ width: qrCanvasSize + 'px', height: qrCanvasSize + 'px' }"></canvas>
-							<text class="poster-qr-tip">微信扫一扫</text>
+							<image v-if="factoryQrcodeUrl" :src="factoryQrcodeUrl" mode="aspectFit" class="poster-qr-canvas" :style="{ width: qrCanvasSize + 'px', height: qrCanvasSize + 'px' }"></image>
+							<canvas v-else type="2d" id="qrCanvas" class="poster-qr-canvas" :style="{ width: qrCanvasSize + 'px', height: qrCanvasSize + 'px' }"></canvas>
 						</view>
 						<view class="poster-slogan">
-							<text class="poster-slogan-main">扫码看最新收购价</text>
+							<text class="poster-slogan-main">微信扫一扫 查看最新报价</text>
 						</view>
 					</view>
 				</view>
+				<text class="poster-tip-text">扫码后直接进入当前页，让更多农户看到收购价</text>
 				<view class="poster-actions">
-					<view class="poster-save-btn" @tap="onSavePoster">
-						<text class="poster-save-text">保存海报</text>
+					<view class="poster-save-btn" :class="{ disabled: isSavingPoster }" @tap="onSavePoster">
+						<text class="poster-save-text">{{ isSavingPoster ? '保存中...' : '保存海报' }}</text>
 					</view>
-					<text class="poster-close" @tap="showPoster = false">关闭</text>
 				</view>
 			</view>
 		</view>
+
+		<canvas type="2d" id="posterCanvas" class="poster-canvas-hidden"></canvas>
 	</view>
 </template>
 
@@ -125,6 +129,7 @@
 	import { factoryApi } from '@/utils/request.js'
 	import { formatVisitorCount, formatDate } from '@/utils/date.js'
 	import { generateQRData } from '@/utils/qrcode.js'
+	import { formatCosUrl } from '@/utils/config.js'
 
 	export default {
 		data() {
@@ -133,9 +138,13 @@
 				loading: true,
 				factoryId: null,
 				qrCanvasSize: 100,
+				isSavingPoster: false,
+				factoryQrcodeUrl: '',
+				loadingQrcode: false,
 				factory: {
 					name: '',
 					verified: false,
+					identification: -1,
 					address: '',
 					notice: '',
 					latitude: 0,
@@ -155,13 +164,22 @@
 					title: this.factory.name
 				})
 			}
-			uni.hideShareMenu()
+			if (options.scene) {
+				const scene = decodeURIComponent(options.scene)
+				this.factoryId = scene.replace('f', '')
+			}
 			this.loadDetail()
 		},
 		onShareAppMessage() {
+			const path = '/pages/factory/detail?Id=' + this.factoryId + '&name=' + encodeURIComponent(this.factory.name)
 			return {
 				title: this.factory.name + ' - 收购信息',
-				path: '/pages/factory/detail?name=' + encodeURIComponent(this.factory.name)
+				path: path
+			}
+		},
+		onShareTimeline() {
+			return {
+				title: this.factory.name + ' - 收购信息'
 			}
 		},
 		methods: {
@@ -173,9 +191,12 @@
 				this.loading = true
 				try {
 					const data = await factoryApi.getDetail(this.factoryId)
+					const idVal = data.identification
+					const idNum = (idVal === null || idVal === undefined || idVal === '') ? -1 : Number(idVal)
 					this.factory = {
 						...data,
-						verified: data.identification === 1 || data.identification === '1'
+						identification: idNum,
+						verified: idNum === 1
 					}
 					this.categories = this.parseCategories(this.factory.category)
 				} catch (e) {
@@ -234,23 +255,69 @@
 					scale: 16
 				})
 			},
-			onShowPoster() {
+			async onShowPoster() {
+				const sysInfo = uni.getSystemInfoSync()
+				const size = Math.floor(340 * sysInfo.windowWidth / 750)
+				this.qrCanvasSize = size
+				if (!this.factoryQrcodeUrl) {
+					uni.showLoading({ title: '生成中...', mask: true })
+					try {
+						const qrcodeData = await factoryApi.generateFactoryQrcode(this.factoryId, this.factory.name)
+						console.log('[小程序码接口] 返回原始数据:', qrcodeData)
+						if (qrcodeData) {
+							let url = ''
+							if (typeof qrcodeData === 'string') {
+								url = qrcodeData
+							} else {
+								url = qrcodeData.url || qrcodeData.qrcode || qrcodeData.qrcode_url || qrcodeData.qrCode || qrcodeData.qr_url || qrcodeData.path || qrcodeData.img || qrcodeData.image || qrcodeData.file || qrcodeData.src || qrcodeData.base64 || ''
+								if (!url && qrcodeData.data) {
+									const inner = qrcodeData.data
+									if (typeof inner === 'string') {
+										url = inner
+									} else {
+										url = inner.url || inner.qrcode || inner.qrcode_url || inner.qrCode || inner.path || inner.img || inner.image || inner.file || inner.src || inner.base64 || ''
+									}
+								}
+							}
+							if (url) {
+								if (/^iVBOR|^\/9j\//i.test(url)) {
+									const prefix = /^iVBOR/i.test(url) ? 'data:image/png;base64,' : 'data:image/jpeg;base64,'
+									url = prefix + url
+								} else if (!/^(wxfile:|file:|blob:|wxLocalResource:|data:|https?:)/i.test(url)) {
+									url = formatCosUrl(url)
+								}
+							}
+							this.factoryQrcodeUrl = url
+							console.log('[小程序码接口] 最终解析到的URL:', this.factoryQrcodeUrl)
+						}
+					} catch (e) {
+						console.error('获取小程序码失败:', e)
+						uni.showToast({ title: '小程序码获取失败，将使用普通二维码', icon: 'none' })
+					} finally {
+						uni.hideLoading()
+					}
+				}
 				this.showPoster = true
 				this.$nextTick(() => {
-					this.renderQRCode()
+					if (!this.factoryQrcodeUrl) {
+						console.log('[海报] 小程序码为空，降级渲染普通二维码')
+						this.renderQRCode()
+					}
 				})
 			},
 			renderQRCode() {
 				const sysInfo = uni.getSystemInfoSync()
-				const size = Math.floor(260 * sysInfo.windowWidth / 750)
-				this.qrCanvasSize = size
-				const qrText = 'https://www.housefactory.cn.cn/pages/factory/detail?Id=' + this.factoryId
+				const size = this.qrCanvasSize
+				const qrText = this.getQRUrl()
 				try {
-					const data = generateQRData(qrText, 0)
+					const data = generateQRData(qrText, 2)
 					const qrSize = data.size
-					const margin = 2
+					const margin = 0
 					const moduleCount = qrSize + margin * 2
-					const cellSize = size / moduleCount
+					const cellSize = Math.max(1, Math.floor(size / moduleCount))
+					const actualSize = cellSize * moduleCount
+					const offsetX = (size - actualSize) / 2
+					const offsetY = (size - actualSize) / 2
 					const query = uni.createSelectorQuery().in(this)
 					query.select('#qrCanvas').fields({ node: true, size: true }).exec((res) => {
 						if (!res || !res[0]) return
@@ -262,13 +329,13 @@
 						ctx.scale(dpr, dpr)
 						ctx.fillStyle = '#ffffff'
 						ctx.fillRect(0, 0, size, size)
-						ctx.fillStyle = '#333333'
+						ctx.fillStyle = '#000000'
 						for (let row = 0; row < qrSize; row++) {
 							for (let col = 0; col < qrSize; col++) {
 								if (data.modules[row][col]) {
-									const x = (col + margin) * cellSize
-									const y = (row + margin) * cellSize
-									ctx.fillRect(x, y, cellSize + 0.5, cellSize + 0.5)
+									const x = offsetX + (col + margin) * cellSize
+									const y = offsetY + (row + margin) * cellSize
+									ctx.fillRect(x, y, cellSize, cellSize)
 								}
 							}
 						}
@@ -277,10 +344,270 @@
 					console.error('QR code generation failed:', e)
 				}
 			},
-			onSavePoster() {
-				uni.showToast({
-					title: '海报已保存到相册',
-					icon: 'success'
+			getQRUrl() {
+				return 'https://housefactory.cn/pages/factory/detail?Id=' + this.factoryId
+			},
+			async onSavePoster() {
+				if (this.isSavingPoster) return
+				this.isSavingPoster = true
+				try {
+					uni.showLoading({ title: '生成海报中...', mask: true })
+					const tempFilePath = await this.renderPosterToImage()
+					uni.hideLoading()
+					await this.savePosterToAlbum(tempFilePath)
+					uni.showToast({ title: '已保存到相册', icon: 'success' })
+				} catch (e) {
+					uni.hideLoading()
+					console.error('保存海报失败:', e)
+					if (e && (e.errMsg || '').indexOf('auth deny') > -1) {
+						uni.showModal({
+							title: '提示',
+							content: '需要您授权保存相册权限，是否去开启？',
+							success: (res) => {
+								if (res.confirm) {
+									uni.openSetting()
+								}
+							}
+						})
+					} else {
+						uni.showToast({ title: (e && e.msg) ? e.msg : '保存失败，请重试', icon: 'none' })
+					}
+				} finally {
+					this.isSavingPoster = false
+				}
+			},
+			downloadImage(url) {
+				return new Promise((resolve, reject) => {
+					if (!url) {
+						reject(new Error('图片地址为空'))
+						return
+					}
+					if (/^(wxfile:|file:|data:|blob:)/i.test(url)) {
+						resolve(url)
+						return
+					}
+					let finalUrl = url
+					if (!/^https?:/i.test(finalUrl)) {
+						finalUrl = formatCosUrl(finalUrl)
+					}
+					uni.downloadFile({
+						url: finalUrl,
+						success: (res) => {
+							if (res.statusCode === 200) {
+								resolve(res.tempFilePath)
+							} else {
+								reject(new Error('下载图片失败, statusCode=' + res.statusCode))
+							}
+						},
+						fail: reject
+					})
+				})
+			},
+			renderPosterToImage() {
+				return new Promise((resolve, reject) => {
+					const sysInfo = uni.getSystemInfoSync()
+					const dpr = sysInfo.pixelRatio || 2
+					const posterW = 375
+					const posterH = 560
+
+					const drawPoster = (qrcodeImgPath) => {
+						const query = uni.createSelectorQuery().in(this)
+						query.select('#posterCanvas').fields({ node: true, size: true }).exec(async (res) => {
+							try {
+								if (!res || !res[0] || !res[0].node) {
+									reject(new Error('获取海报画布失败'))
+									return
+								}
+								const canvas = res[0].node
+								const ctx = canvas.getContext('2d')
+								canvas.width = posterW * dpr
+								canvas.height = posterH * dpr
+								ctx.scale(dpr, dpr)
+
+								const radius = 16
+								const gradient = ctx.createLinearGradient(0, 0, 0, posterH)
+								gradient.addColorStop(0, '#ffffff')
+								gradient.addColorStop(1, '#f5f9ff')
+								this.roundRect(ctx, 0, 0, posterW, posterH, radius)
+								ctx.fillStyle = gradient
+								ctx.fill()
+
+								const padding = 28
+								let y = padding
+
+								ctx.fillStyle = '#333333'
+								ctx.font = 'bold 22px sans-serif'
+								const factoryName = this.factory.name || ''
+								ctx.fillText(factoryName, padding, y + 22)
+								y += 34
+
+								const address = (this.factory.location && this.factory.location.address) || this.factory.address || ''
+								ctx.fillStyle = '#666666'
+								ctx.font = '13px sans-serif'
+								const maxAddrW = posterW - padding * 2
+								const drawAddr = this.truncateText(ctx, address, maxAddrW, '13px sans-serif')
+								ctx.fillText(drawAddr, padding, y + 14)
+								y += 22
+
+								ctx.strokeStyle = '#eeeeee'
+								ctx.lineWidth = 0.5
+								ctx.beginPath()
+								ctx.moveTo(padding, y)
+								ctx.lineTo(posterW - padding, y)
+								ctx.stroke()
+								y += 22
+
+								ctx.fillStyle = '#333333'
+								ctx.font = 'bold 14px sans-serif'
+								ctx.fillText('收购品类', padding, y + 16)
+								y += 28
+
+								let tagX = padding
+								let tagY = y
+								const tagH = 28
+								const tagGap = 10
+								const tagPaddingLR = 14
+								ctx.font = '13px sans-serif'
+								this.categories.forEach((cat) => {
+									const catName = cat.name || String(cat)
+									const textW = ctx.measureText(catName).width
+									const tagW = textW + tagPaddingLR * 2
+									if (tagX + tagW > posterW - padding) {
+										tagX = padding
+										tagY += tagH + tagGap
+									}
+									this.roundRect(ctx, tagX, tagY, tagW, tagH, 6)
+									ctx.fillStyle = '#f0f7ff'
+									ctx.fill()
+									ctx.fillStyle = '#333333'
+									ctx.fillText(catName, tagX + tagPaddingLR, tagY + 19)
+									tagX += tagW + tagGap
+								})
+								y = tagY + tagH + 28
+
+								ctx.strokeStyle = '#eeeeee'
+								ctx.lineWidth = 0.5
+								ctx.beginPath()
+								ctx.moveTo(padding, y)
+								ctx.lineTo(posterW - padding, y)
+								ctx.stroke()
+								y += 24
+
+								const qrSize = 180
+								const qrX = (posterW - qrSize) / 2
+
+								if (qrcodeImgPath) {
+									const img = canvas.createImage()
+									await new Promise((imgResolve, imgReject) => {
+										img.onload = imgResolve
+										img.onerror = imgReject
+										img.src = qrcodeImgPath
+									})
+									ctx.drawImage(img, qrX, y, qrSize, qrSize)
+								} else {
+									const qrText = this.getQRUrl()
+									const qrData = generateQRData(qrText, 2)
+									this.drawQRCodeToCtx(ctx, qrData, qrX, y, qrSize)
+								}
+								y += qrSize + 20
+
+								ctx.fillStyle = '#333333'
+								ctx.font = '13px sans-serif'
+								const slogan = '微信扫一扫 查看最新报价'
+								const sloganW = ctx.measureText(slogan).width
+								ctx.fillText(slogan, (posterW - sloganW) / 2, y + 16)
+
+								setTimeout(() => {
+									uni.canvasToTempFilePath({
+										canvas: canvas,
+										success: (r) => resolve(r.tempFilePath),
+										fail: (err) => reject(err)
+									}, this)
+								}, 50)
+							} catch (e) {
+								reject(e)
+							}
+						})
+					}
+
+					if (this.factoryQrcodeUrl) {
+						this.downloadImage(this.factoryQrcodeUrl)
+							.then((localPath) => drawPoster(localPath))
+							.catch((e) => {
+								console.warn('下载小程序码失败，使用普通二维码:', e)
+								drawPoster('')
+							})
+					} else {
+						drawPoster('')
+					}
+				})
+			},
+			drawQRCodeToCtx(ctx, data, x, y, size) {
+				const qrSize = data.size
+				const margin = 0
+				const moduleCount = qrSize + margin * 2
+				const cellSize = Math.max(1, Math.floor(size / moduleCount))
+				const actualSize = cellSize * moduleCount
+				const offsetX = x + (size - actualSize) / 2
+				const offsetY = y + (size - actualSize) / 2
+				ctx.fillStyle = '#ffffff'
+				ctx.fillRect(x, y, size, size)
+				ctx.fillStyle = '#000000'
+				for (let row = 0; row < qrSize; row++) {
+					for (let col = 0; col < qrSize; col++) {
+						if (data.modules[row][col]) {
+							const px = offsetX + (col + margin) * cellSize
+							const py = offsetY + (row + margin) * cellSize
+							ctx.fillRect(px, py, cellSize, cellSize)
+						}
+					}
+				}
+			},
+			roundRect(ctx, x, y, w, h, r) {
+				ctx.beginPath()
+				ctx.moveTo(x + r, y)
+				ctx.lineTo(x + w - r, y)
+				ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+				ctx.lineTo(x + w, y + h - r)
+				ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+				ctx.lineTo(x + r, y + h)
+				ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+				ctx.lineTo(x, y + r)
+				ctx.quadraticCurveTo(x, y, x + r, y)
+				ctx.closePath()
+			},
+			truncateText(ctx, text, maxWidth, font) {
+				ctx.font = font
+				if (ctx.measureText(text).width <= maxWidth) return text
+				let result = text
+				while (result.length > 0 && ctx.measureText(result + '...').width > maxWidth) {
+					result = result.slice(0, -1)
+				}
+				return result + '...'
+			},
+			savePosterToAlbum(tempFilePath) {
+				return new Promise((resolve, reject) => {
+					uni.saveImageToPhotosAlbum({
+						filePath: tempFilePath,
+						success: resolve,
+						fail: (err) => {
+							if (err && err.errMsg && err.errMsg.indexOf('auth deny') > -1) {
+								uni.authorize({
+									scope: 'scope.writePhotosAlbum',
+									success: () => {
+										uni.saveImageToPhotosAlbum({
+											filePath: tempFilePath,
+											success: resolve,
+											fail: reject
+										})
+									},
+									fail: reject
+								})
+							} else {
+								reject(err)
+							}
+						}
+					})
 				})
 			}
 		}
@@ -324,14 +651,19 @@
 
 	.verified-tag {
 		font-size: 22rpx;
-		color: #8b4513;
-		background: linear-gradient(135deg, #ffd700, #ffb347);
 		padding: 6rpx 16rpx;
 		border-radius: 20rpx;
 		margin-left: 16rpx;
 		flex-shrink: 0;
 		font-weight: 600;
-		box-shadow: 0 2rpx 8rpx rgba(255, 179, 71, 0.5);
+	}
+
+	.verified-tag.tag-success,
+	.verified-tag.tag-unauth {
+		color: #fff;
+		background: transparent;
+		border: 1rpx solid rgba(255, 255, 255, 0.8);
+		box-shadow: none;
 	}
 
 	.address-row {
@@ -722,8 +1054,8 @@
 	}
 
 	.poster-slogan-main {
-		font-size: 32rpx;
-		font-weight: 700;
+		font-size: 24rpx;
+		font-weight: 400;
 		color: #333;
 		margin-bottom: 8rpx;
 	}
@@ -744,7 +1076,6 @@
 		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
 		padding: 24rpx 80rpx;
 		border-radius: 999rpx;
-		margin-bottom: 20rpx;
 	}
 
 	.poster-save-text {
@@ -753,8 +1084,25 @@
 		font-weight: 500;
 	}
 
-	.poster-close {
-		font-size: 26rpx;
-		color: rgba(255, 255, 255, 0.8);
+	.poster-tip-text {
+		margin: 32rpx 0 24rpx;
+		font-size: 24rpx;
+		color: rgba(255, 255, 255, 0.85);
+		line-height: 1.6;
+		text-align: center;
+	}
+
+	.poster-canvas-hidden {
+		position: fixed;
+		left: -9999px;
+		top: -9999px;
+		width: 375px;
+		height: 560px;
+		z-index: -1;
+	}
+
+	.poster-save-btn.disabled {
+		opacity: 0.6;
+		pointer-events: none;
 	}
 </style>

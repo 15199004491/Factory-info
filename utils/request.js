@@ -63,6 +63,7 @@ export const factoryApi = {
     deleteFactory: (Id) => request('/farm/Factory/deleteFactory', { Id, open_id: getOpenid() }, 'POST'),
     verifyFactory: (Id, license, id_card) => request('/farm/Factory/verifyFactory', { Id, license, id_card,open_id: getOpenid() }, 'POST'),
     publishFactory: (d) => request('/farm/Factory/publishFactoryInfo', { ...d, open_id: getOpenid() }, 'POST'),
+    generateFactoryQrcode: (Id, name = '', page = 'pages/factory/detail', width = 430) => request('/farm/Factory/generateFactoryQrcode', { Id, name, page, width }),
 };
 
 export const rentApi = {

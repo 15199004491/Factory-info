@@ -147,7 +147,7 @@
 					floor: item.floor || '',
 					payment: item.payment || '',
 					price: item.price,
-					tagType: item.tagType || 'entire',
+					tagType: item.tag_type || item.tagType || 'entire',
 					description: item.description || item.explain || '',
 					createTime: formatDate(item.update_time || item.create_time || item.createTime || 0)
 				}))

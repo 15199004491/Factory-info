@@ -9,7 +9,7 @@
 				<view class="form-item form-item-row">
 					<text class="form-label">通知</text>
 					<view class="notice-wrap">
-						<textarea class="form-textarea notice-textarea" v-model="factoryNotice" maxlength="200" auto-height placeholder="请输入通知内容，如：即日起至8月31日，小麦收购价格上调5%" placeholder-class="input-placeholder" />
+						<textarea class="form-textarea notice-textarea" v-model="factoryNotice" maxlength="200" auto-height placeholder="请输入通知内容，如：即日起至8月31日，小麦收购价格上调5%" placeholder-class="input-placeholder" adjust-position="true" cursor-spacing="120" fixed="false" />
 						<text class="notice-count">{{ factoryNotice.length }}/200</text>
 					</view>
 				</view>
@@ -103,7 +103,7 @@
 					<view class="form-row">
 						<text class="form-label">备注</text>
 						<view class="remark-wrap">
-							<textarea class="form-textarea" v-model="form.remark" maxlength="50" placeholder="选填，如：要求水分≤14%" placeholder-class="form-placeholder" />
+							<textarea class="form-textarea" v-model="form.remark" maxlength="50" placeholder="选填，如：要求水分≤14%" placeholder-class="form-placeholder" adjust-position="true" cursor-spacing="120" fixed="false" />
 							<text class="remark-count">{{ form.remark.length }}/50</text>
 						</view>
 					</view>
@@ -135,7 +135,7 @@
 				editingIndex: -1,
 				saving: false,
 				publishing: false,
-				unitOptions: ['公斤', '斤','吨'],
+				unitOptions: ['公斤', '吨'],
 				form: {
 					name: '',
 					price: '',
@@ -256,7 +256,7 @@
 				}
 				if (typeof data === 'string') {
 					return data.split(',').filter(Boolean).map(name => ({
-						name, price: '', unit: '斤', status: 'active', remark: ''
+						name, price: '', unit: '公斤', status: 'active', remark: ''
 					}))
 				}
 				return []
@@ -271,7 +271,7 @@
 					return
 				}
 				this.editingIndex = -1
-				this.form = { name: '', price: '', unit: '斤', status: 'active', remark: '' }
+				this.form = { name: '', price: '', unit: '公斤', status: 'active', remark: '' }
 				this.showModal = true
 			},
 			onEditCategory(idx) {
