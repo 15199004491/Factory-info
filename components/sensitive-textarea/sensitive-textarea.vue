@@ -12,6 +12,7 @@
 				:cursor-spacing="cursorSpacing"
 				:fixed="fixed"
 				:auto-height="autoHeight"
+				:show-confirm-bar="false"
 				@input="onInput"
 			></textarea>
 			<view v-if="showCount" class="textarea-count-wrap">

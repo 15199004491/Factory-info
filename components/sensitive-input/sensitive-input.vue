@@ -8,6 +8,7 @@
 			:type="type"
 			:placeholder="placeholder"
 			:placeholder-class="placeholderClass"
+			:show-confirm-bar="false"
 			@input="onInput"
 		/>
 		<text v-if="hasError" class="sensitive-error">{{ errorMsg }}</text>
@@ -117,7 +118,7 @@
 		width: 100%;
 		height: 100%;
 		box-sizing: border-box;
-		border: 2rpx solid #f0f0f0;
+		border: 2rpx solid #eee;
 		border-radius: 8rpx;
 		padding: 0 20rpx;
 	}
