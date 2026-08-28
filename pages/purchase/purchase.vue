@@ -9,12 +9,15 @@
 				<input
 					class="search-input"
 					v-model="keyword"
-					placeholder="搜索收购信息"
+					placeholder="搜索收购品类"
 					placeholder-class="search-placeholder"
 					confirm-type="search"
 					:maxlength="10"
 					@confirm="onSearch"
 				/>
+				<view v-if="keyword" class="clear-icon" @tap="onClearKeyword">
+					<u-icon name="close-circle-fill" size="18" color="#999"></u-icon>
+				</view>
 			</view>
 			<view class="search-btn" @tap="onSearch">
 				<text class="search-btn-text">搜索</text>
@@ -205,6 +208,15 @@
 			onSearch() {
 				this.loadList()
 			},
+			onReset() {
+				this.keyword = ''
+				this.currentRegion = '全部'
+				this.loadList()
+			},
+			onClearKeyword() {
+				this.keyword = ''
+				this.loadList()
+			},
 			onPurchaseTap(item) {
 				uni.navigateTo({
 					url: '/pages/purchase/detail?id=' + item.id
@@ -264,6 +276,13 @@
 		background-color: #f5f5f5;
 		border-radius: 8rpx;
 		padding: 0 20rpx;
+		display: flex;
+		align-items: center;
+		position: relative;
+	}
+
+	.clear-icon {
+		margin-left: 12rpx;
 		display: flex;
 		align-items: center;
 	}

@@ -7,7 +7,8 @@ export function getOpenid() {
 	return info.open_id || ''
 }
 
-export function request(url, data = {}, method = 'GET') {
+export function request(url, data = {}, method = 'GET', options = {}) {
+    const { silent = false } = options;
     return new Promise((resolve, reject) => {
         const header = {}
         if (method !== 'GET') {
@@ -29,7 +30,9 @@ export function request(url, data = {}, method = 'GET') {
                             resolve(res.data.data);
                         } else {
                             const msg = (res && res.data && res.data.msg) || '请求失败'
-                            uni.showToast({ title: msg, icon: 'none' });
+                            if (!silent) {
+                                uni.showToast({ title: msg, icon: 'none' });
+                            }
                             reject((res && res.data) || {});
                         }
                     } catch (e) {
@@ -89,7 +92,7 @@ export const userApi = {
     getInfo: (token) => request('/farm/Wxuser/getUserInfo', { token }),
     update: (d) => request('/farm/Wxuser/ringUp', d, 'POST'),
     getPhone: (code) => request('/farm/Wxuser/getuserphonenumber', { code }, 'POST'),
-    msgCheck: (msg) => request('/farm/Wxuser/msgSecCheck', { msg }, 'POST'),
+    msgCheck: (msg) => request('/farm/Wxuser/msgSecCheck', { msg }, 'POST', { silent: true }),
     imgSecCheck: (media) => request('/farm/Wxuser/imgSecCheck', media, 'POST'),
 };
 

@@ -4,7 +4,17 @@
 			<view class="form-card">
 				<view class="form-item">
 					<text class="form-label">标题</text>
-					<input class="form-input" v-model="form.title" maxlength="20" placeholder="例：大量收购玉米小麦" placeholder-class="form-placeholder" />
+					<view class="form-input">
+						<sensitive-input
+							:key="'title-' + formLoadKey"
+							ref="titleInput"
+							:value="form.title"
+							@input="form.title = $event"
+							:maxlength="20"
+							placeholder="例：大量收购玉米小麦"
+							placeholder-class="form-placeholder"
+						/>
+					</view>
 				</view>
 				<view class="form-item form-item-link" @tap="openRegionPicker">
 					<text class="form-label">所在地区</text>
@@ -63,10 +73,16 @@
 				</view>
 				<view class="form-item form-item-textarea">
 					<text class="form-label">详细说明</text>
-					<view class="textarea-wrap">
-						<textarea class="form-textarea" v-model="form.description" maxlength="200" placeholder="请详细说明收购要求、品质标准等" placeholder-class="form-placeholder" adjust-position="true" cursor-spacing="120" fixed="false"></textarea>
-						<text class="textarea-count">{{ form.description.length }}/200</text>
-					</view>
+					<sensitive-textarea
+						:key="'desc-' + formLoadKey"
+						ref="descInput"
+						:value="form.description"
+						@input="form.description = $event"
+						:maxlength="200"
+						placeholder="请详细说明收购要求、品质标准等"
+						placeholder-class="form-placeholder"
+						input-class="form-textarea"
+					/>
 				</view>
 			</view>
 		</view>
@@ -91,12 +107,21 @@
 				<view class="modal-form">
 					<view class="form-row">
 						<text class="form-label">品类名称</text>
-						<input class="form-input" v-model="formData.name" maxlength="10" placeholder="请输入品类名称" placeholder-class="form-placeholder" />
+						<view class="form-input-gray">
+							<sensitive-input
+								ref="catNameInput"
+								:value="formData.name"
+								@input="formData.name = $event"
+								:maxlength="10"
+								placeholder="请输入品类名称"
+								placeholder-class="form-placeholder"
+							/>
+						</view>
 					</view>
 					<view class="form-row">
 						<text class="form-label">收购价格</text>
 						<view class="price-row">
-							<input class="form-input price-input" maxlength="10" v-model="formData.price" type="digit" placeholder="请输入价格" placeholder-class="form-placeholder" @input="onPriceInput" @blur="onPriceBlur" />
+							<input class="form-input-gray price-input" maxlength="10" v-model="formData.price" type="digit" placeholder="请输入价格" placeholder-class="form-placeholder" @input="onPriceInput" @blur="onPriceBlur" />
 							<text class="price-unit-label">元</text>
 							<picker class="unit-picker" :value="unitIndex" :range="unitOptions" @change="onUnitChange">
 								<view class="unit-select">
@@ -108,10 +133,15 @@
 					</view>
 					<view class="form-row">
 						<text class="form-label">备注</text>
-						<view class="textarea-wrap remark-wrap">
-							<textarea class="form-textarea modal-remark" v-model="formData.remark" maxlength="100" placeholder="请输入品类备注（如品质要求、收购说明等）" placeholder-class="form-placeholder" adjust-position="true" cursor-spacing="120" fixed="false"></textarea>
-							<text class="textarea-count">{{ (formData.remark || '').length }}/100</text>
-						</view>
+						<sensitive-textarea
+							ref="catRemarkInput"
+							:value="formData.remark"
+							@input="formData.remark = $event"
+							:maxlength="50"
+							placeholder="请输入品类备注（如品质要求、收购说明等）"
+							placeholder-class="form-placeholder"
+							input-class="form-textarea-gray"
+						/>
 					</view>
 				</view>
 				<view class="modal-actions">
@@ -165,6 +195,7 @@
 				unitOptions: ['公斤', '吨'],
 				editingId: null,
 				submitting: false,
+				formLoadKey: 0,
 				form: {
 					title: '',
 					region: '',
@@ -196,12 +227,15 @@
 				try {
 					const data = await purchaseApi.purchaseDetail({ Id: this.editingId })
 					this.form = {
-						title: data.title || '',
-						region: data.region || data.area_name || data.area || '',
-						mobile: data.mobile || '',
-						description: data.description || data.explain || '',
+						title: data.title || data.name || data.subject || '',
+						region: data.region || data.area_name || data.area || data.address || '',
+						mobile: data.mobile || data.phone || data.tel || '',
+						description: data.description || data.explain || data.content || data.detail || data.remark || '',
 						categories: this.parseCategories(data)
 					}
+					this.$nextTick(() => {
+						this.formLoadKey++
+					})
 				} catch (e) {
 					console.error('loadDetail error', e)
 				}
@@ -322,11 +356,19 @@
 					return
 				}
 
-				uni.showLoading({ title: '校验中...', mask: true, timeout: 6000 })
-				const checkText = [this.formData.name, this.formData.remark].filter(Boolean).join(' ')
-				const textOk = await uni.checkTextSafe(checkText)
-				uni.hideLoading()
-				if (!textOk) return
+				const validations = [
+					{ ref: this.$refs.catNameInput, label: '品类名称' },
+					{ ref: this.$refs.catRemarkInput, label: '备注' }
+				]
+				const results = await Promise.all(validations.map(v => {
+					if (!v.ref || !v.ref.validate) return Promise.resolve({ valid: true, label: v.label })
+					return v.ref.validate().then(valid => ({ valid, label: v.label }))
+				}))
+				const failed = results.filter(r => !r.valid)
+				if (failed.length > 0) {
+					uni.showToast({ title: failed.map(f => f.label).join('、') + ' 含敏感词汇', icon: 'none' })
+					return
+				}
 
 				const price = this.formatPrice(this.formData.price)
 
@@ -369,54 +411,48 @@
 					cb(false)
 				}
 			},
-			doSubmit() {
+			async doSubmit() {
+				const validations = [
+					{ ref: this.$refs.titleInput, label: '标题' },
+					{ ref: this.$refs.descInput, label: '详细说明' }
+				]
+				const results = await Promise.all(validations.map(v => {
+					if (!v.ref || !v.ref.validate) return Promise.resolve({ valid: true, label: v.label })
+					return v.ref.validate().then(valid => ({ valid, label: v.label }))
+				}))
+				const failed = results.filter(r => !r.valid)
+				if (failed.length > 0) {
+					uni.showToast({ title: failed.map(f => f.label).join('、') + ' 含敏感词汇', icon: 'none' })
+					return
+				}
+
 				this.submitting = true
-				uni.showLoading({ title: '校验中...', mask: true, timeout: 6000 })
+				uni.showLoading({ title: '提交中...', mask: true })
 
-				const msg = [
-					this.form.title,
-					this.form.region,
-					this.form.categories.map(c => c.name).join(' '),
-					this.form.description
-				].filter(Boolean).join(' ')
-
-				uni.checkTextSafe(msg).then(textOk => {
+				const postData = {
+					id: this.editingId || undefined,
+					title: this.form.title,
+					region: this.form.region,
+					mobile: this.form.mobile,
+					description: this.form.description,
+					categories: this.form.categories.map(c => ({
+						name: c.name,
+						price: c.price,
+						unit: c.unit,
+						remark: c.remark || ''
+					}))
+				}
+				console.log('postData--', postData)
+				purchaseApi.addPurchase(postData).then(() => {
 					uni.hideLoading()
-					if (!textOk) {
-						this.submitting = false
-						return
-					}
-
-					uni.showLoading({ title: '提交中...', mask: true, timeout: 6000 })
-
-					const postData = {
-						id: this.editingId || undefined,
-						title: this.form.title,
-						region: this.form.region,
-						mobile: this.form.mobile,
-						description: this.form.description,
-						categories: this.form.categories.map(c => ({
-							name: c.name,
-							price: c.price,
-							unit: c.unit,
-							remark: c.remark || ''
-						}))
-					}
-					console.log('postData--', postData)
-					purchaseApi.addPurchase(postData).then(() => {
-						uni.hideLoading()
-						uni.showToast({ title: this.editingId ? '修改成功' : '发布成功', icon: 'success' })
-						setTimeout(() => {
-							uni.navigateBack()
-						}, 1000)
-					}).catch(e => {
-						uni.hideLoading()
-						uni.showToast({ title: (e && e.message) ? '提交失败:' + e.message : '提交失败', icon: 'none' })
-					}).finally(() => {
-						this.submitting = false
-					})
-				}).catch(() => {
+					uni.showToast({ title: this.editingId ? '修改成功' : '发布成功', icon: 'success' })
+					setTimeout(() => {
+						uni.navigateBack()
+					}, 1000)
+				}).catch(e => {
 					uni.hideLoading()
+					uni.showToast({ title: (e && e.message) ? '提交失败:' + e.message : '提交失败', icon: 'none' })
+				}).finally(() => {
 					this.submitting = false
 				})
 			},
@@ -448,6 +484,8 @@
 </script>
 
 <style lang="scss">
+	@import '@/common/form.scss';
+
 	.page {
 		min-height: 100vh;
 		background-color: #f5f5f5;
@@ -597,85 +635,8 @@
 		color: #999;
 	}
 
-	.form-item {
-		padding: 28rpx 24rpx;
-		border-bottom: 1rpx solid #f5f5f5;
-	}
-
-	.form-item:last-child {
-		border-bottom: none;
-	}
-
-	.form-item-textarea {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-	}
-
-	.form-label {
-		font-size: 28rpx;
-		color: #333;
-		font-weight: 500;
-		margin-bottom: 16rpx;
-		display: block;
-	}
-
-	.form-input {
-		width: 100%;
-		height: 60rpx;
-		font-size: 28rpx;
-		color: #333;
-	}
-
-	.form-input-wrap {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		height: 60rpx;
-	}
-
-	.form-value {
-		font-size: 28rpx;
-		color: #333;
-	}
-
-	.form-placeholder-text {
-		color: #999;
-	}
-
 	.form-item-link {
 		cursor: pointer;
-	}
-
-	.textarea-wrap {
-		position: relative;
-		width: 100%;
-	}
-	.form-textarea {
-		width: 100%;
-		min-height: 180rpx;
-		font-size: 28rpx;
-		color: #333;
-		padding: 16rpx 0 48rpx;
-		background-color: #f9f9f9;
-		border-radius: 8rpx;
-	}
-	.form-textarea.modal-remark {
-		min-height: 100rpx;
-		height: 100rpx;
-		padding: 12rpx 0 36rpx;
-	}
-	.textarea-count {
-		position: absolute;
-		right: 4rpx;
-		bottom: 12rpx;
-		font-size: 22rpx;
-		color: #999;
-		line-height: 1;
-	}
-
-	.form-placeholder {
-		color: #999;
 	}
 
 	.submit-bar {
@@ -750,6 +711,11 @@
 		margin-bottom: 0;
 	}
 
+	.modal-form {
+		position: relative;
+		z-index: 1;
+	}
+
 	.form-label {
 		font-size: 26rpx;
 		color: #666;
@@ -757,15 +723,14 @@
 		display: block;
 	}
 
-	.form-input {
-		width: 100%;
-		height: 72rpx;
-		font-size: 28rpx;
-		color: #333;
+	.form-input-gray {
 		background-color: #f5f7fa;
-		border-radius: 8rpx;
-		padding: 0 20rpx;
-		box-sizing: border-box;
+	}
+
+	.form-textarea-gray {
+		background-color: #f5f7fa;
+		min-height: 180rpx;
+		padding: 16rpx 20rpx;
 	}
 
 	.price-row {
@@ -811,6 +776,8 @@
 	.modal-actions {
 		display: flex;
 		gap: 24rpx;
+		position: relative;
+		z-index: 2;
 	}
 
 	.modal-btn {

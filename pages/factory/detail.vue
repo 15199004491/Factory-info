@@ -188,7 +188,8 @@
 		},
 		onShareTimeline() {
 			return {
-				title: this.factory.name + ' - 收购信息'
+				title: this.factory.name + ' - 收购信息',
+				query: 'Id=' + this.factoryId + '&from=share'
 			}
 		},
 		methods: {

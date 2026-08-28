@@ -8,7 +8,9 @@
 			"^image-placeholder": "@/components/image-placeholder/image-placeholder.vue",
 			"^safe-bottom": "@/components/safe-bottom/safe-bottom.vue",
 			"^tab-bar": "@/components/tab-bar/tab-bar.vue",
-			"^uploader-single": "@/components/uploader-single/uploader-single.vue"
+			"^uploader-single": "@/components/uploader-single/uploader-single.vue",
+			"^sensitive-input": "@/components/sensitive-input/sensitive-input.vue",
+			"^sensitive-textarea": "@/components/sensitive-textarea/sensitive-textarea.vue"
 		}
 	},
 	"pages": [
@@ -58,12 +60,6 @@
 			"path": "pages/rent/detail",
 			"style": {
 				"navigationBarTitleText": "租房详情"
-			}
-		},
-		{
-			"path": "pages/publish/publish",
-			"style": {
-				"navigationBarTitleText": "发布房源"
 			}
 		},
 		{

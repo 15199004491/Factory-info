@@ -3,12 +3,32 @@
 		<view class="form-list">
 			<view class="form-item">
 				<text class="form-label">标题</text>
-				<input class="form-input" v-model="form.title" maxlength="20" placeholder="例：阳光花园 3室2厅" placeholder-class="form-placeholder" />
+				<view class="form-input">
+					<sensitive-input
+						:key="'title-' + formLoadKey"
+						ref="titleInput"
+						:value="form.title"
+						@input="form.title = $event"
+						:maxlength="20"
+						placeholder="例：阳光花园 3室2厅"
+						placeholder-class="form-placeholder"
+					/>
+				</view>
 			</view>
 
 			<view class="form-item">
 				<text class="form-label">小区</text>
-				<input class="form-input" v-model="form.name" maxlength="10" placeholder="请输入小区名称" placeholder-class="form-placeholder" />
+				<view class="form-input">
+					<sensitive-input
+						:key="'name-' + formLoadKey"
+						ref="nameInput"
+						:value="form.name"
+						@input="form.name = $event"
+						:maxlength="10"
+						placeholder="请输入小区名称"
+						placeholder-class="form-placeholder"
+					/>
+				</view>
 			</view>
 
 			<view class="form-item form-item-link" @tap="openRegionPicker">
@@ -29,8 +49,8 @@
 
 			<view class="form-item">
 				<text class="form-label">面积</text>
-				<view class="input-with-unit">
-					<input class="form-input" v-model="form.acreage" type="digit" maxlength="20" placeholder="请输入面积" placeholder-class="form-placeholder" />
+				<view class="input-with-unit form-input">
+					<input v-model="form.acreage" type="digit" maxlength="20" placeholder="请输入面积" placeholder-class="form-placeholder" />
 					<text class="input-unit">㎡</text>
 				</view>
 			</view>
@@ -65,10 +85,16 @@
 
 			<view class="form-item form-item-textarea">
 				<text class="form-label">房源描述</text>
-				<view class="textarea-wrap">
-					<textarea class="form-textarea" v-model="form.explain" maxlength="200" placeholder="请详细描述房源信息" placeholder-class="form-placeholder" adjust-position="true" cursor-spacing="120" fixed="false"></textarea>
-					<text class="textarea-count">{{ form.explain.length }}/200</text>
-				</view>
+				<sensitive-textarea
+					:key="'explain-' + formLoadKey"
+					ref="explainInput"
+					:value="form.explain"
+					@input="form.explain = $event"
+					:maxlength="200"
+					placeholder="请详细描述房源信息"
+					placeholder-class="form-placeholder"
+					input-class="form-textarea"
+				/>
 			</view>
 		</view>
 
@@ -107,7 +133,7 @@
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import regionPicker from '@/components/region-picker/region-picker.vue'
 	import uploaderSingle from '@/components/uploader-single/uploader-single.vue'
-	import { secondHouseApi, userApi } from '@/utils/request.js'
+	import { secondHouseApi } from '@/utils/request.js'
 	import { uploadImages, isLocalTempPath } from '@/utils/upload.js'
 
 	export default {
@@ -130,6 +156,7 @@
 				typeOptions: ['1室1厅', '1室2厅', '2室1厅', '2室2厅', '2室3厅', '3室1厅', '3室2厅', '3室3厅', '4室2厅', '4室3厅', '5室2厅', '5室3厅'],
 				floorOptions: [],
 				imageChanged: false,
+				formLoadKey: 0,
 				form: {
 					title: '',
 					name: '',
@@ -168,6 +195,7 @@
 						if (this.$refs.uploaderSecond) {
 							this.$refs.uploaderSecond.currentSrc = data.second_image
 						}
+						this.formLoadKey++
 					})
 				} catch (e) {
 					console.error('加载二手房详情失败:', e)
@@ -208,15 +236,19 @@
 				this.showPicker = false
 			},
 			onPickerChange(e) {
-				this.pickerTempIndex = e.detail.value[0]
+				const idx = e.detail.value[0]
+				this.pickerTempIndex = idx
+				this.pickerValue = [idx]
 			},
 			confirmPicker() {
-				const value = this.pickerOptions[this.pickerTempIndex]
+				const idx = this.pickerTempIndex
+				const value = this.pickerOptions[idx]
 				if (this.pickerType === 'type') {
 					this.form.shape = value
 				} else {
 					this.form.floor = value
 				}
+				this.pickerValue = [idx]
 				this.showPicker = false
 			},
 			async onSubmit() {
@@ -258,24 +290,23 @@
 					this.form.second_image = refImage
 				}
 
-				this.submitting = true
-				uni.showLoading({ title: '校验中...', mask: true, timeout: 6000 })
-
-				const msg = [
-					this.form.title,
-					this.form.name,
-					this.form.area,
-					this.form.acreage,
-					this.form.shape,
-					this.form.explain
-				].filter(Boolean).join(' ')
-
-				const textOk = await uni.checkTextSafe(msg)
-				if (!textOk) {
-					uni.hideLoading()
-					this.submitting = false
+				const validations = [
+					{ ref: this.$refs.titleInput, label: '标题' },
+					{ ref: this.$refs.nameInput, label: '小区名称' },
+					{ ref: this.$refs.explainInput, label: '房源描述' }
+				]
+				const results = await Promise.all(validations.map(v => {
+					if (!v.ref || !v.ref.validate) return Promise.resolve({ valid: true, label: v.label })
+					return v.ref.validate().then(valid => ({ valid, label: v.label }))
+				}))
+				const failed = results.filter(r => !r.valid)
+				if (failed.length > 0) {
+					uni.showToast({ title: failed.map(f => f.label).join('、') + ' 含敏感词汇', icon: 'none' })
 					return
 				}
+
+				this.submitting = true
+				uni.showLoading({ title: '提交中...', mask: true })
 
 				try {
 					let secondImage = this.form.second_image || ''
@@ -319,6 +350,8 @@
 </script>
 
 <style lang="scss">
+	@import '@/common/form.scss';
+
 	.filter-mask {
 		position: fixed;
 		top: 0;
@@ -386,35 +419,6 @@
 		padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
 	}
 
-	.form-list {
-		background-color: #fff;
-		margin-top: 20rpx;
-	}
-
-	.form-item {
-		padding: 28rpx 30rpx;
-		border-bottom: 1rpx solid #f5f5f5;
-	}
-
-	.form-item:last-child {
-		border-bottom: none;
-	}
-
-	.form-label {
-		font-size: 28rpx;
-		color: #333;
-		font-weight: 500;
-		margin-bottom: 16rpx;
-		display: block;
-	}
-
-	.form-input {
-		width: 100%;
-		height: 60rpx;
-		font-size: 28rpx;
-		color: #333;
-	}
-
 	.form-picker {
 		width: 100%;
 	}
@@ -423,67 +427,9 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		height: 60rpx;
+		height: 72rpx;
 		font-size: 28rpx;
 		color: #333;
-	}
-
-	.form-input-wrap {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		height: 60rpx;
-	}
-
-	.form-value {
-		font-size: 28rpx;
-		color: #333;
-	}
-
-	.form-placeholder-text {
-		color: #999;
-	}
-
-	.form-placeholder {
-		color: #999;
-	}
-
-	.input-with-unit {
-		display: flex;
-		align-items: center;
-		height: 60rpx;
-	}
-
-	.input-with-unit .form-input {
-		flex: 1;
-	}
-
-	.input-unit {
-		font-size: 28rpx;
-		color: #666;
-		margin-left: 10rpx;
-	}
-
-	.textarea-wrap {
-		position: relative;
-		width: 100%;
-	}
-	.form-textarea {
-		width: 100%;
-		min-height: 180rpx;
-		font-size: 28rpx;
-		color: #333;
-		padding: 16rpx 0 48rpx 0;
-		background-color: #f9f9f9;
-		border-radius: 8rpx;
-	}
-	.textarea-count {
-		position: absolute;
-		right: 4rpx;
-		bottom: 12rpx;
-		font-size: 22rpx;
-		color: #999;
-		line-height: 1;
 	}
 
 	.image-upload {

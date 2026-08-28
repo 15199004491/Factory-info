@@ -65,7 +65,7 @@
 			<button class="action-btn share-btn" open-type="share">
 				<text class="btn-label">分享</text>
 			</button>
-			<view class="action-btn more-btn" v-if="showMoreBtn" @tap="onGoMore">
+			<view class="action-btn more-btn" @tap="onGoMore">
 				<text class="btn-label">更多房源</text>
 			</view>
 		</view>
@@ -183,6 +183,12 @@
 				}
 				if (imgUrl) share.imageUrl = imgUrl
 				return share
+			},
+			onShareTimeline() {
+				return {
+					title: this.house.name || this.house.title || '二手房房源',
+					query: 'id=' + this.houseId + '&from=share'
+				}
 			},
 			onGoMore() {
 				uni.switchTab({

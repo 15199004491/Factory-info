@@ -15,6 +15,9 @@
 					@confirm="onSearch"
 					maxlength="10"
 				/>
+				<view v-if="keyword" class="clear-icon" @tap="onClearKeyword">
+					<u-icon name="close-circle-fill" size="18" color="#999"></u-icon>
+				</view>
 			</view>
 			<view class="search-btn" @tap="onSearch">
 				<text class="search-btn-text">搜索</text>
@@ -105,20 +108,17 @@
 					</view>
 				</view>
 				<view class="fb-body">
-					<textarea
-						class="fb-textarea"
-						v-model="feedbackContent"
-						maxlength="200"
+					<sensitive-textarea
+						ref="feedbackInput"
+						:value="feedbackContent"
+						@input="feedbackContent = $event"
+						:maxlength="200"
 						placeholder="请输入您的意见或建议，帮助我们做得更好～"
 						placeholder-class="fb-placeholder"
-						auto-height
-						adjust-position="true"
-						cursor-spacing="120"
-						fixed="false"
+						input-class="form-textarea-gray"
+						:auto-height="true"
+						:show-count="false"
 					/>
-					<view class="fb-count">
-						<text class="fb-count-text">{{ feedbackContent.length }}/200</text>
-					</view>
 				</view>
 				<view class="fb-footer">
 					<view class="fb-submit" :class="{ disabled: !canSubmitFeedback || submittingFeedback }" @tap="submitFeedback">
@@ -310,6 +310,10 @@
 			onSearch() {
 				this.loadList()
 			},
+			onClearKeyword() {
+				this.keyword = ''
+				this.loadList()
+			},
 			onShareAppMessage(res) {
 				const shareObj = {
 					title: '邀请加工厂入驻，帮更多农户找到优质收购商',
@@ -339,6 +343,16 @@
 					return
 				}
 				if (this.submittingFeedback) return
+
+				const feedbackInput = this.$refs.feedbackInput
+				if (feedbackInput && feedbackInput.validate) {
+					const valid = await feedbackInput.validate()
+					if (!valid) {
+						uni.showToast({ title: '反馈内容含敏感词汇', icon: 'none' })
+						return
+					}
+				}
+
 				this.submittingFeedback = true
 				uni.showLoading({ title: '提交中...', mask: true })
 				try {
@@ -365,6 +379,8 @@
 </script>
 
 <style lang="scss">
+	@import '@/common/form.scss';
+
 	.page {
 		display: flex;
 		flex-direction: column;
@@ -551,6 +567,12 @@
 		background-color: #f5f5f5;
 		border-radius: 8rpx;
 		padding: 0 20rpx;
+		display: flex;
+		align-items: center;
+	}
+
+	.clear-icon {
+		margin-left: 12rpx;
 		display: flex;
 		align-items: center;
 	}
@@ -782,32 +804,12 @@
 		padding: 28rpx 32rpx 8rpx;
 	}
 
-	.fb-textarea {
-		width: 100%;
-		min-height: 220rpx;
-		max-height: 360rpx;
-		font-size: 28rpx;
-		color: #333;
-		line-height: 1.6;
-		background-color: #f7f8fa;
-		border-radius: 12rpx;
-		padding: 20rpx 24rpx;
-		box-sizing: border-box;
+	.fb-body .form-textarea-gray {
+		min-height: 240rpx;
 	}
 
 	.fb-placeholder {
 		color: #c0c4cc;
-	}
-
-	.fb-count {
-		display: flex;
-		justify-content: flex-end;
-		margin-top: 12rpx;
-	}
-
-	.fb-count-text {
-		font-size: 22rpx;
-		color: #bbb;
 	}
 
 	.fb-footer {

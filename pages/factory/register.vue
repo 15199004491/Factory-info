@@ -7,7 +7,16 @@
 			<view class="form-card">
 				<view class="form-item">
 					<text class="form-label">加工厂名称</text>
-					<input class="form-input" v-model="form.name" maxlength="20" placeholder="请输入加工厂名称" placeholder-class="input-placeholder" />
+					<view class="form-input">
+						<sensitive-input
+							ref="nameInput"
+							:value="form.name"
+							@input="form.name = $event"
+							:maxlength="20"
+							placeholder="请输入加工厂名称"
+							placeholder-class="input-placeholder"
+						/>
+					</view>
 				</view>
 				<view class="form-item">
 					<text class="form-label">联系电话</text>
@@ -184,24 +193,17 @@
 					return
 				}
 
-				this.submitting = true
-				uni.showLoading({ title: '校验中...', mask: true, timeout: 6000 })
-
-				const msg = [
-					this.form.name,
-					this.form.mobile,
-					this.form.location.address
-				].filter(Boolean).join(' ')
-
-				try {
-					const result = await userApi.msgCheck(msg)
-					if (result.errcode !== 0) {
-						uni.hideLoading()
-						this.submitting = false
-						uni.showToast({ title: '内容包含敏感信息', icon: 'none' })
+				const nameInput = this.$refs.nameInput
+				if (nameInput && nameInput.validate) {
+					const valid = await nameInput.validate()
+					if (!valid) {
+						uni.showToast({ title: '加工厂名称含敏感词汇', icon: 'none' })
 						return
 					}
-				} catch (e) {}
+				}
+
+				this.submitting = true
+				uni.showLoading({ title: '提交中...', mask: true })
 
 				try {
 					const postData = {
@@ -257,6 +259,8 @@
 </script>
 
 <style lang="scss">
+	@import '@/common/form.scss';
+
 	.page {
 		height: 100vh;
 		background-color: #f5f5f5;
@@ -282,28 +286,6 @@
 		background-color: #fff;
 		border-radius: 16rpx;
 		overflow: hidden;
-	}
-
-	.form-item {
-		padding: 28rpx 24rpx;
-		border-bottom: 1rpx solid #f0f0f0;
-	}
-
-	.form-item:last-child {
-		border-bottom: none;
-	}
-
-	.form-label {
-		font-size: 26rpx;
-		color: #666;
-		margin-bottom: 12rpx;
-		display: block;
-	}
-
-	.form-input {
-		font-size: 28rpx;
-		color: #333;
-		width: 100%;
 	}
 
 	.input-placeholder {

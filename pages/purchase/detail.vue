@@ -52,7 +52,7 @@
 			<button class="action-btn share-btn" open-type="share">
 				<text class="btn-label">分享</text>
 			</button>
-			<view class="action-btn more-btn" v-if="showMoreBtn" @tap="onGoMore">
+			<view class="action-btn more-btn" @tap="onGoMore">
 				<text class="btn-label">更多收购商</text>
 			</view>
 		</view>
@@ -132,9 +132,17 @@
 				}
 			},
 			onShareAppMessage() {
+				const title = this.detail.title || '收购信息'
 				return {
-					title: this.detail.title + ' - 收购信息',
+					title: title,
 					path: '/pages/purchase/detail?id=' + this.id + '&from=share'
+				}
+			},
+			onShareTimeline() {
+				const title = this.detail.title || '收购信息'
+				return {
+					title: title,
+					query: 'id=' + this.id + '&from=share'
 				}
 			},
 			onGoMore() {

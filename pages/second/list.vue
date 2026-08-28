@@ -15,6 +15,9 @@
 					@confirm="onSearch"
 					maxlength="10"
 				/>
+				<view v-if="keyword" class="clear-icon" @tap="onClearKeyword">
+					<u-icon name="close-circle-fill" size="18" color="#999"></u-icon>
+				</view>
 			</view>
 			<view class="search-btn" @tap="onSearch">
 				<text class="search-btn-text">搜索</text>
@@ -172,6 +175,10 @@
 			onSearch() {
 				this.loadList()
 			},
+			onClearKeyword() {
+				this.keyword = ''
+				this.loadList()
+			},
 			onHouseTap(item) {
 				uni.navigateTo({
 					url: '/pages/second/detail?id=' + item.id
@@ -230,6 +237,12 @@
 		background-color: #f5f5f5;
 		border-radius: 8rpx;
 		padding: 0 20rpx;
+		display: flex;
+		align-items: center;
+	}
+
+	.clear-icon {
+		margin-left: 12rpx;
 		display: flex;
 		align-items: center;
 	}
