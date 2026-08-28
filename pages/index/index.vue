@@ -32,22 +32,29 @@
 				<text class="section-title-text">二手房推荐</text>
 			</view>
 
-			<view class="house-grid">
-				<view class="house-card" v-for="(item, index) in houseList" :key="item.id || index" @tap="onHouseTap(item)">
-					<view class="house-image-wrap">
-						<image-placeholder :src="item.second_image" mode="aspectFill" />
-					</view>
-					<view class="house-info">
-						<text class="house-title">{{ item.title }}</text>
-						<text class="house-desc">{{ item.desc }}</text>
-						<text class="house-price">{{ item.price }}</text>
+			<scroll-view
+				class="scroll-area"
+				scroll-y
+			>
+				<view class="house-grid">
+					<view class="house-card" v-for="(item, index) in houseList" :key="item.id || index" @tap="onHouseTap(item)">
+						<view class="house-image-wrap">
+							<image-placeholder :src="item.second_image" mode="aspectFill" />
+						</view>
+						<view class="house-info">
+							<text class="house-title">{{ item.title }}</text>
+							<text class="house-desc">{{ item.desc }}</text>
+							<text class="house-price">{{ item.price }}</text>
+						</view>
 					</view>
 				</view>
-			</view>
 
-			<view class="empty" v-if="houseList.length === 0">
-				<text class="empty-text">暂无二手房源</text>
-			</view>
+				<view class="empty" v-if="houseList.length === 0">
+					<text class="empty-text">暂无二手房源</text>
+				</view>
+
+				<view class="scroll-bottom-space"></view>
+			</scroll-view>
 		</view>
 
 		<tab-bar :currentIndex="2"></tab-bar>
@@ -127,9 +134,10 @@
 
 <style>
 	.page {
-		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
 		background-color: #f5f5f5;
-		padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 	}
 
 	.module-entry {
@@ -140,6 +148,41 @@
 		background-color: #ffffff;
 		border-radius: 20rpx;
 		box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+		flex-shrink: 0;
+	}
+
+	.house-section-card {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+		margin: 20rpx 24rpx 0;
+		background-color: #ffffff;
+		border-radius: 20rpx;
+		box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+		overflow: hidden;
+	}
+
+	.section-title {
+		padding: 30rpx 30rpx 20rpx;
+		display: flex;
+		align-items: center;
+		flex-shrink: 0;
+	}
+
+	.section-title-text {
+		font-size: 28rpx;
+		font-weight: normal;
+		color: #333333;
+	}
+
+	.scroll-area {
+		flex: 1;
+		height: 0;
+	}
+
+	.scroll-bottom-space {
+		height: calc(120rpx + env(safe-area-inset-bottom));
 	}
 
 	.entry-card {
@@ -207,26 +250,6 @@
 		font-weight: 500;
 	}
 
-
-	.house-section-card {
-		margin: 20rpx 24rpx 0;
-		background-color: #ffffff;
-		border-radius: 20rpx;
-		box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
-		overflow: hidden;
-	}
-
-	.section-title {
-		padding: 30rpx 30rpx 20rpx;
-		display: flex;
-		align-items: center;
-	}
-
-	.section-title-text {
-		font-size: 28rpx;
-		font-weight: normal;
-		color: #333333;
-	}
 
 	.house-grid {
 		display: flex;

@@ -31,7 +31,7 @@
 			</view>
 			<picker-view class="filter-picker" :value="pickerValue" @change="onPickerChange" indicator-style="height: 80rpx; border-top: 1rpx solid #eee; border-bottom: 1rpx solid #eee;">
 				<picker-view-column>
-					<view class="picker-item" v-for="(opt, i) in distanceOptions[0]" :key="i">
+					<view class="picker-item" v-for="(opt, i) in distanceOptions[0]" :key="i" :class="{ 'picker-selected': pickerValue[0] === i }" @tap="selectOption(i)">
 						{{ opt.label }}
 					</view>
 				</picker-view-column>
@@ -39,44 +39,55 @@
 		</view>
 
 		<view class="invite-banner-wrap">
-		<button class="invite-banner" open-type="share">
-			<view class="invite-left">
-				<view class="invite-info">
-					<text class="invite-title">没有找到想要的加工厂？</text>
-					<text class="invite-desc">邀请加工厂入驻，帮更多农户找到优质收购商</text>
-				</view>
-			</view>
-			<view class="invite-action">
-				<text class="invite-btn-text">立即邀请</text>
-				<text class="invite-arrow">›</text>
-			</view>
-		</button>
-	</view>
-
-		<view class="factory-list">
-			<view class="factory-item" v-for="(item, index) in factoryList" :key="index" @tap="goDetail(item)">
-				<view class="item-top">
-					<view class="name-wrap">
-						<text class="verified-tag" v-if="item.identification === 1">已认证</text>
-						<text class="factory-name">{{ item.name }}</text>
+			<button class="invite-banner" open-type="share">
+				<view class="invite-left">
+					<view class="invite-info">
+						<text class="invite-title">没有找到想要的加工厂？</text>
+						<text class="invite-desc">邀请加工厂入驻，帮更多农户找到优质收购商</text>
 					</view>
 				</view>
-				<view class="item-bottom">
-					<view class="card-tags">
-						<text class="cat-tag" v-for="(cat, catIdx) in item.categories" :key="catIdx">{{ cat.name || cat }}</text>
+				<view class="invite-action">
+					<text class="invite-btn-text">立即邀请</text>
+					<text class="invite-arrow">›</text>
+				</view>
+			</button>
+		</view>
+
+		<scroll-view
+			class="scroll-area"
+			scroll-y
+			:lower-threshold="50"
+			@scrolltolower="loadMore"
+		>
+			<view class="factory-list">
+				<view class="factory-item" v-for="(item, index) in factoryList" :key="index" @tap="goDetail(item)">
+					<view class="item-top">
+						<view class="name-wrap">
+							<text class="verified-tag" v-if="item.identification === 1">已认证</text>
+							<text class="factory-name">{{ item.name }}</text>
+						</view>
 					</view>
-					<text class="date">{{ formatDateTime(item.createTime) }}</text>
+					<view class="item-bottom">
+						<view class="card-tags">
+							<text class="cat-tag" v-for="(cat, catIdx) in item.categories" :key="catIdx">{{ cat.name || cat }}</text>
+						</view>
+						<text class="date">{{ formatDateTime(item.createTime) }}</text>
+					</view>
 				</view>
 			</view>
-		</view>
 
-		<view class="empty" v-if="factoryList.length === 0">
-			<text class="empty-text">暂无数据</text>
-		</view>
+			<view class="empty" v-if="factoryList.length === 0">
+				<text class="empty-text">暂无数据</text>
+			</view>
 
-		<view class="load-more" v-if="factoryList.length > 0">
-			<text class="load-more-text">没有更多数据了</text>
-		</view>
+			<view class="load-more" v-if="factoryList.length > 0">
+				<text v-if="loading" class="load-more-text">加载中...</text>
+				<text v-else-if="noMore" class="load-more-text">没有更多数据了</text>
+				<text v-else class="load-more-text" @tap="loadMore">加载更多</text>
+			</view>
+
+			<view class="scroll-bottom-space"></view>
+		</scroll-view>
 
 		<view class="feedback-float" @tap="openFeedback">
 			<view class="fb-float-icon">
@@ -143,9 +154,9 @@
 				distanceOptions: [
 					[
 						{ label: '5公里内', value: '5' },
-						{ label: '10公里内', value: '10' },
 						{ label: '20公里内', value: '20' },
 						{ label: '50公里内', value: '50' },
+						{ label: '100公里内', value: '100' },
 						{ label: '全部', value: 'all' }
 					]
 				],
@@ -155,6 +166,10 @@
 				firstLoaded: false,
 				locationDenied: false,
 				factoryList: [],
+				page: 1,
+				limit: 20,
+				loading: false,
+				noMore: false,
 				showFeedback: false,
 				feedbackContent: '',
 				submittingFeedback: false
@@ -171,6 +186,40 @@
 			this.loadList()
 		},
 		methods: {
+			async loadList() {
+				this.loading = true
+				this.noMore = false
+				this.page = 1
+				try {
+					const list = await this.fetchList()
+					this.factoryList = list
+					this.checkNoMore()
+				} catch (e) {
+					this.factoryList = []
+					this.noMore = true
+					uni.showToast({
+						title: (e && e.msg) ? e.msg : '加载加工厂失败，请稍后重试',
+						icon: 'none',
+						duration: 2500
+					})
+				} finally {
+					this.loading = false
+				}
+			},
+			async loadMore() {
+				if (this.loading || this.noMore) return
+				this.loading = true
+				try {
+					this.page++
+					const list = await this.fetchList()
+					this.factoryList = this.factoryList.concat(list)
+					this.checkNoMore()
+				} catch (e) {
+					this.page--
+				} finally {
+					this.loading = false
+				}
+			},
 			async ensureLocationForFilter() {
 				if (this.userLat && this.userLng) {
 					this.showMenu = true
@@ -197,50 +246,46 @@
 					}
 				}
 			},
-			async loadList() {
+			async fetchList() {
 				const distanceVal = this.distanceOptions[0][this.pickerValue[0]].value
 				const params = {
 					keyword: this.keyword,
 					distance: distanceVal === 'all' ? '' : distanceVal,
-					lat: this.userLat,
-					lng: this.userLng,
-					page: 1,
-					limit: 1000
+					page: this.page,
+					limit: this.limit
+				}
+				if (distanceVal !== 'all' && this.userLat) {
+					params.lat = this.userLat
+					params.lng = this.userLng
 				}
 				console.log('[factory] 调用 factoryApi.getList 参数:', JSON.stringify(params))
-				try {
-					const res = await factoryApi.getList(params)
-					console.log('[factory] factoryApi.getList 返回原始值:', res)
-					const list = (res && res.list) ? res.list : (Array.isArray(res) ? res : [])
-					this.factoryList = list.map(item => {
-						let categoryNames = []
-						const raw = item.categories || item.category || item.category_list || ''
-						if (Array.isArray(raw)) {
-							categoryNames = raw.map(c => {
-								if (typeof c === 'string') return c
-								return c.name || c.category || ''
-							}).filter(Boolean)
-						} else if (typeof raw === 'string') {
-							categoryNames = raw.split(',').filter(Boolean)
-						}
-						return {
-							id: item.Id,
-							name: item.name,
-							identification: item.identification,
-							createTime: item.update_time || item.create_time || item.createtime || 0,
-							categories: categoryNames
-						}
-					})
-					this.total = this.factoryList.length
-					console.log('[factory] 解析后 factoryList 数量:', this.factoryList.length)
-				} catch (e) {
-					console.error('[factory] 加载加工厂列表失败:', e)
-					this.factoryList = []
-					uni.showToast({
-						title: (e && e.msg) ? e.msg : '加载加工厂失败，请稍后重试',
-						icon: 'none',
-						duration: 2500
-					})
+				const res = await factoryApi.getList(params)
+				console.log('[factory] factoryApi.getList 返回原始值:', res)
+				const list = (res && res.list) ? res.list : (Array.isArray(res) ? res : [])
+				this.total = (res && res.total) ? res.total : list.length
+				return list.map(item => {
+					let categoryNames = []
+					const raw = item.categories || item.category || item.category_list || ''
+					if (Array.isArray(raw)) {
+						categoryNames = raw.map(c => {
+							if (typeof c === 'string') return c
+							return c.name || c.category || ''
+						}).filter(Boolean)
+					} else if (typeof raw === 'string') {
+						categoryNames = raw.split(',').filter(Boolean)
+					}
+					return {
+						id: item.Id,
+						name: item.name,
+						identification: item.identification,
+						createTime: item.update_time || item.create_time || item.createtime || 0,
+						categories: categoryNames
+					}
+				})
+			},
+			checkNoMore() {
+				if (this.factoryList.length >= this.total || this.factoryList.length < this.limit) {
+					this.noMore = true
 				}
 			},
 			formatDateTime,
@@ -249,6 +294,9 @@
 			},
 			onPickerChange(e) {
 				this.pickerValue = e.detail.value
+			},
+			selectOption(i) {
+				this.pickerValue = [i]
 			},
 			confirmFilter() {
 				const idx = this.pickerValue[0]
@@ -318,9 +366,10 @@
 
 <style lang="scss">
 	.page {
-		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
 		background-color: #f5f5f5;
-		padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 	}
 
 	.search-bar {
@@ -329,7 +378,16 @@
 		padding: 20rpx 24rpx;
 		background-color: #fff;
 		gap: 16rpx;
-		position: relative;
+		flex-shrink: 0;
+	}
+
+	.scroll-area {
+		flex: 1;
+		height: 0;
+	}
+
+	.scroll-bottom-space {
+		height: calc(120rpx + env(safe-area-inset-bottom));
 	}
 
 	.distance-wrap {
@@ -350,6 +408,7 @@
 		background-color: #fff;
 		padding: 20rpx 0;
 		border-bottom: 1rpx solid #f0f0f0;
+		flex-shrink: 0;
 	}
 
 	.invite-banner {
@@ -478,8 +537,13 @@
 		align-items: center;
 		justify-content: center;
 		font-size: 32rpx;
-		color: #333;
+		color: #999;
 		line-height: 80rpx;
+	}
+
+	.picker-selected {
+		color: #3c9cff;
+		font-weight: 600;
 	}
 
 	.search-input-wrap {

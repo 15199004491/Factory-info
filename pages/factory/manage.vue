@@ -24,8 +24,11 @@
 
 			<view class="empty" v-if="factoryList.length === 0">
 				<text class="empty-text">暂无加工厂，点击下方新增</text>
+				<text class="empty-link" @tap="showContact = true">不会操作怎么办？</text>
 			</view>
 		</view>
+
+		<contact-modal :visible="showContact" @close="showContact = false"></contact-modal>
 
 		<view class="bottom-bar">
 			<view class="add-btn" @tap="onAdd">
@@ -38,11 +41,16 @@
 <script>
 	import { factoryApi } from '@/utils/request.js'
 	import { formatDate } from '@/utils/date.js'
+	import contactModal from '@/components/contact-modal/contact-modal.vue'
 
 	export default {
+		components: {
+			contactModal
+		},
 		data() {
 			return {
-				factoryList: []
+				factoryList: [],
+				showContact: false
 			}
 		},
 		onShow() {
@@ -380,13 +388,22 @@
 
 	.empty {
 		display: flex;
-		justify-content: center;
-		padding: 160rpx 0;
+		flex-direction: column;
+		align-items: center;
+		justify-content: flex-start;
+		padding: 100rpx 30rpx 160rpx;
+		gap: 30rpx;
 	}
 
 	.empty-text {
 		font-size: 28rpx;
 		color: #999;
+	}
+
+	.empty-link {
+		font-size: 28rpx;
+		color: #3c9cff;
+		font-weight: 500;
 	}
 
 	.bottom-bar {

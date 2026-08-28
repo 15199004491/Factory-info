@@ -12,49 +12,60 @@
 			</view>
 		</view>
 
-		<view class="list-container">
-			<view class="empty" v-if="filteredList.length === 0">
-				<text class="empty-text">暂无发布的信息</text>
-			</view>
+		<scroll-view
+			class="scroll-area"
+			scroll-y
+		>
+			<view class="list-container">
+				<view class="empty" v-if="filteredList.length === 0 && loadedTabs[activeTab]">
+					<text class="empty-text">暂无发布的信息</text>
+				</view>
 
-			<view class="list-item" v-for="(item, index) in filteredList" :key="item.id">
-				<view class="item-main">
-					<view class="item-header">
-						<text class="item-title">{{ item.title }}</text>
-						<text class="item-type-tag" :class="getTypeClass(item.type)">{{ getTypeLabel(item.type) }}</text>
-					</view>
-
-					<view class="item-tags" v-if="item.type === 'rent'">
-						<text class="item-sub-tag" :class="item.tagType === 'shared' ? 'tag-shared' : 'tag-entire'">{{ item.tagType === 'shared' ? '合租' : '整租' }}</text>
-					</view>
-
-					<block v-if="item.type === 'purchase'">
-						<view class="item-categories" v-if="item.categories && item.categories.length">
-							<text class="cat-tag" v-for="(cat, ci) in item.categories" :key="ci">{{ cat }}</text>
+				<view class="list-item" v-for="(item, index) in filteredList" :key="item.id" @tap="onViewDetail(item)">
+					<view class="item-main">
+						<view class="item-header">
+							<text class="item-title">{{ item.title }}</text>
+							<text class="item-type-tag" :class="getTypeClass(item.type)">{{ getTypeLabel(item.type) }}</text>
 						</view>
-						<text class="item-region" v-if="item.region">地点：{{ item.region }}</text>
-					</block>
 
-					<block v-else>
-						<text class="item-desc">{{ item.community }} · {{ item.houseType }} · {{ item.area }}</text>
-						<text class="item-region" v-if="item.region">地点：{{ item.region }}</text>
-					</block>
+						<view class="item-tags" v-if="item.type === 'rent'">
+							<text class="item-sub-tag" :class="item.tagType === 'shared' ? 'tag-shared' : 'tag-entire'">{{ item.tagType === 'shared' ? '合租' : '整租' }}</text>
+						</view>
 
-					<view class="item-footer">
-						<text class="item-price">{{ getPriceText(item) }}</text>
-						<text class="item-time">{{ item.createTime }}</text>
+						<block v-if="item.type === 'purchase'">
+							<view class="item-categories" v-if="item.categories && item.categories.length">
+								<text class="cat-tag" v-for="(cat, ci) in item.categories" :key="ci">{{ cat }}</text>
+							</view>
+							<text class="item-region" v-if="item.region">地点：{{ item.region }}</text>
+						</block>
+
+						<block v-else>
+							<text class="item-desc">{{ item.community }} · {{ item.houseType }} · {{ item.area }}</text>
+							<text class="item-region" v-if="item.region">地点：{{ item.region }}</text>
+						</block>
+
+						<view class="item-footer">
+							<text class="item-price">{{ getPriceText(item) }}</text>
+							<text class="item-time">{{ item.createTime }}</text>
+						</view>
+					</view>
+					<view class="item-actions">
+						<view class="action-btn" @tap.stop="onEdit(item)">
+							<text class="action-text">编辑</text>
+						</view>
+						<view class="action-btn btn-delete" @tap.stop="onDelete(item, index)">
+							<text class="action-text">删除</text>
+						</view>
 					</view>
 				</view>
-				<view class="item-actions">
-					<view class="action-btn" @tap="onEdit(item)">
-						<text class="action-text">编辑</text>
-					</view>
-					<view class="action-btn btn-delete" @tap="onDelete(item, index)">
-						<text class="action-text">删除</text>
-					</view>
+
+				<view class="no-more" v-if="filteredList.length > 0 && loadedTabs[activeTab]">
+					<text class="no-more-text">没有更多消息了</text>
 				</view>
 			</view>
-		</view>
+
+			<view class="scroll-bottom-space"></view>
+		</scroll-view>
 	</view>
 </template>
 
@@ -184,6 +195,12 @@
 				if (item.type === 'rent') return (item.price || '') + '元/月'
 				return ''
 			},
+			onViewDetail(item) {
+				var url = '/pages/purchase/detail?id=' + item.id
+				if (item.type === 'second') url = '/pages/second/detail?id=' + item.id
+				else if (item.type === 'rent') url = '/pages/rent/detail?id=' + item.id
+				uni.navigateTo({ url: url })
+			},
 			onEdit(item) {
 				var url = '/pages/publish/purchase'
 				if (item.type === 'second') url = '/pages/publish/second'
@@ -230,7 +247,9 @@
 
 <style lang="scss">
 	.page {
-		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
 		background-color: #f5f5f5;
 	}
 
@@ -239,9 +258,16 @@
 		background-color: #fff;
 		padding: 16rpx 24rpx;
 		gap: 16rpx;
-		position: sticky;
-		top: 0;
-		z-index: 10;
+		flex-shrink: 0;
+	}
+
+	.scroll-area {
+		flex: 1;
+		height: 0;
+	}
+
+	.scroll-bottom-space {
+		height: 60rpx;
 	}
 
 	.tab-item {
@@ -426,5 +452,17 @@
 
 	.btn-delete .action-text {
 		color: #ff4d4f;
+	}
+
+	.no-more {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		padding: 40rpx 0 20rpx;
+	}
+
+	.no-more-text {
+		font-size: 24rpx;
+		color: #bbb;
 	}
 </style>

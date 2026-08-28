@@ -32,31 +32,7 @@
 			</view>
 		</view>
 
-		<view class="contact-mask" v-if="showContact" @tap="closeContact">
-			<view class="contact-card" @tap.stop>
-				<view class="contact-title">
-					<text>联系我们</text>
-				</view>
-				<view class="contact-row">
-					<view class="contact-left">
-						<text class="contact-label">手机号</text>
-						<text class="contact-value">18073057410</text>
-					</view>
-					<view class="contact-icon-btn contact-call" @tap="onCallPhone">
-						<text class="contact-call-text">拨打</text>
-					</view>
-				</view>
-				<view class="contact-row">
-					<view class="contact-left">
-						<text class="contact-label">微信号</text>
-						<text class="contact-value">w18073057410</text>
-					</view>
-					<view class="contact-icon-btn contact-copy" @tap="onCopyWechat">
-						<text class="contact-copy-text">复制</text>
-					</view>
-				</view>
-			</view>
-		</view>
+		<contact-modal :visible="showContact" @close="showContact = false"></contact-modal>
 
 		<tab-bar :currentIndex="3"></tab-bar>
 	</view>
@@ -65,12 +41,14 @@
 <script>
 	import tabBar from '@/components/tab-bar/tab-bar.vue'
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
+	import contactModal from '@/components/contact-modal/contact-modal.vue'
 	import { auth } from '@/utils/auth.js'
 
 	export default {
 		components: {
 			tabBar,
-			uIcon
+			uIcon,
+			contactModal
 		},
 		data() {
 			return {
@@ -213,23 +191,6 @@
 						icon: 'none'
 					})
 				}
-			},
-			closeContact() {
-				this.showContact = false
-			},
-			onCallPhone() {
-				uni.makePhoneCall({
-					phoneNumber: '18073057410',
-					fail: () => {}
-				})
-			},
-			onCopyWechat() {
-				uni.setClipboardData({
-					data: '18073057410',
-					success: () => {
-						uni.showToast({ title: '微信号已复制', icon: 'success' })
-					}
-				})
 			}
 		}
 	}
@@ -347,109 +308,5 @@
 	.logout-text {
 		font-size: 24rpx;
 		color: #fff;
-	}
-
-	.contact-mask {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-color: rgba(0, 0, 0, 0.5);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 9999;
-	}
-
-	.contact-card {
-		width: 620rpx;
-		background-color: #fff;
-		border-radius: 24rpx;
-		padding: 40rpx 32rpx 32rpx;
-		box-sizing: border-box;
-	}
-
-	.contact-title {
-		text-align: center;
-		font-size: 34rpx;
-		font-weight: 600;
-		color: #333;
-		margin-bottom: 36rpx;
-	}
-
-	.contact-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 24rpx 0;
-		border-bottom: 1rpx solid #f0f0f0;
-	}
-
-	.contact-row:last-child {
-		border-bottom: none;
-	}
-
-	.contact-left {
-		display: flex;
-		flex-direction: column;
-		flex: 1;
-		margin-right: 24rpx;
-		min-width: 0;
-	}
-
-	.contact-label {
-		font-size: 24rpx;
-		color: #999;
-		margin-bottom: 8rpx;
-	}
-
-	.contact-value {
-		font-size: 30rpx;
-		color: #333;
-		font-weight: 500;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.contact-icon-btn {
-		flex: none;
-		width: 72rpx;
-		height: 72rpx;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.contact-call {
-		background: linear-gradient(135deg, #3c9cff, #56ccf2);
-		box-shadow: 0 4rpx 12rpx rgba(60, 156, 255, 0.3);
-		width: auto;
-		height: auto;
-		padding: 14rpx 30rpx;
-		border-radius: 999rpx;
-	}
-
-	.contact-call-text {
-		font-size: 26rpx;
-		color: #fff;
-		font-weight: 500;
-	}
-
-	.contact-copy {
-		background-color: #f5f7fa;
-		border: 1rpx solid #e5e7eb;
-		width: auto;
-		height: auto;
-		padding: 14rpx 30rpx;
-		border-radius: 999rpx;
-	}
-
-	.contact-copy-text {
-		font-size: 26rpx;
-		color: #3c9cff;
-		font-weight: 500;
 	}
 </style>

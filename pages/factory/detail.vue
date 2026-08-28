@@ -85,37 +85,42 @@
 			<button class="action-btn share-btn" open-type="share">
 				<text class="btn-label">分享</text>
 			</button>
+			<view class="action-btn home-btn" v-if="showHomeBtn" @tap="onGoHome">
+				<text class="btn-label">更多收购商</text>
+			</view>
 		</view>
 
 		<view class="poster-modal" v-if="showPoster" @tap="showPoster = false">
-			<view class="poster-wrap" @tap.stop>
-				<view class="poster-card">
-					<view class="poster-header">
-						<view class="poster-factory-name">{{ factory.name }}</view>
-						<view class="poster-address-text poster-header-address">{{ factory.location.address }}</view>
-					</view>
-					<view class="poster-categories">
-						<view class="poster-cat-title">收购品类</view>
-						<view class="poster-cat-list">
-							<view class="poster-cat-item" v-for="(cat, idx) in categories" :key="idx">
-								<text class="poster-cat-name">{{ cat.name }}</text>
+			<view class="poster-wrap">
+				<view class="poster-inner">
+					<view class="poster-card"  @tap.stop>
+						<view class="poster-header">
+							<view class="poster-factory-name">{{ factory.name }}</view>
+							<view class="poster-address-text poster-header-address">{{ factory.location.address }}</view>
+						</view>
+						<view class="poster-categories">
+							<view class="poster-cat-title">收购品类</view>
+							<view class="poster-cat-list">
+								<view class="poster-cat-item" v-for="(cat, idx) in categories" :key="idx">
+									<text class="poster-cat-name">{{ cat.name }}</text>
+								</view>
+							</view>
+						</view>
+						<view class="poster-bottom">
+							<view class="poster-qrcode">
+								<image v-if="factoryQrcodeUrl" :src="factoryQrcodeUrl" mode="aspectFit" class="poster-qr-canvas" :style="{ width: qrCanvasSize + 'px', height: qrCanvasSize + 'px' }"></image>
+								<canvas v-else type="2d" id="qrCanvas" class="poster-qr-canvas" :style="{ width: qrCanvasSize + 'px', height: qrCanvasSize + 'px' }"></canvas>
+							</view>
+							<view class="poster-slogan">
+								<text class="poster-slogan-main">微信扫一扫 查看最新报价</text>
 							</view>
 						</view>
 					</view>
-					<view class="poster-bottom">
-						<view class="poster-qrcode">
-							<image v-if="factoryQrcodeUrl" :src="factoryQrcodeUrl" mode="aspectFit" class="poster-qr-canvas" :style="{ width: qrCanvasSize + 'px', height: qrCanvasSize + 'px' }"></image>
-							<canvas v-else type="2d" id="qrCanvas" class="poster-qr-canvas" :style="{ width: qrCanvasSize + 'px', height: qrCanvasSize + 'px' }"></canvas>
+					<text class="poster-tip-text" @tap.stop>扫码后直接进入当前页，让更多农户看到收购价</text>
+					<view class="poster-actions" @tap.stop>
+						<view class="poster-save-btn" :class="{ disabled: isSavingPoster }" @tap="onSavePoster">
+							<text class="poster-save-text">{{ isSavingPoster ? '保存中...' : '保存海报' }}</text>
 						</view>
-						<view class="poster-slogan">
-							<text class="poster-slogan-main">微信扫一扫 查看最新报价</text>
-						</view>
-					</view>
-				</view>
-				<text class="poster-tip-text">扫码后直接进入当前页，让更多农户看到收购价</text>
-				<view class="poster-actions">
-					<view class="poster-save-btn" :class="{ disabled: isSavingPoster }" @tap="onSavePoster">
-						<text class="poster-save-text">{{ isSavingPoster ? '保存中...' : '保存海报' }}</text>
 					</view>
 				</view>
 			</view>
@@ -135,6 +140,7 @@
 		data() {
 			return {
 				showPoster: false,
+				showHomeBtn: false,
 				loading: true,
 				factoryId: null,
 				qrCanvasSize: 100,
@@ -168,10 +174,13 @@
 				const scene = decodeURIComponent(options.scene)
 				this.factoryId = scene.replace('f', '')
 			}
+			if (options && options.from === 'share') {
+				this.showHomeBtn = true
+			}
 			this.loadDetail()
 		},
 		onShareAppMessage() {
-			const path = '/pages/factory/detail?Id=' + this.factoryId + '&name=' + encodeURIComponent(this.factory.name)
+			const path = '/pages/factory/detail?Id=' + this.factoryId + '&name=' + encodeURIComponent(this.factory.name) + '&from=share'
 			return {
 				title: this.factory.name + ' - 收购信息',
 				path: path
@@ -253,6 +262,11 @@
 					name: this.factory.name,
 					address,
 					scale: 16
+				})
+			},
+			onGoHome() {
+				uni.switchTab({
+					url: '/pages/factory/factory'
 				})
 			},
 			async onShowPoster() {
@@ -408,7 +422,6 @@
 					const sysInfo = uni.getSystemInfoSync()
 					const dpr = sysInfo.pixelRatio || 2
 					const posterW = 375
-					const posterH = 560
 
 					const drawPoster = (qrcodeImgPath) => {
 						const query = uni.createSelectorQuery().in(this)
@@ -420,6 +433,51 @@
 								}
 								const canvas = res[0].node
 								const ctx = canvas.getContext('2d')
+
+								const padding = 28
+								const maxTextW = posterW - padding * 2
+
+								ctx.font = 'bold 22px sans-serif'
+								const factoryName = this.factory.name || ''
+								const nameLines = this.wrapText(ctx, factoryName, maxTextW)
+								const nameLineH = 30
+
+								ctx.font = '13px sans-serif'
+								const address = (this.factory.location && this.factory.location.address) || this.factory.address || ''
+								const addrLines = this.wrapText(ctx, address, maxTextW)
+								const addrLineH = 20
+
+								let tagX = padding
+								let tagY = 0
+								const tagH = 28
+								const tagGap = 10
+								const tagPaddingLR = 14
+								const tagLines = []
+								ctx.font = '13px sans-serif'
+								this.categories.forEach((cat) => {
+									const catName = cat.name || String(cat)
+									const textW = ctx.measureText(catName).width
+									const tagW = textW + tagPaddingLR * 2
+									if (tagX + tagW > posterW - padding) {
+										tagX = padding
+										tagY += tagH + tagGap
+									}
+									tagLines.push({ name: catName, x: tagX, y: tagY, w: tagW })
+									tagX += tagW + tagGap
+								})
+								const tagBlockH = tagY + tagH
+
+								const qrSize = 180
+								const qrGapTop = 24
+								const qrGapBottom = 16
+
+								const posterH = padding
+									+ nameLines.length * nameLineH + 10
+									+ addrLines.length * addrLineH + 14
+									+ 14 + 14 + 28
+									+ tagBlockH + 28
+									+ qrGapTop + qrSize + qrGapBottom + 24
+
 								canvas.width = posterW * dpr
 								canvas.height = posterH * dpr
 								ctx.scale(dpr, dpr)
@@ -432,22 +490,23 @@
 								ctx.fillStyle = gradient
 								ctx.fill()
 
-								const padding = 28
 								let y = padding
 
 								ctx.fillStyle = '#333333'
 								ctx.font = 'bold 22px sans-serif'
-								const factoryName = this.factory.name || ''
-								ctx.fillText(factoryName, padding, y + 22)
-								y += 34
+								nameLines.forEach((line) => {
+									ctx.fillText(line, padding, y + 22)
+									y += nameLineH
+								})
+								y += 10
 
-								const address = (this.factory.location && this.factory.location.address) || this.factory.address || ''
 								ctx.fillStyle = '#666666'
 								ctx.font = '13px sans-serif'
-								const maxAddrW = posterW - padding * 2
-								const drawAddr = this.truncateText(ctx, address, maxAddrW, '13px sans-serif')
-								ctx.fillText(drawAddr, padding, y + 14)
-								y += 22
+								addrLines.forEach((line) => {
+									ctx.fillText(line, padding, y + 14)
+									y += addrLineH
+								})
+								y += 14
 
 								ctx.strokeStyle = '#eeeeee'
 								ctx.lineWidth = 0.5
@@ -455,35 +514,22 @@
 								ctx.moveTo(padding, y)
 								ctx.lineTo(posterW - padding, y)
 								ctx.stroke()
-								y += 22
+								y += 14
 
 								ctx.fillStyle = '#333333'
 								ctx.font = 'bold 14px sans-serif'
 								ctx.fillText('收购品类', padding, y + 16)
 								y += 28
 
-								let tagX = padding
-								let tagY = y
-								const tagH = 28
-								const tagGap = 10
-								const tagPaddingLR = 14
 								ctx.font = '13px sans-serif'
-								this.categories.forEach((cat) => {
-									const catName = cat.name || String(cat)
-									const textW = ctx.measureText(catName).width
-									const tagW = textW + tagPaddingLR * 2
-									if (tagX + tagW > posterW - padding) {
-										tagX = padding
-										tagY += tagH + tagGap
-									}
-									this.roundRect(ctx, tagX, tagY, tagW, tagH, 6)
+								tagLines.forEach((tag) => {
+									this.roundRect(ctx, tag.x, y + tag.y, tag.w, tagH, 6)
 									ctx.fillStyle = '#f0f7ff'
 									ctx.fill()
 									ctx.fillStyle = '#333333'
-									ctx.fillText(catName, tagX + tagPaddingLR, tagY + 19)
-									tagX += tagW + tagGap
+									ctx.fillText(tag.name, tag.x + tagPaddingLR, y + tag.y + 19)
 								})
-								y = tagY + tagH + 28
+								y += tagBlockH + 28
 
 								ctx.strokeStyle = '#eeeeee'
 								ctx.lineWidth = 0.5
@@ -491,9 +537,8 @@
 								ctx.moveTo(padding, y)
 								ctx.lineTo(posterW - padding, y)
 								ctx.stroke()
-								y += 24
+								y += qrGapTop
 
-								const qrSize = 180
 								const qrX = (posterW - qrSize) / 2
 
 								if (qrcodeImgPath) {
@@ -509,7 +554,7 @@
 									const qrData = generateQRData(qrText, 2)
 									this.drawQRCodeToCtx(ctx, qrData, qrX, y, qrSize)
 								}
-								y += qrSize + 20
+								y += qrSize + qrGapBottom
 
 								ctx.fillStyle = '#333333'
 								ctx.font = '13px sans-serif'
@@ -576,14 +621,21 @@
 				ctx.quadraticCurveTo(x, y, x + r, y)
 				ctx.closePath()
 			},
-			truncateText(ctx, text, maxWidth, font) {
-				ctx.font = font
-				if (ctx.measureText(text).width <= maxWidth) return text
-				let result = text
-				while (result.length > 0 && ctx.measureText(result + '...').width > maxWidth) {
-					result = result.slice(0, -1)
+			wrapText(ctx, text, maxWidth) {
+				if (!text) return []
+				const lines = []
+				let currentLine = ''
+				for (let i = 0; i < text.length; i++) {
+					const testLine = currentLine + text[i]
+					if (currentLine && ctx.measureText(testLine).width > maxWidth) {
+						lines.push(currentLine)
+						currentLine = text[i]
+					} else {
+						currentLine = testLine
+					}
 				}
-				return result + '...'
+				if (currentLine) lines.push(currentLine)
+				return lines
 			},
 			savePosterToAlbum(tempFilePath) {
 				return new Promise((resolve, reject) => {
@@ -896,6 +948,16 @@
 		border: none;
 	}
 
+	.home-btn {
+		background: #fff;
+		border: 2rpx solid #3c9cff;
+	}
+
+	.home-btn .btn-label {
+		color: #3c9cff;
+		font-size: 28rpx;
+	}
+
 	.poster-btn {
 		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
 	}
@@ -928,6 +990,12 @@
 		flex-direction: column;
 		align-items: center;
 		padding: 40rpx;
+	}
+
+	.poster-inner {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
 	}
 
 	.poster-card {
@@ -1066,7 +1134,7 @@
 	}
 
 	.poster-actions {
-		margin-top: 40rpx;
+		margin-top: 20rpx;
 		display: flex;
 		flex-direction: column;
 		align-items: center;

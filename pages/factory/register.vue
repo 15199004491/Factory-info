@@ -26,7 +26,7 @@
 
 		<view class="bottom-bar">
 			<view class="action-btn submit-btn" :class="{ disabled: submitting }" @tap="onNextStep">
-				<text class="btn-label">{{ submitting ? '提交中...' : (isEdit ? '立即提交' : '下一步') }}</text>
+				<text class="btn-label">{{ submitting ? '提交中...' : '下一步' }}</text>
 			</view>
 		</view>
 	</view>
@@ -221,9 +221,16 @@
 					uni.hideLoading()
 
 					if (this.isEdit) {
+						const newId = (res && (res.id || res.data && res.data.id)) || this.factoryId
 						uni.showToast({ title: '保存成功', icon: 'success' })
 						setTimeout(() => {
-							uni.navigateBack()
+							const params = []
+							if (newId) params.push('id=' + newId)
+							if (this.form.name) params.push('name=' + encodeURIComponent(this.form.name.trim()))
+							params.push('from=register')
+							uni.navigateTo({
+								url: '/pages/factory/certify' + (params.length ? '?' + params.join('&') : '')
+							})
 						}, 1000)
 					} else {
 						const newId = (res && (res.id || res.data && res.data.id)) || this.factoryId

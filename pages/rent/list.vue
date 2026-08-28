@@ -21,40 +21,49 @@
 			</view>
 		</view>
 
-		<view class="result-count" v-if="total > 0">
-			<text class="result-count-text">共找到 {{ total }} 套租房</text>
-		</view>
+		<scroll-view
+			class="scroll-area"
+			scroll-y
+			:lower-threshold="50"
+			@scrolltolower="loadMore"
+		>
+			<view class="result-count" v-if="total > 0">
+				<text class="result-count-text">共找到 {{ total }} 套租房</text>
+			</view>
 
-		<view class="rent-grid">
-			<view
-				class="rent-card"
-				v-for="(item, index) in rentList"
-				:key="item.id || index"
-				@tap="onRentTap(item)"
-			>
-				<view class="rent-image-wrap">
-					<image-placeholder class="rent-image" :src="item.image" mode="aspectFill" />
-				</view>
-				<view class="rent-info">
-					<text class="rent-title">{{ item.title }}</text>
-					<text class="rent-desc">{{ item.desc }}</text>
-					<view class="rent-bottom">
-						<text class="rent-price">{{ item.price }}</text>
-						<text class="rent-tag" :class="item.tagType === 'shared' ? 'rent-tag-shared' : 'rent-tag-entire'">{{ item.tag }}</text>
+			<view class="rent-grid">
+				<view
+					class="rent-card"
+					v-for="(item, index) in rentList"
+					:key="item.id || index"
+					@tap="onRentTap(item)"
+				>
+					<view class="rent-image-wrap">
+						<image-placeholder class="rent-image" :src="item.image" mode="aspectFill" />
+					</view>
+					<view class="rent-info">
+						<text class="rent-title">{{ item.title }}</text>
+						<text class="rent-desc">{{ item.desc }}</text>
+						<view class="rent-bottom">
+							<text class="rent-price">{{ item.price }}</text>
+							<text class="rent-tag" :class="item.tagType === 'shared' ? 'rent-tag-shared' : 'rent-tag-entire'">{{ item.tag }}</text>
+						</view>
 					</view>
 				</view>
 			</view>
-		</view>
 
-		<view class="load-more" v-if="rentList.length > 0">
-			<text v-if="loading" class="load-more-text">加载中...</text>
-			<text v-else-if="noMore" class="load-more-text">没有更多数据了</text>
-			<text v-else class="load-more-text" @tap="loadMore">加载更多</text>
-		</view>
+			<view class="load-more" v-if="rentList.length > 0">
+				<text v-if="loading" class="load-more-text">加载中...</text>
+				<text v-else-if="noMore" class="load-more-text">没有更多数据了</text>
+				<text v-else class="load-more-text" @tap="loadMore">加载更多</text>
+			</view>
 
-		<view class="empty" v-if="!loading && rentList.length === 0">
-			<text class="empty-text">暂无符合条件的租房源</text>
-		</view>
+			<view class="empty" v-if="!loading && rentList.length === 0">
+				<text class="empty-text">暂无符合条件的租房源</text>
+			</view>
+
+			<view class="scroll-bottom-space"></view>
+		</scroll-view>
 
 		<region-picker
 			:visible="showRegionPicker"
@@ -92,11 +101,6 @@
 		},
 		onLoad() {
 			this.loadList()
-		},
-		onReachBottom() {
-			if (!this.noMore && !this.loading && this.rentList.length > 0) {
-				this.loadMore()
-			}
 		},
 		methods: {
 			async loadList() {
@@ -182,7 +186,9 @@
 
 <style lang="scss">
 	.page {
-		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
 		background-color: #f5f5f5;
 	}
 
@@ -192,7 +198,16 @@
 		padding: 20rpx 24rpx;
 		background-color: #fff;
 		gap: 16rpx;
-		position: relative;
+		flex-shrink: 0;
+	}
+
+	.scroll-area {
+		flex: 1;
+		height: 0;
+	}
+
+	.scroll-bottom-space {
+		height: 60rpx;
 	}
 
 	.region-wrap {

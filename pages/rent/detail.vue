@@ -65,6 +65,9 @@
 			<button class="action-btn share-btn" open-type="share">
 				<text class="btn-label">分享</text>
 			</button>
+			<view class="action-btn more-btn" v-if="showMoreBtn" @tap="onGoMore">
+				<text class="btn-label">更多房源</text>
+			</view>
 		</view>
 	</view>
 </template>
@@ -82,6 +85,7 @@
 		data() {
 			return {
 				houseId: 0,
+				showMoreBtn: false,
 				visitors: 0,
 				house: {
 					id: 0,
@@ -107,6 +111,9 @@
 			if (options.id) {
 				this.houseId = parseInt(options.id)
 				this.loadHouseDetail()
+			}
+			if (options && options.from === 'share') {
+				this.showMoreBtn = true
 			}
 		},
 		methods: {
@@ -152,10 +159,15 @@
 				const imgUrl = formatCosUrl(this.house.image)
 				const share = {
 					title: this.house.name || this.house.title || '租房房源',
-					path: '/pages/rent/detail?id=' + this.houseId
+					path: '/pages/rent/detail?id=' + this.houseId + '&from=share'
 				}
 				if (imgUrl) share.imageUrl = imgUrl
 				return share
+			},
+			onGoMore() {
+				uni.switchTab({
+					url: '/pages/index/index'
+				})
 			}
 		}
 	}
@@ -364,6 +376,16 @@
 
 	.share-btn {
 		background: linear-gradient(135deg, #ff9800, #ffb74d);
+	}
+
+	.more-btn {
+		background: #fff;
+		border: 2rpx solid #3c9cff;
+	}
+
+	.more-btn .btn-label {
+		color: #3c9cff;
+		font-size: 28rpx;
 	}
 
 	.share-btn::after {

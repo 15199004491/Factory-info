@@ -21,42 +21,51 @@
 			</view>
 		</view>
 
-		<view class="result-count" v-if="total > 0">
-			<text class="result-count-text">共找到 {{ total }} 条收购信息</text>
-		</view>
+		<scroll-view
+			class="scroll-area"
+			scroll-y
+			:lower-threshold="50"
+			@scrolltolower="loadMore"
+		>
+			<view class="result-count" v-if="total > 0">
+				<text class="result-count-text">共找到 {{ total }} 条收购信息</text>
+			</view>
 
-		<view class="purchase-list">
-			<view
-				class="purchase-card"
-				v-for="(item, index) in purchaseList"
-				:key="item.id || index"
-				@tap="onPurchaseTap(item)"
-			>
-				<view class="card-header">
-					<text class="card-title">{{ item.title }}</text>
-					<text class="card-time">{{ item.time }}</text>
-				</view>
-				<view class="card-tags">
-					<text class="cat-tag" v-for="(cat, catIdx) in item.categories" :key="catIdx">{{ cat.name || cat }}</text>
-				</view>
-				<view class="card-footer">
-					<view class="region-item">
-						<u-icon name="map" size="12" color="#999"></u-icon>
-						<text class="region-value">{{ item.region }}</text>
+			<view class="purchase-list">
+				<view
+					class="purchase-card"
+					v-for="(item, index) in purchaseList"
+					:key="item.id || index"
+					@tap="onPurchaseTap(item)"
+				>
+					<view class="card-header">
+						<text class="card-title">{{ item.title }}</text>
+						<text class="card-time">{{ item.time }}</text>
+					</view>
+					<view class="card-tags">
+						<text class="cat-tag" v-for="(cat, catIdx) in item.categories" :key="catIdx">{{ cat.name || cat }}</text>
+					</view>
+					<view class="card-footer">
+						<view class="region-item">
+							<u-icon name="map" size="12" color="#999"></u-icon>
+							<text class="region-value">{{ item.region }}</text>
+						</view>
 					</view>
 				</view>
 			</view>
-		</view>
 
-		<view class="load-more" v-if="purchaseList.length > 0">
-			<text v-if="loading" class="load-more-text">加载中...</text>
-			<text v-else-if="noMore" class="load-more-text">没有更多数据了</text>
-			<text v-else class="load-more-text" @tap="loadMore">加载更多</text>
-		</view>
+			<view class="load-more" v-if="purchaseList.length > 0">
+				<text v-if="loading" class="load-more-text">加载中...</text>
+				<text v-else-if="noMore" class="load-more-text">没有更多数据了</text>
+				<text v-else class="load-more-text" @tap="loadMore">加载更多</text>
+			</view>
 
-		<view class="empty" v-if="!loading && purchaseList.length === 0">
-			<text class="empty-text">暂无收购信息</text>
-		</view>
+			<view class="empty" v-if="!loading && purchaseList.length === 0">
+				<text class="empty-text">暂无收购信息</text>
+			</view>
+
+			<view class="scroll-bottom-space"></view>
+		</scroll-view>
 
 		<view class="fab-btn" @tap="onPublish">
 			<u-icon name="plus" size="24" color="#fff"></u-icon>
@@ -108,11 +117,6 @@
 		},
 		onShow() {
 			this.loadList()
-		},
-		onReachBottom() {
-			if (!this.noMore && !this.loading && this.purchaseList.length > 0) {
-				this.loadMore()
-			}
 		},
 		methods: {
 			async loadList() {
@@ -218,9 +222,10 @@
 
 <style lang="scss">
 	.page {
-		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
 		background-color: #f5f5f5;
-		padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
 	}
 
 	.search-bar {
@@ -229,7 +234,16 @@
 		padding: 20rpx 24rpx;
 		background-color: #fff;
 		gap: 16rpx;
-		position: relative;
+		flex-shrink: 0;
+	}
+
+	.scroll-area {
+		flex: 1;
+		height: 0;
+	}
+
+	.scroll-bottom-space {
+		height: calc(180rpx + env(safe-area-inset-bottom));
 	}
 
 	.region-wrap {

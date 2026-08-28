@@ -52,6 +52,9 @@
 			<button class="action-btn share-btn" open-type="share">
 				<text class="btn-label">分享</text>
 			</button>
+			<view class="action-btn more-btn" v-if="showMoreBtn" @tap="onGoMore">
+				<text class="btn-label">更多收购商</text>
+			</view>
 		</view>
 	</view>
 </template>
@@ -64,6 +67,7 @@
 		data() {
 			return {
 				id: 0,
+				showMoreBtn: false,
 				detail: {
 					title: '',
 					category: '',
@@ -82,6 +86,9 @@
 			if (options.id) {
 				this.id = parseInt(options.id)
 				this.loadDetail()
+			}
+			if (options && options.from === 'share') {
+				this.showMoreBtn = true
 			}
 		},
 		methods: {
@@ -127,8 +134,13 @@
 			onShareAppMessage() {
 				return {
 					title: this.detail.title + ' - 收购信息',
-					path: '/pages/purchase/detail?id=' + this.id
+					path: '/pages/purchase/detail?id=' + this.id + '&from=share'
 				}
+			},
+			onGoMore() {
+				uni.switchTab({
+					url: '/pages/purchase/purchase'
+				})
 			}
 		}
 	}
@@ -350,6 +362,16 @@
 
 	.share-btn {
 		background: linear-gradient(135deg, #ff9800, #ffb74d);
+	}
+
+	.more-btn {
+		background: #fff;
+		border: 2rpx solid #3c9cff;
+	}
+
+	.more-btn .btn-label {
+		color: #3c9cff;
+		font-size: 28rpx;
 	}
 
 	.btn-label {
