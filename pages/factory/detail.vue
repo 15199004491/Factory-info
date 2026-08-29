@@ -132,7 +132,7 @@
 
 <script>
 	import { factoryApi } from '@/utils/request.js'
-	import { formatVisitorCount, formatDate } from '@/utils/date.js'
+	import { formatVisitorCount, formatDate, isShareEnterFirstTimeThenConsume } from '@/utils/date.js'
 	import { generateQRData } from '@/utils/qrcode.js'
 	import { formatCosUrl } from '@/utils/config.js'
 
@@ -174,22 +174,21 @@
 				const scene = decodeURIComponent(options.scene)
 				this.factoryId = scene.replace('f', '')
 			}
-			if (options && options.from === 'share') {
+			if (isShareEnterFirstTimeThenConsume()) {
 				this.showHomeBtn = true
 			}
 			this.loadDetail()
 		},
 		onShareAppMessage() {
-			const path = '/pages/factory/detail?Id=' + this.factoryId + '&name=' + encodeURIComponent(this.factory.name) + '&from=share'
 			return {
 				title: this.factory.name + ' - 收购信息',
-				path: path
+				path: '/pages/factory/detail?Id=' + this.factoryId
 			}
 		},
 		onShareTimeline() {
 			return {
 				title: this.factory.name + ' - 收购信息',
-				query: 'Id=' + this.factoryId + '&from=share'
+				query: 'Id=' + this.factoryId
 			}
 		},
 		methods: {
@@ -278,7 +277,6 @@
 					uni.showLoading({ title: '生成中...', mask: true })
 					try {
 						const qrcodeData = await factoryApi.generateFactoryQrcode(this.factoryId, this.factory.name)
-						console.log('[小程序码接口] 返回原始数据:', qrcodeData)
 						if (qrcodeData) {
 							let url = ''
 							if (typeof qrcodeData === 'string') {
@@ -303,7 +301,6 @@
 								}
 							}
 							this.factoryQrcodeUrl = url
-							console.log('[小程序码接口] 最终解析到的URL:', this.factoryQrcodeUrl)
 						}
 					} catch (e) {
 						console.error('获取小程序码失败:', e)
@@ -315,7 +312,6 @@
 				this.showPoster = true
 				this.$nextTick(() => {
 					if (!this.factoryQrcodeUrl) {
-						console.log('[海报] 小程序码为空，降级渲染普通二维码')
 						this.renderQRCode()
 					}
 				})

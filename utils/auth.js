@@ -37,8 +37,6 @@ export const auth = {
 			uni.setStorageSync('user_info', userData)
 			uni.setStorageSync('user_token', userData.session_token)
 
-			console.log('登录成功，用户信息：', userData)
-
 			uni.showToast({ title: '登录成功', icon: 'success' })
 			return userData
 		} catch (e) {
@@ -70,7 +68,6 @@ export const auth = {
 		try {
 			const userData = await userApi.getInfo(token)
 			uni.setStorageSync('user_info', userData)
-			console.log('获取用户信息：', userData)
 			return userData
 		} catch (e) {
 			uni.removeStorageSync('user_info')

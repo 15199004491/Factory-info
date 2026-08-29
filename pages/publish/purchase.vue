@@ -442,7 +442,6 @@
 						remark: c.remark || ''
 					}))
 				}
-				console.log('postData--', postData)
 				purchaseApi.addPurchase(postData).then(() => {
 					uni.hideLoading()
 					uni.showToast({ title: this.editingId ? '修改成功' : '发布成功', icon: 'success' })

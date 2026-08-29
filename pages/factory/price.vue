@@ -208,7 +208,6 @@
 				if (!this.factoryId) return
 				try {
 					const data = await factoryApi.getDetail(this.factoryId)
-					console.log('getDetail完整返回:', JSON.stringify(data))
 					if (data) {
 						if (!this.factoryName && data.name) {
 							this.factoryName = data.name
@@ -217,14 +216,12 @@
 							})
 						}
 						this.factoryNotice = data.notice || data.announcement || ''
-						console.log('notice:', this.factoryNotice)
 
 						let categoryData = null
 						const candidates = ['categories', 'category_list', 'list', 'goods', 'items', 'purchase_list', 'category', 'data']
 						for (const key of candidates) {
 							if (data[key] && (Array.isArray(data[key]) || typeof data[key] === 'string')) {
 								categoryData = data[key]
-								console.log('匹配到品类字段:', key, '=', categoryData)
 								break
 							}
 						}
@@ -232,7 +229,6 @@
 							for (const key of candidates) {
 								if (data.info[key]) {
 									categoryData = data.info[key]
-									console.log('在info下匹配到品类字段:', key, '=', categoryData)
 									break
 								}
 							}
@@ -241,16 +237,12 @@
 							for (const key of candidates) {
 								if (data.factory[key]) {
 									categoryData = data.factory[key]
-									console.log('在factory下匹配到品类字段:', key, '=', categoryData)
 									break
 								}
 							}
 						}
 						if (categoryData) {
 							this.categories = this.parseCategories(categoryData)
-							console.log('解析后品类:', this.categories)
-						} else {
-							console.log('未找到品类字段，所有顶层key:', Object.keys(data))
 						}
 					}
 				} catch (e) {

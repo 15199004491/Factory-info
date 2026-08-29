@@ -182,7 +182,6 @@
 			}
 		},
 		onShow() {
-			console.log('[factory] onShow 触发，开始 loadList')
 			this.loadList()
 		},
 		methods: {
@@ -258,9 +257,7 @@
 					params.lat = this.userLat
 					params.lng = this.userLng
 				}
-				console.log('[factory] 调用 factoryApi.getList 参数:', JSON.stringify(params))
 				const res = await factoryApi.getList(params)
-				console.log('[factory] factoryApi.getList 返回原始值:', res)
 				const list = (res && res.list) ? res.list : (Array.isArray(res) ? res : [])
 				this.total = (res && res.total) ? res.total : list.length
 				return list.map(item => {

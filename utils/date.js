@@ -1,3 +1,40 @@
+function _getEnterOptions() {
+	try {
+		if (typeof uni.getEnterOptionsSync === 'function') {
+			return uni.getEnterOptionsSync()
+		}
+	} catch (e) {}
+	try {
+		return uni.getLaunchOptionsSync()
+	} catch (e) {
+		return { scene: 0, path: '' }
+	}
+}
+
+export function isShareEnterFirstTimeThenConsume() {
+	try {
+		if (!isFromChatShareScene()) {
+			return false
+		}
+		const app = getApp()
+		const firstTime = !!(app.globalData && app.globalData.shareEnterFirstTime)
+		if (firstTime) {
+			app.globalData.shareEnterFirstTime = false
+			return true
+		}
+		return false
+	} catch (e) {
+		return false
+	}
+}
+
+export function isFromChatShareScene() {
+	const chatShareScenes = [1007, 1008, 1036, 1044, 1073, 1074, 1014]
+	const opt = _getEnterOptions()
+	const scene = opt.scene || 0
+	return chatShareScenes.indexOf(scene) !== -1
+}
+
 export function formatDateTime(timestamp) {
 	if (!timestamp) return ''
 	const ts = Number(timestamp)

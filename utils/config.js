@@ -143,14 +143,6 @@ function getCosSignature(key, method, expireSeconds) {
 	var signKey = hmacSha1(COS_SECRET_KEY, keyTime)
 	var signature = hmacSha1(signKey, stringToSign)
 
-	console.log('[COS签名]')
-	console.log('  KeyTime:', keyTime)
-	console.log('  HttpString:', JSON.stringify(httpString))
-	console.log('  HttpString(SHA1):', httpStringSha1)
-	console.log('  StringToSign:', JSON.stringify(stringToSign))
-	console.log('  SignKey:', signKey)
-	console.log('  Signature:', signature)
-
 	return 'q-sign-algorithm=sha1'
 		+ '&q-ak=' + COS_SECRET_ID
 		+ '&q-sign-time=' + keyTime

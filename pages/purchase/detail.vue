@@ -52,7 +52,7 @@
 			<button class="action-btn share-btn" open-type="share">
 				<text class="btn-label">分享</text>
 			</button>
-			<view class="action-btn more-btn" @tap="onGoMore">
+			<view class="action-btn more-btn" @tap="onGoMore" v-if = "showMoreBtn">
 				<text class="btn-label">更多收购商</text>
 			</view>
 		</view>
@@ -60,7 +60,7 @@
 </template>
 
 <script>
-	import { formatUpdateTime, formatVisitorCount } from '@/utils/date.js'
+	import { formatUpdateTime, formatVisitorCount, isShareEnterFirstTimeThenConsume } from '@/utils/date.js'
 	import { purchaseApi } from '@/utils/request.js'
 
 	export default {
@@ -83,11 +83,12 @@
 			}
 		},
 		onLoad(options) {
-			if (options.id) {
-				this.id = parseInt(options.id)
+			const idVal = options.Id || options.id
+			if (idVal) {
+				this.id = parseInt(idVal)
 				this.loadDetail()
 			}
-			if (options && options.from === 'share') {
+			if (isShareEnterFirstTimeThenConsume()) {
 				this.showMoreBtn = true
 			}
 		},
@@ -131,18 +132,20 @@
 					})
 				}
 			},
-			onShareAppMessage() {
-				const title = this.detail.title || '收购信息'
+			onShareAppMessage(res) {
+				const title = (this.detail.title || '收购信息')
+				const path = '/pages/purchase/detail?id=' + this.id
 				return {
 					title: title,
-					path: '/pages/purchase/detail?id=' + this.id + '&from=share'
+					path: path
 				}
 			},
 			onShareTimeline() {
-				const title = this.detail.title || '收购信息'
+				const title = (this.detail.title || '收购信息')
+				const query = 'id=' + this.id
 				return {
 					title: title,
-					query: 'id=' + this.id + '&from=share'
+					query: query
 				}
 			},
 			onGoMore() {

@@ -311,10 +311,8 @@
 				try {
 					let secondImage = this.form.second_image || ''
 					if (secondImage && this.imageChanged) {
-						console.log('上传二手房图片到COS:', secondImage)
 						const uploaded = await uploadImages([secondImage], { dir: 'second-house' })
 						secondImage = uploaded[0] || ''
-						console.log('二手房图片处理完成: 最终结果=', secondImage)
 					}
 
 					const postData = {
@@ -330,7 +328,6 @@
 						explain: this.form.explain,
 						area: this.form.area,
 					}
-					console.log('提交二手房数据:', postData)
 					await secondHouseApi.addHouse(postData)
 					uni.hideLoading()
 					uni.showToast({ title: this.editingId ? '修改成功' : '发布成功', icon: 'success' })

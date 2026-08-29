@@ -320,7 +320,6 @@
 					if (rentImage && this.imageChanged) {
 						const uploaded = await uploadImages([rentImage], { dir: 'rent-house' })
 						rentImage = uploaded[0] || ''
-						console.log('租房图片处理完成: 最终结果=', rentImage)
 					}
 
 					const postData = {

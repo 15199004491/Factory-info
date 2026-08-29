@@ -1,27 +1,33 @@
 <script>
+	import { isFromChatShareScene } from '@/utils/date.js'
 	export default {
+		globalData: {
+			shareEnterFirstTime: false
+		},
 		onLaunch: function() {
-			console.log('App Launch')
+			try {
+				if (isFromChatShareScene()) {
+					this.globalData.shareEnterFirstTime = true
+				}
+			} catch (e) {}
 			// #ifdef MP-WEIXIN
 			uni.loadFontFace({
 				global: true,
 				family: 'uicon-iconfont',
 				source: 'url("https://at.alicdn.com/t/font_2225171_8kdcwk4po24.ttf")',
-				success() {
-					console.log('uview-plus 字体加载成功')
-				},
-				fail(err) {
-					console.log('uview-plus 字体加载失败', err)
-				}
+				success() {},
+				fail(err) {}
 			})
 			// #endif
 		},
 		onShow: function() {
-			console.log('App Show')
+			try {
+				if (isFromChatShareScene()) {
+					this.globalData.shareEnterFirstTime = true
+				}
+			} catch (e) {}
 		},
-		onHide: function() {
-			console.log('App Hide')
-		}
+		onHide: function() {}
 	}
 </script>
 

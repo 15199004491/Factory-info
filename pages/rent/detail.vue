@@ -65,7 +65,7 @@
 			<button class="action-btn share-btn" open-type="share">
 				<text class="btn-label">分享</text>
 			</button>
-			<view class="action-btn more-btn" @tap="onGoMore">
+			<view class="action-btn more-btn" @tap="onGoMore" v-if="showMoreBtn">
 				<text class="btn-label">更多房源</text>
 			</view>
 		</view>
@@ -76,6 +76,7 @@
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import { rentApi } from '@/utils/request.js'
 	import { formatCosUrl } from '@/utils/config.js'
+	import { isShareEnterFirstTimeThenConsume } from '@/utils/date.js'
 
 	export default {
 		components: {
@@ -112,7 +113,7 @@
 				this.houseId = parseInt(options.id)
 				this.loadHouseDetail()
 			}
-			if (options && options.from === 'share') {
+			if (isShareEnterFirstTimeThenConsume()) {
 				this.showMoreBtn = true
 			}
 		},
@@ -157,17 +158,20 @@
 			},
 			onShareAppMessage() {
 				const imgUrl = formatCosUrl(this.house.image)
+				const title = this.house.name || this.house.title || '租房房源'
+				const path = '/pages/rent/detail?id=' + this.houseId
 				const share = {
-					title: this.house.name || this.house.title || '租房房源',
-					path: '/pages/rent/detail?id=' + this.houseId + '&from=share'
+					title: title,
+					path: path
 				}
 				if (imgUrl) share.imageUrl = imgUrl
 				return share
 			},
 			onShareTimeline() {
+				const title = this.house.name || this.house.title || '租房房源'
 				return {
-					title: this.house.name || this.house.title || '租房房源',
-					query: 'id=' + this.houseId + '&from=share'
+					title: title,
+					query: 'id=' + this.houseId
 				}
 			},
 			onGoMore() {

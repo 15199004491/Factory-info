@@ -249,8 +249,6 @@ function uploadToCOS(filePath, dir) {
 		var signature = getCosSignature(key, 'put')
 		var host = COS_BUCKET + '.cos.' + COS_REGION + '.myqcloud.com'
 
-		console.log('uploadToCOS 开始: 本地文件=', filePath, ' 目标COS key=', key)
-
 		var fs = getFileSystemManager()
 		if (!fs || !fs.readFile) {
 			reject(new Error('当前环境不支持读取文件，无法上传到COS'))
@@ -260,7 +258,6 @@ function uploadToCOS(filePath, dir) {
 			filePath: filePath,
 			encoding: 'base64',
 			success: function(res) {
-				console.log('uploadToCOS 读取文件成功, base64长度=', (res.data || '').length)
 				var base64Str = res.data
 				if (!base64Str || typeof base64Str !== 'string' || base64Str.length < 4) {
 					reject(new Error('读取图片文件为空，请重新选择图片'))
@@ -277,7 +274,6 @@ function uploadToCOS(filePath, dir) {
 					reject(new Error('读取图片文件为空，请重新选择图片'))
 					return
 				}
-				console.log('uploadToCOS 开始PUT上传, 字节长度=', binaryData.byteLength || 'unknown')
 				uni.request({
 					url: url + '?' + signature,
 					method: 'PUT',
@@ -288,16 +284,13 @@ function uploadToCOS(filePath, dir) {
 					},
 					timeout: 60000,
 					success: function(putRes) {
-						console.log('uploadToCOS PUT完成, statusCode=', putRes.statusCode)
 						if (putRes.statusCode === 200 || putRes.statusCode === 204) {
 							uni.request({
 								url: url,
 								method: 'HEAD',
 								timeout: 15000,
 								success: function(headRes) {
-									console.log('uploadToCOS HEAD校验完成, statusCode=', headRes.statusCode)
 									if (headRes.statusCode !== 404) {
-										console.log('uploadToCOS 成功! 返回 key=', key)
 										resolve({ url: url, key: key })
 									} else {
 										reject(new Error('上传未生效，请检查存储桶配置后重试'))
@@ -345,30 +338,23 @@ export function isLocalTempPath(p) {
 export async function uploadImages(images, options = {}) {
 	const maxSizeBytes = options.maxSize || MAX_SIZE_SECOND
 	const dir = options.dir || 'second-house'
-	console.log('uploadImages 开始, 共', images.length, '张图片, 目标目录=', dir, '最大大小=', maxSizeBytes)
 	const results = []
 
 	for (let i = 0; i < images.length; i++) {
 		const tempPath = images[i]
-		console.log('uploadImages 处理第', i + 1, '张: 路径=', tempPath, ' 是本地临时路径=', isLocalTempPath(tempPath))
 		try {
 			if (!isLocalTempPath(tempPath)) {
-				console.log('uploadImages 第', i + 1, '张不是本地路径，跳过上传, 直接使用原值')
 				results.push(tempPath)
 				continue
 			}
-			console.log('uploadImages 第', i + 1, '张开始压缩...')
 			const compressedPath = await compressImage(tempPath, maxSizeBytes)
-			console.log('uploadImages 第', i + 1, '张压缩完成, 压缩后路径=', compressedPath)
 			const uploadResult = await uploadToCOS(compressedPath, dir)
-			console.log('uploadImages 第', i + 1, '张COS上传成功, key=', uploadResult.key)
 			results.push(uploadResult.key || tempPath)
 		} catch (e) {
 			console.error('uploadImages 第', i + 1, '张处理失败:', e)
 			throw e
 		}
 	}
-	console.log('uploadImages 全部处理完成, 结果:', results)
 	return results
 }
 
