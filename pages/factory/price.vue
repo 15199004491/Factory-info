@@ -17,7 +17,7 @@
 							placeholder="请输入通知内容，如：即日起至8月31日，小麦收购价格上调5%"
 							placeholder-class="input-placeholder"
 							input-class="form-textarea"
-							:show-count="false"
+							:show-count="true"
 						/>
 					</view>
 				</view>
@@ -62,10 +62,14 @@
 					<text class="empty-text">暂无品类，点击右上角新增</text>
 				</view>
 			</view>
-			<safe-bottom :height="180"></safe-bottom>
+			<safe-bottom :height="260"></safe-bottom>
 		</view>
 
 		<view class="bottom-bar">
+			<view class="publish-tip">
+				<text class="publish-tip-icon">💡</text>
+				<text class="publish-tip-text">新增或修改品类后，请点击下方「发布」按钮完成更新</text>
+			</view>
 			<view class="publish-btn" :class="{ 'publishing': publishing }" @tap="onPublish">
 				<text class="publish-text">{{ publishing ? '发布中...' : '发布' }}</text>
 			</view>
@@ -79,7 +83,7 @@
 				<view class="modal-form">
 					<view class="form-row">
 						<text class="form-label">品类名称</text>
-						<view class="form-input-gray">
+						<view class="form-input-gray modal-cat-name-wrap">
 							<sensitive-input
 								ref="catNameInput"
 								:value="form.name"
@@ -121,10 +125,11 @@
 							:value="form.remark"
 							@input="form.remark = $event"
 							:maxlength="50"
+							:auto-height="true"
 							placeholder="选填，如：要求水分≤14%"
 							placeholder-class="form-placeholder"
 							input-class="form-textarea-gray"
-							:show-count="false"
+							:show-count="true"
 						/>
 					</view>
 				</view>
@@ -257,12 +262,14 @@
 							return { name: item, price: '', unit: '公斤', status: 'active', remark: '' }
 						}
 						const rawPrice = item.price != null ? String(item.price) : ''
+						let remark = item.remark || item.notes || ''
+						if (remark.length > 50) remark = remark.substring(0, 50)
 						return {
 							name: item.name || item.category || '',
 							price: rawPrice ? this.formatPrice(rawPrice) : '',
 							unit: item.unit || '公斤',
 							status: item.status === 1 || item.status === '1' ? 'active' : 'paused',
-							remark: item.remark || item.notes || ''
+							remark: remark
 						}
 					})
 				}
@@ -340,13 +347,15 @@
 				}
 
 				const price = this.formatPrice(this.form.price)
+				let remark = this.form.remark == null ? '' : String(this.form.remark)
+				if (remark.length > 50) remark = remark.substring(0, 50)
 
 				const catData = {
 					name: this.form.name.trim(),
 					price: price,
 					unit: this.form.unit,
 					status: this.form.status === 'active' ? 1 : 0,
-					remark: this.form.remark
+					remark: remark
 				}
 
 				if (this.editingIndex >= 0) {
@@ -389,16 +398,24 @@
 				this.publishing = true
 				uni.showLoading({ title: '发布中...', mask: true })
 				try {
+					let notice = this.factoryNotice == null ? '' : String(this.factoryNotice)
+					if (notice.length > 200) {
+						notice = notice.substring(0, 200)
+					}
 					const payload = {
 						id: this.factoryId,
-						notice: this.factoryNotice,
-						categories: this.categories.map(cat => ({
-							name: cat.name,
-							price: this.formatPrice(cat.price),
-							unit: cat.unit,
-							status: cat.status === 'active' ? 1 : 0,
-							remark: cat.remark
-						}))
+						notice: notice,
+						categories: this.categories.map(cat => {
+							let remark = cat.remark == null ? '' : String(cat.remark)
+							if (remark.length > 50) remark = remark.substring(0, 50)
+							return {
+								name: cat.name,
+								price: this.formatPrice(cat.price),
+								unit: cat.unit,
+								status: cat.status === 'active' ? 1 : 0,
+								remark: remark
+							}
+						})
 					}
 					await factoryApi.publishFactory(payload)
 					uni.hideLoading()
@@ -627,10 +644,33 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		padding: 24rpx 48rpx;
+		padding: 20rpx 32rpx 24rpx;
 		padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
 		background-color: #fff;
 		box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
+	}
+
+	.publish-tip {
+		display: flex;
+		align-items: flex-start;
+		background-color: #fff8e1;
+		border-radius: 10rpx;
+		padding: 14rpx 18rpx;
+		margin-bottom: 18rpx;
+	}
+
+	.publish-tip-icon {
+		font-size: 26rpx;
+		margin-right: 10rpx;
+		flex-shrink: 0;
+		line-height: 1.5;
+	}
+
+	.publish-tip-text {
+		font-size: 24rpx;
+		color: #b8860b;
+		line-height: 1.5;
+		flex: 1;
 	}
 
 	.publish-btn {
@@ -708,9 +748,23 @@
 		background-color: #f5f7fa;
 	}
 
+	.cat-name-wrap {
+		height: 72rpx;
+		border-radius: 8rpx;
+		overflow: hidden;
+	}
+
+	.modal-cat-name-wrap {
+		width: 100%;
+		height: 72rpx;
+		border-radius: 8rpx;
+		overflow: hidden;
+	}
+
 	.form-textarea-gray {
 		background-color: #f5f7fa;
-		min-height: 180rpx;
+		min-height: 120rpx;
+		max-height: 200rpx;
 		padding: 16rpx 20rpx;
 	}
 

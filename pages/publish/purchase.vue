@@ -138,6 +138,8 @@
 							:value="formData.remark"
 							@input="formData.remark = $event"
 							:maxlength="50"
+							:auto-height="true"
+							:show-count="true"
 							placeholder="请输入品类备注（如品质要求、收购说明等）"
 							placeholder-class="form-placeholder"
 							input-class="form-textarea-gray"
@@ -216,6 +218,13 @@
 				return this.unitOptions.indexOf(this.formData.unit)
 			}
 		},
+		watch: {
+			['formData.remark'](val) {
+				if (val && val.length > 50) {
+					this.formData.remark = val.substring(0, 50)
+				}
+			}
+		},
 		onLoad(options) {
 			if (options && options.action === 'edit') {
 				this.editingId = parseInt(options.id)
@@ -274,7 +283,7 @@
 					const rawPrice = item.price || ''
 					const price = rawPrice !== '' ? this.formatPrice(rawPrice) : ''
 					const unit = item.unit || item.unit_name || '公斤'
-					const remark = item.remark || item.note || item.desc || ''
+					const remark = (item.remark || item.note || item.desc || '').substring(0, 50)
 					return { name, price, unit, remark }
 				}).filter(c => c.name)
 			},
@@ -371,20 +380,21 @@
 				}
 
 				const price = this.formatPrice(this.formData.price)
+				const remark = (this.formData.remark || '').substring(0, 50)
 
 				if (this.editingIndex >= 0) {
 					this.form.categories.splice(this.editingIndex, 1, {
 						name: this.formData.name.trim(),
 						price,
 						unit: this.formData.unit,
-						remark: this.formData.remark || ''
+						remark
 					})
 				} else {
 					this.form.categories.push({
 						name: this.formData.name.trim(),
 						price,
 						unit: this.formData.unit,
-						remark: this.formData.remark || ''
+						remark
 					})
 				}
 				this.showModal = false
@@ -728,7 +738,8 @@
 
 	.form-textarea-gray {
 		background-color: #f5f7fa;
-		min-height: 180rpx;
+		min-height: 120rpx;
+		max-height: 200rpx;
 		padding: 16rpx 20rpx;
 	}
 

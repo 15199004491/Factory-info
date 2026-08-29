@@ -83,18 +83,32 @@
 		},
 		watch: {
 			value(newVal) {
-				const v = newVal == null ? '' : String(newVal)
+				let v = newVal == null ? '' : String(newVal)
+				if (this.maxlength && v.length > this.maxlength) {
+					v = v.substring(0, this.maxlength)
+				}
 				if (v !== this.innerValue) {
 					this.innerValue = v
+					this.$emit('input', v)
 				}
 			}
 		},
 		created() {
-			this.innerValue = this.value == null ? '' : String(this.value)
+			let v = this.value == null ? '' : String(this.value)
+			if (this.maxlength && v.length > this.maxlength) {
+				v = v.substring(0, this.maxlength)
+				this.$emit('input', v)
+			}
+			this.innerValue = v
 		},
 		mounted() {
 			this.$nextTick(() => {
-				this.innerValue = this.value == null ? '' : String(this.value)
+				let v = this.value == null ? '' : String(this.value)
+				if (this.maxlength && v.length > this.maxlength) {
+					v = v.substring(0, this.maxlength)
+					this.$emit('input', v)
+				}
+				this.innerValue = v
 			})
 		},
 		methods: {

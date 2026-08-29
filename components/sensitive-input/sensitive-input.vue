@@ -1,5 +1,5 @@
 <template>
-	<view class="sensitive-input-wrap" :class="{ 'has-error': hasError }">
+	<view class="sensitive-input-wrap" :class="{ 'has-error': hasError, 'show-count': showCount }">
 		<input
 			class="sensitive-input"
 			:class="{ 'sensitive-input-error': hasError }"
@@ -11,6 +11,7 @@
 			:show-confirm-bar="false"
 			@input="onInput"
 		/>
+		<text v-if="showCount" class="input-count">{{ (innerValue || '').length }}/{{ maxlength }}</text>
 		<text v-if="hasError" class="sensitive-error">{{ errorMsg }}</text>
 	</view>
 </template>
@@ -44,6 +45,10 @@
 			placeholderClass: {
 				type: String,
 				default: 'sensitive-placeholder'
+			},
+			showCount: {
+				type: Boolean,
+				default: false
 			}
 		},
 		data() {
@@ -121,6 +126,7 @@
 		border: 2rpx solid #eee;
 		border-radius: 8rpx;
 		padding: 0 20rpx;
+		position: relative;
 	}
 
 	.sensitive-input-wrap.has-error {
@@ -136,6 +142,19 @@
 		border: none;
 		padding: 0;
 		box-sizing: border-box;
+	}
+
+	.sensitive-input-wrap.show-count .sensitive-input {
+		padding-right: 80rpx;
+	}
+
+	.input-count {
+		position: absolute;
+		right: 16rpx;
+		bottom: 6rpx;
+		font-size: 20rpx;
+		color: #999;
+		line-height: 1;
 	}
 
 	.sensitive-input-error {
