@@ -1,13 +1,38 @@
 <script>
 	import { isFromChatShareScene } from '@/utils/date.js'
+	function _getEnterOptions() {
+		try {
+			if (typeof uni.getEnterOptionsSync === 'function') {
+				return uni.getEnterOptionsSync()
+			}
+		} catch (e) {}
+		try {
+			return uni.getLaunchOptionsSync()
+		} catch (e) {
+			return { scene: 0, path: '' }
+		}
+	}
 	export default {
 		globalData: {
 			shareEnterFirstTime: false
 		},
 		onLaunch: function() {
 			try {
+				
 				if (isFromChatShareScene()) {
-					this.globalData.shareEnterFirstTime = true
+					const opt = _getEnterOptions()
+					const path = (opt && opt.path) ? String(opt.path) : ''
+					const detailPagePatterns = [
+						'pages/second/detail',
+						'pages/rent/detail',
+						'pages/purchase/detail',
+						'pages/factory/detail'
+					]
+					const isDetailPage = detailPagePatterns.some(p => path.indexOf(p) !== -1)
+					console.log('onLaunch', path, isDetailPage)
+					if (isDetailPage) {
+						this.globalData.shareEnterFirstTime = true
+					}
 				}
 			} catch (e) {}
 			// #ifdef MP-WEIXIN
@@ -19,13 +44,6 @@
 				fail(err) {}
 			})
 			// #endif
-		},
-		onShow: function() {
-			try {
-				if (isFromChatShareScene()) {
-					this.globalData.shareEnterFirstTime = true
-				}
-			} catch (e) {}
 		},
 		onHide: function() {}
 	}
