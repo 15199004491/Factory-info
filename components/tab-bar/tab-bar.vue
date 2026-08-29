@@ -40,12 +40,12 @@
 					{
 						text: '加工厂',
 						icon: 'list',
-						selectedIcon: 'grid',
+						selectedIcon: 'order',
 						pagePath: '/pages/factory/factory'
 					},
 					{
 						text: '个人收购',
-						icon: 'file-text',
+						icon: 'coupon',
 						selectedIcon: 'rmb-circle',
 						pagePath: '/pages/purchase/purchase'
 					},
