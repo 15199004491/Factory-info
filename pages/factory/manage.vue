@@ -22,6 +22,10 @@
 				</view>
 			</view>
 
+			<view class="no-more" v-if="factoryList.length > 0">
+				<text class="no-more-text">没有更多消息了</text>
+			</view>
+
 			<view class="empty" v-if="factoryList.length === 0">
 				<text class="empty-text">暂无加工厂，点击下方新增</text>
 				<text class="empty-link" @tap="showContact = true">不会操作怎么办？</text>
@@ -398,6 +402,18 @@
 	.empty-text {
 		font-size: 28rpx;
 		color: #999;
+	}
+
+	.no-more {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		padding: 40rpx 0 20rpx;
+	}
+
+	.no-more-text {
+		font-size: 24rpx;
+		color: #bbb;
 	}
 
 	.empty-link {

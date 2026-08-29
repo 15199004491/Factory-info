@@ -67,7 +67,7 @@
 
 		<view class="bottom-bar">
 			<view class="publish-tip">
-				<text class="publish-tip-icon">💡</text>
+				<u-icon name="error-circle" size="14" color="#d48806" class="publish-tip-icon"></u-icon>
 				<text class="publish-tip-text">新增或修改品类后，请点击下方「发布」按钮完成更新</text>
 			</view>
 			<view class="publish-btn" :class="{ 'publishing': publishing }" @tap="onPublish">
@@ -148,8 +148,12 @@
 
 <script>
 	import { factoryApi } from '@/utils/request.js'
+	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 
 	export default {
+		components: {
+			uIcon
+		},
 		data() {
 			return {
 				factoryId: null,
@@ -652,7 +656,8 @@
 
 	.publish-tip {
 		display: flex;
-		align-items: flex-start;
+		align-items: center;
+		gap: 12rpx;
 		background-color: #fff8e1;
 		border-radius: 10rpx;
 		padding: 14rpx 18rpx;
@@ -660,17 +665,20 @@
 	}
 
 	.publish-tip-icon {
-		font-size: 26rpx;
-		margin-right: 10rpx;
 		flex-shrink: 0;
-		line-height: 1.5;
+		line-height: 1;
+		height: 24rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.publish-tip-text {
 		font-size: 24rpx;
 		color: #b8860b;
-		line-height: 1.5;
+		line-height: 1.4;
 		flex: 1;
+		padding: 2rpx 0;
 	}
 
 	.publish-btn {

@@ -52,7 +52,7 @@
 		},
 		data() {
 			return {
-				menuList: ['加工厂', '去发布', '已发布', '联系我们'],
+				menuList: ['加工厂', '去发布', '已发布', '联系客服'],
 				isLogin: false,
 				userInfo: null,
 				showContact: false
@@ -183,7 +183,7 @@
 					uni.navigateTo({
 						url: '/pages/mine/published'
 					})
-				}  else if (item === '联系我们') {
+				}  else if (item === '联系客服') {
 					this.showContact = true
 				} else {
 					uni.showToast({
