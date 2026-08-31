@@ -21,6 +21,7 @@
 
 <script>
 	import imagePlaceholder from '@/components/image-placeholder/image-placeholder.vue'
+	import { formatCosUrl } from '@/utils/config.js'
 	export default {
 		name: 'UploaderSingle',
 		components: {
@@ -118,10 +119,7 @@
 				if (!this.currentSrc) return
 				let previewSrc = this.currentSrc
 				if (!this.isLocalSrc) {
-					if (previewSrc.indexOf('http://') !== 0 && previewSrc.indexOf('https://') !== 0) {
-						const tmp = previewSrc.charAt(0) === '/' ? previewSrc.substring(1) : previewSrc
-						previewSrc = 'https://house-factory-1468042561.cos.ap-shanghai.myqcloud.com/' + tmp
-					}
+					previewSrc = formatCosUrl(previewSrc)
 				}
 				uni.previewImage({
 					urls: [previewSrc],

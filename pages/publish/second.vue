@@ -126,6 +126,7 @@
 				</picker-view-column>
 			</picker-view>
 		</view>
+		<canvas canvas-id="compressCanvas" class="compress-canvas"></canvas>
 	</view>
 </template>
 
@@ -348,6 +349,17 @@
 
 <style lang="scss">
 	@import '@/common/form.scss';
+
+	.compress-canvas {
+		position: fixed;
+		left: -9999rpx;
+		top: -9999rpx;
+		width: 2000rpx;
+		height: 2000rpx;
+		z-index: -1;
+		opacity: 0;
+		pointer-events: none;
+	}
 
 	.filter-mask {
 		position: fixed;

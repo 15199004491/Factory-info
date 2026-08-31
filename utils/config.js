@@ -161,7 +161,7 @@ function cosKeyFromUrl(url) {
 	return url.replace(/^\/+/, '')
 }
 
-const USE_COS_SIGNED_URL = false
+const USE_COS_SIGNED_URL = true
 
 function formatCosUrl(src, opts) {
 	if (!src) return ''

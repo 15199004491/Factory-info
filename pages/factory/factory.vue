@@ -153,7 +153,7 @@
 				distanceRange: '全部',
 				distanceOptions: [
 					[
-						{ label: '5公里内', value: '5' },
+						{ label: '10公里内', value: '10' },
 						{ label: '20公里内', value: '20' },
 						{ label: '50公里内', value: '50' },
 						{ label: '100公里内', value: '100' },
