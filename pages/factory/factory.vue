@@ -181,10 +181,25 @@
 				return s.length >= 5 && s.length <= 200
 			}
 		},
+		onLoad() {
+			uni.$on('tab:change', this.onTabChange)
+		},
+		onUnload() {
+			uni.$off('tab:change', this.onTabChange)
+		},
 		onShow() {
 			this.loadList()
 		},
 		methods: {
+			onTabChange({ pagePath }) {
+				if (pagePath !== '/pages/factory/factory') return
+				this.keyword = ''
+				this.pickerValue = [this.distanceOptions[0].length - 1]
+				this.distanceRange = '全部'
+				this.showMenu = false
+				this.page = 1
+				this.loadList()
+			},
 			async loadList() {
 				this.loading = true
 				this.noMore = false

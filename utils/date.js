@@ -108,7 +108,7 @@ export function formatUpdateTime(timestamp) {
 	const time = `${hh}:${mm}`
 
 	if (diffDays === 0) {
-		return `更新于 ${time}`
+		return `更新于 今天 ${time}`
 	} else if (diffDays === 1) {
 		return `更新于 昨天 ${time}`
 	} else if (diffDays === 2) {

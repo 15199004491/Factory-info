@@ -61,8 +61,11 @@
 									<text class="cat-status-tag" :class="{ active: cat.status === '收购中', paused: cat.status === '暂停收购' }">{{ cat.status }}</text>
 								</view>
 								<view class="cat-price-wrap">
-									<text class="cat-price-num">{{ getPriceNum(cat.price) }}</text>
-									<text class="cat-price-unit">/{{ getPriceUnit(cat.price) }}</text>
+									<template v-if="cat.price != null && cat.price !== ''">
+										<text class="cat-price-num">{{ getPriceNum(cat.price) }}</text>
+										<text class="cat-price-unit">/{{ getPriceUnit(cat.price) }}</text>
+									</template>
+									<text class="cat-price-negotiable" v-else>暂无报价</text>
 								</view>
 							</view>
 							<view class="cat-remark" v-if="cat.remark">
@@ -905,6 +908,12 @@
 		font-weight: 600;
 		color: #ff5722;
 		margin-left: 4rpx;
+	}
+
+	.cat-price-negotiable {
+		font-size: 28rpx;
+		font-weight: 500;
+		color: #bbb;
 	}
 
 	.cat-remark {

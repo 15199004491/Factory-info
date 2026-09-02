@@ -149,15 +149,24 @@
 				}
 			},
 			formatList(list) {
-				return (list || []).map(item => ({
-					id: item.Id || item.id,
-					title: item.title,
-					desc: `${item.acreage || ''}㎡ · ${item.floor || ''}`,
-					price: (item.price || '') + '元/月',
-					tag: item.tag_type === 'shared' ? '合租' : '整租',
-					tagType: item.tag_type || 'entire',
-					image: item.rent_image || item.rentImage || item.image || item.img || ''
-				}))
+				return (list || []).map(item => {
+					const community = item.name || item.community || item.community_name || ''
+					const acreage = item.acreage || ''
+					const floor = item.floor || ''
+					const parts = []
+					if (community) parts.push(community)
+					const areaFloor = [acreage ? acreage + '㎡' : '', floor].filter(Boolean).join(' · ')
+					if (areaFloor) parts.push(areaFloor)
+					return {
+						id: item.Id || item.id,
+						title: item.title,
+						desc: parts.join(' · '),
+						price: (item.price || '') + '元/月',
+						tag: item.tag_type === 'shared' ? '合租' : '整租',
+						tagType: item.tag_type || 'entire',
+						image: item.rent_image || item.rentImage || item.image || item.img || ''
+					}
+				})
 			},
 			checkNoMore() {
 				if (this.rentList.length >= this.total || this.rentList.length < this.limit) {

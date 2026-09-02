@@ -42,8 +42,9 @@
 						<view class="cat-header">
 							<text class="cat-name">{{ cat.name }}</text>
 							<view class="cat-price">
-								<text class="cat-price-num">{{ cat.price }}</text>
-								<text class="cat-price-unit">元/{{ cat.unit }}</text>
+								<text class="cat-price-num" v-if="cat.price != null && cat.price !== ''">{{ cat.price }}</text>
+								<text class="cat-price-unit" v-if="cat.price != null && cat.price !== ''">元/{{ cat.unit }}</text>
+								<text class="cat-price-empty" v-else>暂无报价</text>
 							</view>
 						</view>
 						<view class="cat-remark" v-if="cat.remark">
@@ -280,8 +281,8 @@
 						return { name: item, price: '', unit: '公斤', remark: '' }
 					}
 					const name = item.name || item.category || item.title || ''
-					const rawPrice = item.price || ''
-					const price = rawPrice !== '' ? this.formatPrice(rawPrice) : ''
+					const rawPrice = (item.price === null || item.price === undefined) ? '' : String(item.price)
+					const price = (rawPrice && rawPrice.trim() !== '') ? this.formatPrice(rawPrice) : ''
 					const unit = item.unit || item.unit_name || '公斤'
 					const remark = (item.remark || item.note || item.desc || '').substring(0, 50)
 					return { name, price, unit, remark }
@@ -360,10 +361,6 @@
 					uni.showToast({ title: '请输入品类名称', icon: 'none' })
 					return
 				}
-				if (!this.formData.price.trim()) {
-					uni.showToast({ title: '请输入收购价格', icon: 'none' })
-					return
-				}
 
 				const validations = [
 					{ ref: this.$refs.catNameInput, label: '品类名称' },
@@ -379,7 +376,8 @@
 					return
 				}
 
-				const price = this.formatPrice(this.formData.price)
+				const rawPrice = this.formData.price == null ? '' : String(this.formData.price)
+				const price = rawPrice.trim() === '' ? '' : this.formatPrice(rawPrice)
 				const remark = (this.formData.remark || '').substring(0, 50)
 
 				if (this.editingIndex >= 0) {
@@ -402,8 +400,19 @@
 				uni.showToast({ title: '保存成功', icon: 'success' })
 			},
 			formatPrice(price) {
+				if (price === null || price === undefined || price === '') {
+					return ''
+				}
 				const val = parseFloat(price)
-				return isNaN(val) ? price : val.toFixed(2)
+				return isNaN(val) ? '' : val.toFixed(2)
+			},
+			formatPriceForBackend(price) {
+				if (price === null || price === undefined) return null
+				const str = String(price).trim()
+				if (str === '') return null
+				const val = parseFloat(str)
+				if (isNaN(val)) return null
+				return val.toFixed(2)
 			},
 			onConfirmMobileOk() {
 				this.showConfirmMobile = false
@@ -447,11 +456,12 @@
 					description: this.form.description,
 					categories: this.form.categories.map(c => ({
 						name: c.name,
-						price: c.price,
+						price: this.formatPriceForBackend(c.price),
 						unit: c.unit,
 						remark: c.remark || ''
 					}))
 				}
+				console.log('发布purchase payload:', JSON.stringify(postData))
 				purchaseApi.addPurchase(postData).then(() => {
 					uni.hideLoading()
 					uni.showToast({ title: this.editingId ? '修改成功' : '发布成功', icon: 'success' })
@@ -596,6 +606,12 @@
 		font-weight: 700;
 		color: #ff5722;
 		margin-left: 4rpx;
+	}
+
+	.cat-price-empty {
+		font-size: 26rpx;
+		color: #bbb;
+		font-weight: 500;
 	}
 
 	.cat-remark {

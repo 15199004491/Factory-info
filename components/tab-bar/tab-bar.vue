@@ -67,6 +67,10 @@
 		methods: {
 			switchTab(index) {
 				if (this.currentIndex === index) return
+				uni.$emit('tab:change', {
+					pagePath: this.tabs[index].pagePath,
+					index: index
+				})
 				uni.switchTab({
 					url: this.tabs[index].pagePath
 				})

@@ -40,8 +40,9 @@
 								<text class="cat-status-tag" :class="cat.status">{{ cat.status === 'active' ? '收购中' : '暂停收购' }}</text>
 							</view>
 							<view class="cat-price">
-								<text class="cat-price-num">{{ formatPrice(cat.price) }}</text>
-								<text class="cat-price-unit">元/{{ cat.unit }}</text>
+								<text class="cat-price-num" v-if="cat.price != null && cat.price !== ''">{{ formatPrice(cat.price) }}</text>
+								<text class="cat-price-unit" v-if="cat.price != null && cat.price !== ''">元/{{ cat.unit }}</text>
+								<text class="cat-price-num price-negotiable" v-else>面议</text>
 							</view>
 						</view>
 						<view class="cat-remark" v-if="cat.remark">
@@ -268,9 +269,10 @@
 						const rawPrice = item.price != null ? String(item.price) : ''
 						let remark = item.remark || item.notes || ''
 						if (remark.length > 50) remark = remark.substring(0, 50)
+						const priceVal = (rawPrice && rawPrice.trim() !== '') ? this.formatPrice(rawPrice) : ''
 						return {
 							name: item.name || item.category || '',
-							price: rawPrice ? this.formatPrice(rawPrice) : '',
+							price: priceVal,
 							unit: item.unit || '公斤',
 							status: item.status === 1 || item.status === '1' ? 'active' : 'paused',
 							remark: remark
@@ -285,8 +287,19 @@
 				return []
 			},
 			formatPrice(price) {
+				if (price === null || price === undefined || price === '') {
+					return ''
+				}
 				const val = parseFloat(price)
-				return isNaN(val) ? price : val.toFixed(2)
+				return isNaN(val) ? '' : val.toFixed(2)
+			},
+			formatPriceForBackend(price) {
+				if (price === null || price === undefined) return null
+				const str = String(price).trim()
+				if (str === '') return null
+				const val = parseFloat(str)
+				if (isNaN(val)) return null
+				return val.toFixed(2)
 			},
 			onAddCategory() {
 				if (this.categories.length >= 6) {
@@ -331,11 +344,6 @@
 					uni.showToast({ title: '请输入品类名称', icon: 'none' })
 					return
 				}
-				if (!this.form.price.trim()) {
-					uni.showToast({ title: '请输入价格', icon: 'none' })
-					return
-				}
-
 				const validations = [
 					{ ref: this.$refs.catNameInput, label: '品类名称' },
 					{ ref: this.$refs.catRemarkInput, label: '备注' }
@@ -350,7 +358,8 @@
 					return
 				}
 
-				const price = this.formatPrice(this.form.price)
+				const rawPrice = this.form.price == null ? '' : String(this.form.price)
+				const price = rawPrice.trim() === '' ? '' : this.formatPrice(rawPrice)
 				let remark = this.form.remark == null ? '' : String(this.form.remark)
 				if (remark.length > 50) remark = remark.substring(0, 50)
 
@@ -358,9 +367,10 @@
 					name: this.form.name.trim(),
 					price: price,
 					unit: this.form.unit,
-					status: this.form.status === 'active' ? 1 : 0,
+					status: this.form.status,
 					remark: remark
 				}
+				console.log('保存品类数据:', catData)
 
 				if (this.editingIndex >= 0) {
 					this.$set(this.categories, this.editingIndex, {
@@ -368,7 +378,7 @@
 						name: catData.name,
 						price: catData.price,
 						unit: catData.unit,
-						status: this.form.status,
+						status: catData.status,
 						remark: catData.remark
 					})
 				} else {
@@ -376,10 +386,11 @@
 						name: catData.name,
 						price: catData.price,
 						unit: catData.unit,
-						status: this.form.status,
+						status: catData.status,
 						remark: catData.remark
 					})
 				}
+				console.log('当前categories列表:', JSON.stringify(this.categories))
 				this.showModal = false
 				uni.showToast({ title: '保存成功', icon: 'success' })
 			},
@@ -406,21 +417,23 @@
 					if (notice.length > 200) {
 						notice = notice.substring(0, 200)
 					}
+					const categoriesPayload = this.categories.map(cat => {
+						let remark = cat.remark == null ? '' : String(cat.remark)
+						if (remark.length > 50) remark = remark.substring(0, 50)
+						return {
+							name: cat.name,
+							price: this.formatPriceForBackend(cat.price),
+							unit: cat.unit,
+							status: cat.status === 'active' ? 1 : 0,
+							remark: remark
+						}
+					})
 					const payload = {
 						id: this.factoryId,
 						notice: notice,
-						categories: this.categories.map(cat => {
-							let remark = cat.remark == null ? '' : String(cat.remark)
-							if (remark.length > 50) remark = remark.substring(0, 50)
-							return {
-								name: cat.name,
-								price: this.formatPrice(cat.price),
-								unit: cat.unit,
-								status: cat.status === 'active' ? 1 : 0,
-								remark: remark
-							}
-						})
+						categories: categoriesPayload
 					}
+					console.log('发布payload:', JSON.stringify(payload))
 					await factoryApi.publishFactory(payload)
 					uni.hideLoading()
 					uni.showToast({ title: '发布成功', icon: 'success' })
@@ -589,6 +602,12 @@
 		font-weight: 700;
 		color: #ff5722;
 		margin-left: 4rpx;
+	}
+
+	.price-negotiable {
+		font-size: 28rpx;
+		color: #999;
+		font-weight: 500;
 	}
 
 	.cat-remark {

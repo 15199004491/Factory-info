@@ -22,11 +22,17 @@
 			</view>
 			<view class="category-grid" v-if="detail.items.length > 0">
 				<view class="category-card" v-for="(item, idx) in detail.items" :key="idx" :class="{ 'no-border': idx === detail.items.length - 1 }">
-					<text class="cat-name">{{ item.name }}</text>
-					<view class="cat-price-value">
-						<text class="cat-price-num">{{ item.price }}</text>
-						<text class="cat-price-unit">元/{{ item.unit }}</text>
+					<view class="cat-main">
+						<text class="cat-name">{{ item.name }}</text>
+						<view class="cat-price-value">
+							<template v-if="item.price != null && item.price !== ''">
+								<text class="cat-price-num">{{ item.price }}</text>
+								<text class="cat-price-unit">元/{{ item.unit }}</text>
+							</template>
+							<text class="cat-price-empty" v-else>暂无报价</text>
+						</view>
 					</view>
+					<text class="cat-remark-text" v-if="item.description">{{ item.description }}</text>
 				</view>
 			</view>
 			<view class="empty-tip" v-else>
@@ -98,11 +104,15 @@
 				try {
 					const data = await purchaseApi.purchaseDetail({ Id: this.id })
 					const rawList = data.categories || data.items || []
-					const items = rawList.map(item => ({
-						name: item.name || '',
-						price: item.price || '',
-						unit: item.unit || ''
-					}))
+					const items = rawList.map(item => {
+						const rawPrice = (item.price === null || item.price === undefined) ? '' : String(item.price)
+						return {
+							name: item.name || '',
+							price: rawPrice,
+							unit: item.unit || '',
+							description: item.description || item.remark || item.desc || ''
+						}
+					})
 					this.detail = {
 						title: data.title || '',
 						category: data.category || '',
@@ -256,8 +266,8 @@
 	}
 
 	.category-card {
-		display: inline-flex;
-		align-items: center;
+		display: flex;
+		flex-direction: column;
 		padding: 16rpx 0;
 		border-bottom: 1rpx solid #f0f0f0;
 		width: 100%;
@@ -267,16 +277,30 @@
 		border-bottom: none;
 	}
 
+	.cat-main {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+	}
+
 	.cat-name {
 		font-size: 30rpx;
 		font-weight: 500;
 		color: #333;
-		margin-right: 24rpx;
 	}
 
 	.cat-price-value {
 		display: flex;
 		align-items: baseline;
+	}
+
+
+	.cat-remark-text {
+		font-size: 24rpx;
+		color: #888;
+		line-height: 1.5;
+		margin-top: 20rpx
 	}
 
 	.cat-price-num {
@@ -290,6 +314,12 @@
 		font-weight: 600;
 		color: #ff5722;
 		margin-left: 6rpx;
+	}
+
+	.cat-price-empty {
+		font-size: 26rpx;
+		font-weight: 500;
+		color: #bbb;
 	}
 
 	.detail-section {

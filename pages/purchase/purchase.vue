@@ -116,12 +116,24 @@
 			}
 		},
 		onLoad() {
+			uni.$on('tab:change', this.onTabChange)
 			this.loadList()
+		},
+		onUnload() {
+			uni.$off('tab:change', this.onTabChange)
 		},
 		onShow() {
 			this.loadList()
 		},
 		methods: {
+			onTabChange({ pagePath }) {
+				if (pagePath !== '/pages/purchase/purchase') return
+				this.keyword = ''
+				this.currentRegion = '全部'
+				this.showRegionPicker = false
+				this.page = 1
+				this.loadList()
+			},
 			async loadList() {
 				this.loading = true
 				this.noMore = false
