@@ -36,17 +36,18 @@
 
 		<view class="detail-section">
 			<text class="section-title">位置信息</text>
-			<view class="location-row">
-				<view class="location-left">
-					<text class="location-label">地区</text>
-					<text class="location-value">{{ house.region }}{{ house.address ? ' ' + house.address : '' }}</text>
-				</view>
+			<view class="location-row" v-if="house.region">
+				<text class="location-label">地区</text>
+				<text class="location-value">{{ house.region }}</text>
 			</view>
-			<view class="location-row">
-				<view class="location-left">
-					<text class="location-label">小区</text>
-					<text class="location-value">{{ house.name }}</text>
-				</view>
+			<view class="location-row" v-if="house.name">
+				<text class="location-label">小区</text>
+				<text class="location-value">{{ house.name }}</text>
+			</view>
+			<view class="address-row" v-if="house.addressText" @tap="openLocation">
+				<text class="location-label">地点</text>
+				<text class="address-text">{{ house.addressText }}</text>
+				<text class="address-arrow">›</text>
 			</view>
 		</view>
 
@@ -98,31 +99,18 @@
 					houseType: '',
 					area: '',
 					floor: '',
-					phone: '',
+					mobile: '',
 					name: '',
 					region: '',
-					address: '',
 					latitude: 0,
 					longitude: 0,
+					addressText: '',
+					hasCoord: false,
 					description: ''
 				}
 			}
 		},
-		computed: {
-			mapMarkers() {
-				if (this.house.latitude && this.house.longitude) {
-					return [{
-						id: 1,
-						latitude: this.house.latitude,
-						longitude: this.house.longitude,
-						title: this.house.name,
-						width: 32,
-						height: 32
-					}]
-				}
-				return []
-			}
-		},
+		computed: {},
 		onLoad(options) {
 			if (options.id) {
 				this.houseId = parseInt(options.id)
@@ -133,9 +121,20 @@
 			}
 		},
 		methods: {
+			parseLocation(data) {
+				if (!data.location) return null
+				if (typeof data.location === 'string') {
+					try { return JSON.parse(data.location) } catch (e) { return null }
+				}
+				return data.location
+			},
 			async loadHouseDetail() {
 				try {
 					const data = await secondHouseApi.getDetail(this.houseId)
+					const loc = this.parseLocation(data)
+					const lat = Number(loc ? loc.latitude : (data.latitude || 0))
+					const lng = Number(loc ? loc.longitude : (data.longitude || 0))
+					const address = loc ? (loc.address || '') : ''
 					this.house = {
 						id: data.id,
 						title: data.title,
@@ -147,10 +146,11 @@
 						floor: data.floor || '',
 						mobile: data.mobile || '',
 						name: data.name || '',
-						region: data.region || '',
-						address: data.area || data.location_name || data.location || '',
-						latitude: data.latitude || 0,
-						longitude: data.longitude || 0,
+						region: data.area || data.region || '',
+						latitude: lat,
+						longitude: lng,
+						addressText: address,
+						hasCoord: !!(lat && lng && lat !== 0 && lng !== 0),
 						description: data.explain || data.description || ''
 					}
 					this.visitors = data.count || data.visitors || 0
@@ -171,9 +171,17 @@
 					})
 				}
 			},
-			onOpenMap() {
-				uni.navigateTo({
-					url: '/pages/second/map?latitude=' + this.house.latitude + '&longitude=' + this.house.longitude + '&title=' + encodeURIComponent(this.house.name)
+			openLocation() {
+				if (!this.house.hasCoord) {
+					uni.showToast({ title: '该房源暂无位置信息', icon: 'none' })
+					return
+				}
+				uni.openLocation({
+					latitude: this.house.latitude,
+					longitude: this.house.longitude,
+					name: this.house.name || this.house.title || '房源位置',
+					address: this.house.addressText,
+					scale: 16
 				})
 			},
 			onShareAppMessage() {
@@ -318,35 +326,34 @@
 		border-bottom: 1rpx solid #f5f5f5;
 	}
 
-	.location-row-link {
-		cursor: pointer;
-	}
-
-	.map-wrap {
-		margin-top: 20rpx;
-		border-radius: 12rpx;
-		overflow: hidden;
-	}
-
-	.detail-map {
-		width: 100%;
-		height: 360rpx;
-	}
-
-	.location-left {
-		display: flex;
-		flex: 1;
-		flex-direction: column;
-	}
-
 	.location-label {
 		font-size: 26rpx;
 		color: #999;
+		flex: 1
 	}
 
 	.location-value {
 		font-size: 26rpx;
 		color: #333;
+	}
+
+	.address-row {
+		display: flex;
+		align-items: center;
+		gap: 10rpx;
+		padding: 16rpx 0;
+	}
+
+	.address-text {
+		flex: 8;
+		font-size: 28rpx;
+		color: #333;
+		line-height: 1.5;
+	}
+
+	.address-arrow {
+		font-size: 30rpx;
+		color: #ccc;
 	}
 
 	.detail-content {

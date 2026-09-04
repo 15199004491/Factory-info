@@ -39,6 +39,16 @@
 				</view>
 			</view>
 
+			<view class="form-item form-item-link" @tap="onChooseLocation">
+				<text class="form-label">位置</text>
+				<view class="form-input-wrap">
+					<text class="form-value" :class="{ 'form-placeholder-text': !form.location.address }">
+						{{ form.location.address || '获取地址' }}
+					</text>
+					<u-icon name="map" size="16" color="#999"></u-icon>
+				</view>
+			</view>
+
 			<view class="form-item form-item-link" @tap="openPicker('type')">
 				<text class="form-label">户型</text>
 				<view class="form-input-wrap">
@@ -168,7 +178,12 @@
 					price: '',
 					mobile: '',
 					second_image: '',
-					explain: ''
+					explain: '',
+					location: {
+						address: '',
+						latitude: 39.908823,
+						longitude: 116.397470
+					}
 				}
 			}
 		},
@@ -187,10 +202,37 @@
 			}
 		},
 		methods: {
+			fixCoord(val, defaultVal) {
+				const num = Number(val)
+				if (isNaN(num) || num < -180 || num > 180) return defaultVal
+				return num
+			},
 			async loadDetail() {
 				try {
 					const data = await secondHouseApi.getDetail(this.editingId)
-					this.form = data
+					let locationObj = null
+					if (data.location) {
+						if (typeof data.location === 'string') {
+							try { locationObj = JSON.parse(data.location) } catch (e) { locationObj = null }
+						} else { locationObj = data.location }
+					}
+					this.form = {
+						title: data.title || '',
+						name: data.name || '',
+						area: data.area || '',
+						shape: data.shape || '',
+						acreage: data.acreage || '',
+						floor: data.floor || '',
+						price: data.price || '',
+						mobile: data.mobile || '',
+						second_image: data.second_image || '',
+						explain: data.explain || '',
+						location: {
+							address: locationObj ? locationObj.address : (data.location_name || data.address || data.location || ''),
+							latitude: this.fixCoord(parseFloat(locationObj ? locationObj.latitude : (data.latitude || 39.908823)), 39.908823),
+							longitude: this.fixCoord(parseFloat(locationObj ? locationObj.longitude : (data.longitude || 116.397470)), 116.397470)
+						}
+					}
 					this.imageChanged = false
 					this.$nextTick(() => {
 						if (this.$refs.uploaderSecond) {
@@ -215,6 +257,51 @@
 			},
 			onRegionCancel() {
 				this.showRegionPicker = false
+			},
+			onChooseLocation() {
+				const latitude = Number(this.form.location.latitude)
+				const longitude = Number(this.form.location.longitude)
+				const address = this.form.location.address || ''
+				const hasLocation = address && latitude && longitude && latitude !== 0 && longitude !== 0
+
+				const doChoose = () => {
+					const opts = {
+						success: (res) => {
+							this.form.location.address = res.address
+							this.form.location.latitude = res.latitude
+							this.form.location.longitude = res.longitude
+						},
+						fail: () => {
+							uni.showToast({ title: '选择位置失败', icon: 'none' })
+						}
+					}
+					if (latitude && longitude && latitude !== 0 && longitude !== 0) {
+						opts.latitude = latitude
+						opts.longitude = longitude
+					}
+					uni.chooseLocation(opts)
+				}
+
+				if (hasLocation) {
+					uni.showActionSheet({
+						itemList: ['在地图中查看', '重新选择地址'],
+						success: (res) => {
+							if (res.tapIndex === 0) {
+								uni.openLocation({
+									latitude,
+									longitude,
+									name: this.form.name || '房源位置',
+									address,
+									scale: 16
+								})
+							} else if (res.tapIndex === 1) {
+								doChoose()
+							}
+						}
+					})
+				} else {
+					doChoose()
+				}
 			},
 			openPicker(shape) {
 				this.pickerType = shape
@@ -328,6 +415,7 @@
 						second_image: secondImage,
 						explain: this.form.explain,
 						area: this.form.area,
+						location: this.form.location
 					}
 					await secondHouseApi.addHouse(postData)
 					uni.hideLoading()

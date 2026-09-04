@@ -85,20 +85,26 @@ export const auth = {
 		return uni.getStorageSync('user_token') || ''
 	},
 
-	requireAuth() {
-		if (!this.isLoggedIn()) {
-			uni.showModal({
-				title: '提示',
-				content: '请先登录',
-				confirmText: '去登录',
-				success: async (res) => {
-					if (res.confirm) {
+	async requireAuth(callback) {
+		if (this.isLoggedIn()) {
+			if (callback) callback()
+			return true
+		}
+		uni.showModal({
+			title: '提示',
+			content: '请先登录',
+			confirmText: '去登录',
+			success: async (res) => {
+				if (res.confirm) {
+					try {
 						await this.login()
+						if (callback) callback()
+					} catch (e) {
+						console.error('登录失败', e)
 					}
 				}
-			})
-			return false
-		}
-		return true
+			}
+		})
+		return false
 	}
 }

@@ -15,6 +15,12 @@
 	},
 	"pages": [
 		{
+			"path": "pages/hall/hall",
+			"style": {
+				"navigationBarTitleText": "收购大厅"
+			}
+		},
+		{
 			"path": "pages/factory/factory",
 			"style": {
 				"navigationBarTitleText": "加工厂收购"
@@ -117,6 +123,12 @@
 			}
 		},
 		{
+			"path": "pages/factory/guide",
+			"style": {
+				"navigationBarTitleText": "操作指引"
+			}
+		},
+		{
 			"path": "pages/mine/mine",
 			"style": {
 				"navigationBarTitleText": "我的"
@@ -149,12 +161,8 @@
 		"borderStyle": "black",
 		"list": [
 			{
-				"pagePath": "pages/factory/factory",
-				"text": "加工厂"
-			},
-			{
-				"pagePath": "pages/purchase/purchase",
-				"text": "个人收购"
+				"pagePath": "pages/hall/hall",
+				"text": "收购大厅"
 			},
 			{
 				"pagePath": "pages/index/index",

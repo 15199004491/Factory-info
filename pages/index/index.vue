@@ -80,7 +80,7 @@
 
 		<contact-modal :visible="contactVisible" @close="contactVisible = false"></contact-modal>
 
-		<tab-bar :currentIndex="2"></tab-bar>
+		<tab-bar :currentIndex="1"></tab-bar>
 	</view>
 </template>
 

@@ -198,7 +198,6 @@
 				this.distanceRange = '全部'
 				this.showMenu = false
 				this.page = 1
-				this.loadList()
 			},
 			async loadList() {
 				this.loading = true

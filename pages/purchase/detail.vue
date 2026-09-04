@@ -160,7 +160,7 @@
 			},
 			onGoMore() {
 				uni.switchTab({
-					url: '/pages/purchase/purchase'
+					url: '/pages/hall/hall'
 				})
 			}
 		}

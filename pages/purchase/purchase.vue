@@ -117,7 +117,6 @@
 		},
 		onLoad() {
 			uni.$on('tab:change', this.onTabChange)
-			this.loadList()
 		},
 		onUnload() {
 			uni.$off('tab:change', this.onTabChange)
@@ -132,7 +131,6 @@
 				this.currentRegion = '全部'
 				this.showRegionPicker = false
 				this.page = 1
-				this.loadList()
 			},
 			async loadList() {
 				this.loading = true
@@ -235,9 +233,10 @@
 				})
 			},
 			onPublish() {
-				if (!auth.requireAuth()) return
-				uni.navigateTo({
-					url: '/pages/publish/purchase'
+				auth.requireAuth(() => {
+					uni.navigateTo({
+						url: '/pages/publish/purchase'
+					})
 				})
 			}
 		}
@@ -370,7 +369,6 @@
 	.purchase-card {
 		background-color: #fff;
 		border-radius: 16rpx;
-		padding: 24rpx;
 		margin-bottom: 20rpx;
 		box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 	}

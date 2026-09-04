@@ -34,7 +34,7 @@
 
 		<contact-modal :visible="showContact" @close="showContact = false"></contact-modal>
 
-		<tab-bar :currentIndex="3"></tab-bar>
+		<tab-bar :currentIndex="2"></tab-bar>
 	</view>
 </template>
 
@@ -113,75 +113,45 @@
 			onMenuTap(index) {
 				const item = this.menuList[index]
 				if (item === '加工厂') {
-					if (!this.isLogin) {
-						uni.showModal({
-							title: '提示',
-							content: '请先登录后再进入加工厂管理',
-							confirmText: '去登录',
-							success: (res) => {
-								if (res.confirm) {
-									this.onWechatLogin()
-								}
-							}
+					auth.requireAuth(() => {
+						this.checkLoginStatus()
+						uni.navigateTo({
+							url: '/pages/factory/manage'
 						})
-						return
-					}
-					uni.navigateTo({
-						url: '/pages/factory/manage'
 					})
 				} else if (item === '去发布') {
-					if (!this.isLogin) {
-						uni.showModal({
-							title: '提示',
-							content: '请先登录后再进行发布',
-							confirmText: '去登录',
-							success: (res) => {
-								if (res.confirm) {
-									this.onWechatLogin()
+					auth.requireAuth(() => {
+						this.checkLoginStatus()
+						uni.showActionSheet({
+							itemList: ['二手房', '租房', '个人收购', '新房'],
+							success: function(res) {
+								if (res.tapIndex === 0) {
+									uni.navigateTo({
+										url: '/pages/publish/second'
+									})
+								} else if (res.tapIndex === 1) {
+									uni.navigateTo({
+										url: '/pages/publish/rent'
+									})
+								} else if (res.tapIndex === 2) {
+									uni.navigateTo({
+										url: '/pages/publish/purchase'
+									})
+								} else if (res.tapIndex === 3) {
+									uni.showToast({
+										title: '暂未开通',
+										icon: 'none'
+									})
 								}
 							}
 						})
-						return
-					}
-					uni.showActionSheet({
-						itemList: ['二手房', '租房', '个人收购', '新房'],
-						success: function(res) {
-							if (res.tapIndex === 0) {
-								uni.navigateTo({
-									url: '/pages/publish/second'
-								})
-							} else if (res.tapIndex === 1) {
-								uni.navigateTo({
-									url: '/pages/publish/rent'
-								})
-							} else if (res.tapIndex === 2) {
-								uni.navigateTo({
-									url: '/pages/publish/purchase'
-								})
-							} else if (res.tapIndex === 3) {
-								uni.showToast({
-									title: '暂未开通',
-									icon: 'none'
-								})
-							}
-						}
 					})
 				} else if (item === '已发布') {
-					if (!this.isLogin) {
-						uni.showModal({
-							title: '提示',
-							content: '请先登录后查看',
-							confirmText: '去登录',
-							success: (res) => {
-								if (res.confirm) {
-									this.onWechatLogin()
-								}
-							}
+					auth.requireAuth(() => {
+						this.checkLoginStatus()
+						uni.navigateTo({
+							url: '/pages/mine/published'
 						})
-						return
-					}
-					uni.navigateTo({
-						url: '/pages/mine/published'
 					})
 				}  else if (item === '联系客服') {
 					this.showContact = true

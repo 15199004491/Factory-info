@@ -38,16 +38,10 @@
 				selectedColor: '#3c9cff',
 				tabs: [
 					{
-						text: '加工厂',
+						text: '收购大厅',
 						icon: 'list',
-						selectedIcon: 'order',
-						pagePath: '/pages/factory/factory'
-					},
-					{
-						text: '个人收购',
-						icon: 'coupon',
 						selectedIcon: 'rmb-circle',
-						pagePath: '/pages/purchase/purchase'
+						pagePath: '/pages/hall/hall'
 					},
 					{
 						text: '住房',

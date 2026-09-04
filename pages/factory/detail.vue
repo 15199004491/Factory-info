@@ -269,7 +269,7 @@
 			},
 			onGoHome() {
 				uni.switchTab({
-					url: '/pages/factory/factory'
+					url: '/pages/hall/hall'
 				})
 			},
 			async onShowPoster() {

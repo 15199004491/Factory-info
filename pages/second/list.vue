@@ -65,6 +65,10 @@
 			<view class="scroll-bottom-space"></view>
 		</scroll-view>
 
+		<view class="fab-btn" @tap="onPublish">
+			<u-icon name="plus" size="24" color="#fff"></u-icon>
+		</view>
+
 		<region-picker
 			:visible="showRegionPicker"
 			:current="currentRegion"
@@ -80,6 +84,7 @@
 	import regionPicker from '@/components/region-picker/region-picker.vue'
 	import imagePlaceholder from '@/components/image-placeholder/image-placeholder.vue'
 	import { secondHouseApi } from '@/utils/request.js'
+	import { auth } from '@/utils/auth.js'
 
 	export default {
 		components: {
@@ -100,7 +105,7 @@
 				noMore: false
 			}
 		},
-		onLoad() {
+		onShow() {
 			this.loadList()
 		},
 		methods: {
@@ -184,6 +189,13 @@
 					url: '/pages/second/detail?id=' + item.id
 					
 				})
+			},
+			onPublish() {
+				auth.requireAuth(() => {
+					uni.navigateTo({
+						url: '/pages/publish/second'
+					})
+				})
 			}
 		}
 	}
@@ -212,7 +224,7 @@
 	}
 
 	.scroll-bottom-space {
-		height: 60rpx;
+		height: calc(160rpx + env(safe-area-inset-bottom));
 	}
 
 	.region-wrap {
@@ -356,5 +368,20 @@
 	.empty-text {
 		font-size: 28rpx;
 		color: #999;
+	}
+
+	.fab-btn {
+		position: fixed;
+		right: 40rpx;
+		bottom: calc(60rpx + env(safe-area-inset-bottom));
+		width: 100rpx;
+		height: 100rpx;
+		border-radius: 50%;
+		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 8rpx 24rpx rgba(60, 156, 255, 0.4);
+		z-index: 100;
 	}
 </style>

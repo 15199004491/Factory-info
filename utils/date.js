@@ -51,9 +51,8 @@ export function formatDateTime(timestamp) {
 		return `今天 ${time}`
 	} else if (diffDays === 1) {
 		return `昨天 ${time}`
-	} else if (diffDays < 7) {
-		const weekDays = ['日', '一', '二', '三', '四', '五', '六']
-		return `周${weekDays[date.getDay()]} ${time}`
+	} else if (diffDays === 2) {
+		return `前天 ${time}`
 	} else {
 		const m = date.getMonth() + 1
 		const d = date.getDate()
@@ -84,14 +83,12 @@ export function formatDate(input) {
 		return `今天 ${time}`
 	} else if (diffDays === 1) {
 		return `昨天 ${time}`
-	} else if (diffDays < 7) {
-		const weekDays = ['日', '一', '二', '三', '四', '五', '六']
-		return `周${weekDays[date.getDay()]} ${time}`
+	} else if (diffDays === 2) {
+		return `前天 ${time}`
 	} else {
-		const y = date.getFullYear()
-		const m = String(date.getMonth() + 1).padStart(2, '0')
-		const d = String(date.getDate()).padStart(2, '0')
-		return `${y}-${m}-${d}`
+		const m = date.getMonth() + 1
+		const d = date.getDate()
+		return `${m}月${d}日`
 	}
 }
 

@@ -28,11 +28,9 @@
 
 			<view class="empty" v-if="factoryList.length === 0">
 				<text class="empty-text">暂无加工厂，点击下方新增</text>
-				<text class="empty-link" @tap="showContact = true">不会操作怎么办？</text>
+				<text class="empty-link" @tap="goGuide">不会操作怎么办？点击查看操作指引</text>
 			</view>
 		</view>
-
-		<contact-modal :visible="showContact" @close="showContact = false"></contact-modal>
 
 		<view class="bottom-bar">
 			<view class="add-btn" @tap="onAdd">
@@ -45,16 +43,11 @@
 <script>
 	import { factoryApi } from '@/utils/request.js'
 	import { formatDate } from '@/utils/date.js'
-	import contactModal from '@/components/contact-modal/contact-modal.vue'
 
 	export default {
-		components: {
-			contactModal
-		},
 		data() {
 			return {
-				factoryList: [],
-				showContact: false
+				factoryList: []
 			}
 		},
 		onShow() {
@@ -195,6 +188,11 @@
 			goDetail(item) {
 				uni.navigateTo({
 					url: '/pages/factory/detail?Id=' + item.id
+				})
+			},
+			goGuide() {
+				uni.navigateTo({
+					url: '/pages/factory/guide'
 				})
 			}
 		}
@@ -418,6 +416,20 @@
 
 	.empty-link {
 		font-size: 28rpx;
+		color: #3c9cff;
+		font-weight: 500;
+	}
+
+	.guide-entry {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		padding: 30rpx 0;
+		margin-top: 10rpx;
+	}
+
+	.guide-entry-text {
+		font-size: 26rpx;
 		color: #3c9cff;
 		font-weight: 500;
 	}

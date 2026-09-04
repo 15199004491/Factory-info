@@ -40,13 +40,18 @@
 
 		<view class="detail-section">
 			<text class="section-title">位置信息</text>
-			<view class="location-row">
+			<view class="location-row" v-if="house.area">
+				<text class="location-label">地区</text>
+				<text class="location-value">{{ house.area }}</text>
+			</view>
+			<view class="location-row" v-if="house.name">
 				<text class="location-label">小区</text>
 				<text class="location-value">{{ house.name }}</text>
 			</view>
-			<view class="location-row">
-				<text class="location-label">地区</text>
-				<text class="location-value">{{ house.area }}</text>
+			<view class="address-row" v-if="house.addressText" @tap="openLocation">
+				<text class="location-label">地点</text>
+				<text class="address-text">{{ house.addressText }}</text>
+				<text class="address-arrow">›</text>
 			</view>
 		</view>
 
@@ -103,7 +108,11 @@
 					name: '',
 					area: '',
 					explain: '',
-					mobile: ''
+					mobile: '',
+					latitude: 0,
+					longitude: 0,
+					addressText: '',
+					hasCoord: false
 				}
 			}
 		},
@@ -118,9 +127,20 @@
 			}
 		},
 		methods: {
+			parseLocation(data) {
+				if (!data.location) return null
+				if (typeof data.location === 'string') {
+					try { return JSON.parse(data.location) } catch (e) { return null }
+				}
+				return data.location
+			},
 			async loadHouseDetail() {
 				try {
 					const data = await rentApi.rentDetail({ Id: this.houseId })
+					const loc = this.parseLocation(data)
+					const lat = Number(loc ? loc.latitude : (data.latitude || 0))
+					const lng = Number(loc ? loc.longitude : (data.longitude || 0))
+					const address = loc ? (loc.address || '') : ''
 					this.house = {
 						id: data.Id || data.id,
 						title: data.title,
@@ -136,7 +156,11 @@
 						name: data.name || data.community || '',
 						area: data.area_name || data.area || data.region || '',
 						explain: data.explain || data.description || '',
-						mobile: data.mobile || ''
+						mobile: data.mobile || '',
+						latitude: lat,
+						longitude: lng,
+						addressText: address,
+						hasCoord: !!(lat && lng && lat !== 0 && lng !== 0)
 					}
 					this.visitors = data.count || data.visitors || 0
 				} catch (e) {}
@@ -155,6 +179,19 @@
 						icon: 'none'
 					})
 				}
+			},
+			openLocation() {
+				if (!this.house.hasCoord) {
+					uni.showToast({ title: '该房源暂无位置信息', icon: 'none' })
+					return
+				}
+				uni.openLocation({
+					latitude: this.house.latitude,
+					longitude: this.house.longitude,
+					name: this.house.name || this.house.title || '房源位置',
+					address: this.house.addressText,
+					scale: 16
+				})
 			},
 			onShareAppMessage() {
 				const imgUrl = formatCosUrl(this.house.image)
@@ -329,11 +366,31 @@
 	.location-label {
 		font-size: 26rpx;
 		color: #999;
+		flex: 1
 	}
 
 	.location-value {
 		font-size: 26rpx;
 		color: #333;
+	}
+
+	.address-row {
+		display: flex;
+		align-items: center;
+		gap: 10rpx;
+		padding: 16rpx 0;
+	}
+
+	.address-text {
+		flex: 8;
+		font-size: 28rpx;
+		color: #333;
+		line-height: 1.5;
+	}
+
+	.address-arrow {
+		font-size: 30rpx;
+		color: #ccc;
 	}
 
 	.detail-content {
