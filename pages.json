@@ -15,6 +15,12 @@
 	},
 	"pages": [
 		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "住房"
+			}
+		},
+		{
 			"path": "pages/hall/hall",
 			"style": {
 				"navigationBarTitleText": "收购大厅"
@@ -30,12 +36,6 @@
 			"path": "pages/purchase/purchase",
 			"style": {
 				"navigationBarTitleText": "个人收购"
-			}
-		},
-		{
-			"path": "pages/index/index",
-			"style": {
-				"navigationBarTitleText": "住房"
 			}
 		},
 		{

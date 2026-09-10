@@ -19,7 +19,7 @@
 			</view>
 		</view>
 
-		<!-- 加工厂收购 -->
+		<!-- Factory Purchases -->
 		<view v-show="innerTab === 0" class="tab-content">
 			<view class="search-bar">
 				<view class="distance-wrap" @tap="toggleMenu">
@@ -125,7 +125,7 @@
 			</view>
 		</view>
 
-		<!-- 个人收购 -->
+		<!-- Personal Purchases -->
 		<view v-show="innerTab === 1" class="tab-content">
 			<view class="search-bar">
 				<view class="region-wrap" @tap="openRegionPicker">
@@ -486,7 +486,7 @@
 				})
 			},
 
-			/* ============ 个人收购 ============ */
+			/* ============ Personal Purchases ============ */
 			resetPurchaseState() {
 				this.purchaseData.keyword = ''
 				this.purchaseData.currentRegion = '全部'
@@ -591,7 +591,7 @@
 				})
 			},
 
-			/* ============ 反馈 & 分享 ============ */
+			/* ============ Feedback & Share ============ */
 			onShareAppMessage(res) {
 				const shareObj = {
 					title: '邀请加工厂入驻，帮更多农户找到优质收购商',
@@ -1015,7 +1015,7 @@
 		margin-left: 20rpx;
 	}
 
-	/* 个人收购卡片列表 */
+	/* Personal purchase card list */
 	.purchase-list {
 		padding: 10rpx 0 0;
 	}
@@ -1093,7 +1093,7 @@
 		color: #999;
 	}
 
-	/* 意见箱浮标 */
+	/* Feedback floating button */
 	.feedback-float {
 		position: fixed;
 		right: 24rpx;
@@ -1144,7 +1144,7 @@
 		box-shadow: 0 8rpx 24rpx rgba(60, 156, 255, 0.4);
 	}
 
-	/* 反馈弹窗 */
+	/* Feedback modal */
 	.feedback-mask {
 		position: fixed;
 		top: 0;

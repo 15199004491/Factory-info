@@ -1,14 +1,14 @@
 <template>
 	<view class="page">
 		<view class="tab-bar" v-if="!filterType">
-			<view class="tab-item" :class="{ active: activeTab === 'purchase' }" @tap="activeTab = 'purchase'">
-				<text>个人收购</text>
-			</view>
 			<view class="tab-item" :class="{ active: activeTab === 'second' }" @tap="activeTab = 'second'">
 				<text>二手房</text>
 			</view>
 			<view class="tab-item" :class="{ active: activeTab === 'rent' }" @tap="activeTab = 'rent'">
 				<text>租房</text>
+			</view>
+			<view class="tab-item" :class="{ active: activeTab === 'purchase' }" @tap="activeTab = 'purchase'">
+				<text>个人收购</text>
 			</view>
 		</view>
 
@@ -77,7 +77,7 @@
 		data() {
 			return {
 				filterType: '',
-				activeTab: 'purchase',
+				activeTab: 'second',
 				allList: [],
 				loadedTabs: { purchase: false, second: false, rent: false }
 			}

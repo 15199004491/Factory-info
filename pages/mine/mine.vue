@@ -4,8 +4,8 @@
 			<block v-if="isLogin && userInfo">
 				<image class="user-avatar" :src="userInfo.avatarUrl" mode="aspectFill" :lazy-load="true" @tap="onPreviewAvatar"></image>
 				<view class="user-info">
-					<text class="user-nickname">{{ userInfo.nickName }}</text>
-					<text class="user-desc">欢迎回来，祝您使用愉快</text>
+					<text class="user-nickname">{{ isHouseVip ? '房产会员' : userInfo.nickName }}</text>
+					<text class="user-desc">{{ vipDesc }}</text>
 				</view>
 				<view class="logout-btn" @tap="onLogout">
 					<text class="logout-text">退出</text>
@@ -34,6 +34,17 @@
 
 		<contact-modal :visible="showContact" @close="showContact = false"></contact-modal>
 
+		<vip-pay-modal
+			:visible="showPayModal"
+			:loading="payLoading"
+			:start-date="payStartDate"
+			:end-date="payEndDate"
+			:title="payTitle"
+			:subtitle="paySubtitle"
+			@confirm="onPayConfirm"
+			@cancel="onPayCancel"
+		/>
+
 		<tab-bar :currentIndex="2"></tab-bar>
 	</view>
 </template>
@@ -42,9 +53,12 @@
 	import tabBar from '@/components/tab-bar/tab-bar.vue'
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import contactModal from '@/components/contact-modal/contact-modal.vue'
+	import vipPayMixin from '@/mixins/vipPayModal.js'
 	import { auth } from '@/utils/auth.js'
+	import { checkHouseLimit } from '@/utils/houseLimit.js'
 
 	export default {
+		mixins: [vipPayMixin],
 		components: {
 			tabBar,
 			uIcon,
@@ -56,6 +70,16 @@
 				isLogin: false,
 				userInfo: null,
 				showContact: false
+			}
+		},
+		computed: {
+			isHouseVip() {
+				const days = Number(this.userInfo && this.userInfo.house_vip_remaining_days)
+				return days > 0
+			},
+			vipDesc() {
+				if (!this.isLogin || !this.isHouseVip) return '欢迎回来，祝您使用愉快'
+				return `会员有效期剩余${this.userInfo.house_vip_remaining_days}天`
 			}
 		},
 		onShow() {
@@ -124,24 +148,19 @@
 						this.checkLoginStatus()
 						uni.showActionSheet({
 							itemList: ['二手房', '租房', '个人收购', '新房'],
-							success: function(res) {
+							success: async (res) => {
 								if (res.tapIndex === 0) {
-									uni.navigateTo({
-										url: '/pages/publish/second'
-									})
+									const allowed = await checkHouseLimit()
+									if (!allowed) return
+									uni.navigateTo({ url: '/pages/publish/second' })
 								} else if (res.tapIndex === 1) {
-									uni.navigateTo({
-										url: '/pages/publish/rent'
-									})
+									const allowed = await checkHouseLimit()
+									if (!allowed) return
+									uni.navigateTo({ url: '/pages/publish/rent' })
 								} else if (res.tapIndex === 2) {
-									uni.navigateTo({
-										url: '/pages/publish/purchase'
-									})
+									uni.navigateTo({ url: '/pages/publish/purchase' })
 								} else if (res.tapIndex === 3) {
-									uni.showToast({
-										title: '暂未开通',
-										icon: 'none'
-									})
+									uni.showToast({ title: '暂未开通', icon: 'none' })
 								}
 							}
 						})

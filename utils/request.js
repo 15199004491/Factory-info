@@ -89,7 +89,6 @@ export const userApi = {
     login: (d) => request('/farm/Wxuser/login', d, 'POST'),
     logout: (token) => request('/farm/Wxuser/logout', { token }, 'POST'),
     refresh: (token) => request('/farm/Wxuser/refreshToken', { token }, 'POST'),
-    getInfo: (token) => request('/farm/Wxuser/getUserInfo', { token }),
     update: (d) => request('/farm/Wxuser/ringUp', d, 'POST'),
     getPhone: (code) => request('/farm/Wxuser/getuserphonenumber', { code }, 'POST'),
     msgCheck: (msg) => request('/farm/Wxuser/msgSecCheck', { msg }, 'POST', { silent: true }),
@@ -98,4 +97,14 @@ export const userApi = {
 
 export const feedbackApi = {
     submit: (params) => request('/farm/Wxuser/addSuggest', { ...params, open_id: getOpenid() }),
+};
+
+export const visitorApi = {
+    getCount: () => request('/farm/Visitor/getCount'),
+};
+
+export const houseLimitApi = {
+    check: () => request('/farm/Wxuser/checkPublishLimit', { open_id: getOpenid() }, 'POST'),
+    pay: (params) => request('/farm/Wechatprofitsharing/createOrder', { open_id: getOpenid(), ...params }, 'POST'),
+    confirmVip: (out_trade_no) => request('/farm/Wechatprofitsharing/confirmVip', { open_id: getOpenid(), out_trade_no }, 'POST'),
 };

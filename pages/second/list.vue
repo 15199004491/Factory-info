@@ -65,7 +65,7 @@
 			<view class="scroll-bottom-space"></view>
 		</scroll-view>
 
-		<view class="fab-btn" @tap="onPublish">
+		<view class="fab-btn" :class="{ disabled: publishLoading }" @tap="onPublish">
 			<u-icon name="plus" size="24" color="#fff"></u-icon>
 		</view>
 
@@ -76,6 +76,16 @@
 			@confirm="onRegionConfirm"
 			@cancel="onRegionCancel"
 		/>
+		<vip-pay-modal
+			:visible="showPayModal"
+			:loading="payLoading"
+			:start-date="payStartDate"
+			:end-date="payEndDate"
+			:title="payTitle"
+			:subtitle="paySubtitle"
+			@confirm="onPayConfirm"
+			@cancel="onPayCancel"
+		/>
 	</view>
 </template>
 
@@ -83,10 +93,13 @@
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import regionPicker from '@/components/region-picker/region-picker.vue'
 	import imagePlaceholder from '@/components/image-placeholder/image-placeholder.vue'
+	import vipPayMixin from '@/mixins/vipPayModal.js'
 	import { secondHouseApi } from '@/utils/request.js'
 	import { auth } from '@/utils/auth.js'
+	import { checkHouseLimit } from '@/utils/houseLimit.js'
 
 	export default {
+		mixins: [vipPayMixin],
 		components: {
 			uIcon,
 			regionPicker,
@@ -102,7 +115,8 @@
 				limit: 20,
 				total: 0,
 				loading: false,
-				noMore: false
+				noMore: false,
+				publishLoading: false
 			}
 		},
 		onShow() {
@@ -191,10 +205,20 @@
 				})
 			},
 			onPublish() {
-				auth.requireAuth(() => {
-					uni.navigateTo({
-						url: '/pages/publish/second'
-					})
+				if (this.publishLoading) return
+				this.publishLoading = true
+				auth.requireAuth(async () => {
+					try {
+						const allowed = await checkHouseLimit()
+						if (!allowed) return
+						uni.navigateTo({
+							url: '/pages/publish/second'
+						})
+					} finally {
+						setTimeout(() => { this.publishLoading = false }, 500)
+					}
+				}, () => {
+					this.publishLoading = false
 				})
 			}
 		}
@@ -383,5 +407,9 @@
 		justify-content: center;
 		box-shadow: 0 8rpx 24rpx rgba(60, 156, 255, 0.4);
 		z-index: 100;
+	}
+	.fab-btn.disabled {
+		opacity: 0.4;
+		pointer-events: none;
 	}
 </style>

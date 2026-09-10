@@ -1,5 +1,5 @@
 <template>
-	<view class="img-wrap" :class="{ 'has-image': fullSrc }">
+	<view class="img-wrap">
 		<image
 			v-if="fullSrc"
 			class="img-preview"
@@ -10,6 +10,7 @@
 		<view v-else class="img-placeholder">
 			<text class="img-placeholder-text">暂无图片</text>
 		</view>
+		<view v-if="fullSrc" class="img-watermark"></view>
 		<canvas
 			v-if="showCanvas"
 			:id="canvasId"
@@ -94,8 +95,7 @@
 		overflow: hidden;
 	}
 
-	.img-wrap.has-image::after {
-		content: '';
+	.img-watermark {
 		position: absolute;
 		top: 0;
 		left: 0;
