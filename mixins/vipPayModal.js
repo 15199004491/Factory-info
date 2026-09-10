@@ -9,7 +9,7 @@ export default {
 			payStartDate: '',
 			payEndDate: '',
 			payTitle: '已达发布上限',
-			paySubtitle: '开通房产会员即可继续发布',
+			paySubtitle: '开通二手房和租房会员即可继续发布',
 			payConfirmFn: null,
 			payCancelFn: null
 		}
@@ -30,7 +30,7 @@ export default {
 			this.payStartDate = data.startDate
 			this.payEndDate = data.endDate
 			this.payTitle = data.title || '已达发布上限'
-			this.paySubtitle = data.subtitle || '开通房产会员即可继续发布'
+			this.paySubtitle = data.subtitle || '开通二手房和租房会员即可继续发布'
 			this.payConfirmFn = data.onConfirm
 			this.payCancelFn = data.onCancel
 			this.showPayModal = true

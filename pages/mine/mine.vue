@@ -4,7 +4,7 @@
 			<block v-if="isLogin && userInfo">
 				<image class="user-avatar" :src="userInfo.avatarUrl" mode="aspectFill" :lazy-load="true" @tap="onPreviewAvatar"></image>
 				<view class="user-info">
-					<text class="user-nickname">{{ isHouseVip ? '房产会员' : userInfo.nickName }}</text>
+					<text class="user-nickname">{{ userInfo.nickName }}</text>
 					<text class="user-desc">{{ vipDesc }}</text>
 				</view>
 				<view class="logout-btn" @tap="onLogout">
@@ -79,7 +79,7 @@
 			},
 			vipDesc() {
 				if (!this.isLogin || !this.isHouseVip) return '欢迎回来，祝您使用愉快'
-				return `会员有效期剩余${this.userInfo.house_vip_remaining_days}天`
+				return `二手房+租房会员有效期剩余${this.userInfo.house_vip_remaining_days}天`
 			}
 		},
 		onShow() {

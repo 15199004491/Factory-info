@@ -2,7 +2,6 @@
 	import { isFromChatShareScene } from '@/utils/date.js'
 	import { setupUpdateManager } from '@/utils/updateManager.js'
 	import { visitorApi } from '@/utils/request.js'
-	import { auth } from '@/utils/auth.js'
 
 	function _getEnterOptions() {
 		try {
@@ -23,7 +22,6 @@
 		},
 		onLaunch: function() {
 			setupUpdateManager()
-			auth.login({ silent: true }).catch(() => {})
 			// #ifdef MP-WEIXIN
 			uni.loadFontFace({
 				global: true,
@@ -35,7 +33,10 @@
 			// #endif
 		},
 		onShow: function() {
-			visitorApi.getCount()
+			const hasVisited = uni.getStorageSync('has_visited')
+			const isNew = !hasVisited
+			if (isNew) uni.setStorageSync('has_visited', 1)
+			visitorApi.getCount(isNew).catch(() => {})
 			try {
 				if (isFromChatShareScene()) {
 					const opt = _getEnterOptions()

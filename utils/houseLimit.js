@@ -1,6 +1,14 @@
 import { houseLimitApi } from './request.js'
 import { auth } from './auth.js'
 
+export const VIP_CONFIG = {
+	price: 600,
+	priceFen: 60000,
+	unit: '季度',
+	durationMonths: 3,
+	productName: '二手房和租房会员（季度）'
+}
+
 function isAllowed(data) {
 	if (data === true || data === 'true' || data === 1 || data === '1') return true
 	if (data === false || data === 'false' || data === 0 || data === '0' || data === null || data === undefined) return false
@@ -64,14 +72,14 @@ function showPayModal() {
 
 		uni.$emit('showVipPayModal', {
 			title: hasPurchased ? '会员已过期，请续费' : '已达发布上限',
-			subtitle: hasPurchased ? '续费房产会员即可继续发布' : '开通房产会员即可继续发布',
+			subtitle: hasPurchased ? '续费二手房和租房会员即可继续发布' : '开通二手房和租房会员即可继续发布',
 			startDate: startStr,
 			endDate: endStr,
 			onConfirm: async () => {
 				try {
 					const payParams = await houseLimitApi.pay({
-						product_name: '房产会员（季度）',
-						money: 100000
+						product_name: VIP_CONFIG.productName,
+						money: VIP_CONFIG.priceFen
 					})
 					await requestWxPay(payParams)
 					await houseLimitApi.confirmVip(payParams.out_trade_no || payParams.outTradeNo)

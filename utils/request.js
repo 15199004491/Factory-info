@@ -100,7 +100,7 @@ export const feedbackApi = {
 };
 
 export const visitorApi = {
-    getCount: () => request('/farm/Visitor/getCount'),
+    getCount: (isNew = false) => request('/farm/Visitor/getCount', { is_new: isNew ? 1 : 0 }, 'POST', { silent: true }),
 };
 
 export const houseLimitApi = {

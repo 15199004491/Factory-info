@@ -10,7 +10,7 @@
 			<view class="pay-info">
 				<view class="pay-info-row">
 					<text class="pay-info-label">价格</text>
-					<text class="pay-info-value">¥1000 <text class="pay-unit">/ 季度</text></text>
+					<text class="pay-info-value">¥{{ price }} <text class="pay-unit">/ {{ unit }}</text></text>
 				</view>
 				<view class="pay-info-row">
 					<text class="pay-info-label">有效期</text>
@@ -32,6 +32,8 @@
 </template>
 
 <script>
+	import { VIP_CONFIG } from '@/utils/houseLimit.js'
+
 	export default {
 		name: 'vip-pay-modal',
 		props: {
@@ -57,7 +59,15 @@
 			},
 			subtitle: {
 				type: String,
-				default: '开通房产会员即可继续发布'
+				default: '开通二手房和租房会员即可继续发布'
+			}
+		},
+		computed: {
+			price() {
+				return VIP_CONFIG.price
+			},
+			unit() {
+				return VIP_CONFIG.unit
 			}
 		},
 		methods: {
