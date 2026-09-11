@@ -83,7 +83,13 @@
 		{
 			"path": "pages/mine/published",
 			"style": {
-				"navigationBarTitleText": "已发布"
+				"navigationBarTitleText": "房源管理"
+			}
+		},
+		{
+			"path": "pages/mine/purchase",
+			"style": {
+				"navigationBarTitleText": "我的个人收购"
 			}
 		},
 		{
@@ -144,6 +150,19 @@
 			"path": "pages/publish/purchase",
 			"style": {
 				"navigationBarTitleText": "发布收购"
+			}
+		},
+		{
+			"path": "pages/mine/qrcode",
+			"style": {
+				"navigationBarTitleText": "专属小程序码"
+			}
+		},
+		{
+			"path": "pages/share/houses",
+			"style": {
+				"navigationBarTitleText": "房源列表",
+				"enableShareAppMessage": true
 			}
 		}
 	],

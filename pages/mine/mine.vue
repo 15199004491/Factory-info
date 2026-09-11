@@ -25,9 +25,12 @@
 			</block>
 		</view>
 
-		<view class="menu-list">
-			<view class="menu-item" v-for="(item, index) in menuList" :key="index" @tap="onMenuTap(index)">
-				<text class="menu-text">{{ item }}</text>
+		<view class="menu-list" v-for="(group, gi) in menuGroups" :key="gi">
+			<view class="menu-item" v-for="(item, ii) in group" :key="item" @tap="onMenuTap(item)">
+				<view class="menu-left">
+					<text class="menu-text">{{ item }}</text>
+					<text class="menu-badge" v-if="item === '房源管理'">专属小程序码</text>
+				</view>
 				<text class="menu-arrow">›</text>
 			</view>
 		</view>
@@ -55,7 +58,6 @@
 	import contactModal from '@/components/contact-modal/contact-modal.vue'
 	import vipPayMixin from '@/mixins/vipPayModal.js'
 	import { auth } from '@/utils/auth.js'
-	import { checkHouseLimit } from '@/utils/houseLimit.js'
 
 	export default {
 		mixins: [vipPayMixin],
@@ -66,7 +68,11 @@
 		},
 		data() {
 			return {
-				menuList: ['加工厂', '去发布', '已发布', '联系客服'],
+				menuGroups: [
+					['加工厂', '个人收购'],
+					['房源管理'],
+					['联系客服']
+				],
 				isLogin: false,
 				userInfo: null,
 				showContact: false
@@ -142,51 +148,26 @@
 					})
 				}
 			},
-			onMenuTap(index) {
-				const item = this.menuList[index]
+			onMenuTap(item) {
 				if (item === '加工厂') {
 					auth.requireAuth(() => {
 						this.checkLoginStatus()
-						uni.navigateTo({
-							url: '/pages/factory/manage'
-						})
+						uni.navigateTo({ url: '/pages/factory/manage' })
 					})
-				} else if (item === '去发布') {
+				} else if (item === '个人收购') {
 					auth.requireAuth(() => {
 						this.checkLoginStatus()
-						uni.showActionSheet({
-							itemList: ['二手房', '租房', '个人收购', '新房'],
-							success: async (res) => {
-								if (res.tapIndex === 0) {
-									const allowed = await checkHouseLimit()
-									if (!allowed) return
-									uni.navigateTo({ url: '/pages/publish/second' })
-								} else if (res.tapIndex === 1) {
-									const allowed = await checkHouseLimit()
-									if (!allowed) return
-									uni.navigateTo({ url: '/pages/publish/rent' })
-								} else if (res.tapIndex === 2) {
-									uni.navigateTo({ url: '/pages/publish/purchase' })
-								} else if (res.tapIndex === 3) {
-									uni.showToast({ title: '暂未开通', icon: 'none' })
-								}
-							}
-						})
+						uni.navigateTo({ url: '/pages/mine/purchase' })
 					})
-				} else if (item === '已发布') {
+				} else if (item === '房源管理') {
 					auth.requireAuth(() => {
 						this.checkLoginStatus()
-						uni.navigateTo({
-							url: '/pages/mine/published'
-						})
+						uni.navigateTo({ url: '/pages/mine/published' })
 					})
-				}  else if (item === '联系客服') {
+				} else if (item === '联系客服') {
 					this.showContact = true
 				} else {
-					uni.showToast({
-						title: item + ' 即将上线',
-						icon: 'none'
-					})
+					uni.showToast({ title: item + ' 即将上线', icon: 'none' })
 				}
 			}
 		}
@@ -223,6 +204,21 @@
 	.menu-text {
 		font-size: 30rpx;
 		color: #333;
+	}
+
+	.menu-left {
+		display: flex;
+		align-items: center;
+	}
+
+	.menu-badge {
+		font-size: 20rpx;
+		color: #3c9cff;
+		background: rgba(60, 156, 255, 0.12);
+		padding: 4rpx 14rpx;
+		border-radius: 20rpx;
+		margin-left: 8rpx;
+		flex-shrink: 0;
 	}
 
 	.menu-arrow {

@@ -54,8 +54,10 @@ export const secondHouseApi = {
     getDetail: (Id) => request('/farm/Secondhouse/houseDetail', { Id }),
     addHouse: (data) => request('/farm/Secondhouse/addHouse', { ...data, open_id: getOpenid() }, 'POST'),
     houseSelf: () => request('/farm/Secondhouse/houseSelf', { open_id: getOpenid() }),
+    houseListByOpenid: (open_id, params = {}) => request('/farm/Secondhouse/houseList', { ...params, open_id }),
     deleteHouse: (params) => request('/farm/Secondhouse/deleteHouse', params, 'POST'),
     contact: (Id) => request('/farm/Secondhouse/contact', { Id, open_id: getOpenid() }, 'POST', { silent: true }),
+    generateHouseQrcode: (name = '房源专属小程序', page = 'pages/share/houses', width = 600) => request('/farm/Secondhouse/generateHouseQrcode', { open_id: getOpenid(), name, page, width }),
 };
 
 export const factoryApi = {
@@ -75,8 +77,8 @@ export const rentApi = {
     rentDetail: (params) => request('/farm/Rent/rentDetail', params),
     rentList: (params) => request('/farm/Rent/rentList', params),
     rentSelf: () => request('/farm/Rent/rentSelf', { open_id: getOpenid() }),
+    rentListByOpenid: (open_id, params = {}) => request('/farm/Rent/rentList', { ...params, open_id }),
     deleteRent: (params) => request('/farm/Rent/deleteRent', params, 'POST'),
-    contact: (Id) => request('/farm/Rent/contact', { Id, open_id: getOpenid() }, 'POST', { silent: true }),
 };
 
 export const purchaseApi = {
