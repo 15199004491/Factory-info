@@ -1,6 +1,13 @@
 <template>
 	<view class="page">
-		<view class="filter-bar">
+		<view class="custom-nav">
+			<view class="nav-status" :style="{ height: statusBarHeight + 'px' }"></view>
+			<view class="nav-bar" :style="{ height: navBarHeight + 'px' }">
+				<text class="nav-title">专属房源</text>
+			</view>
+		</view>
+
+		<view class="filter-bar" :style="{ marginTop: -(navBarHeight + statusBarHeight) + 'px' }">
 			<view class="filter-tabs">
 				<view class="filter-tab" :class="{ active: filterType === 'second' }" @tap="onFilterType('second')">
 					<text>二手房</text>
@@ -51,6 +58,8 @@
 		components: { imagePlaceholder },
 		data() {
 			return {
+				statusBarHeight: 20,
+				navBarHeight: 44,
 				openId: '',
 				allSecond: [],
 				allRent: [],
@@ -58,6 +67,11 @@
 				loaded: { second: false, rent: false },
 				loading: false
 			}
+		},
+		created() {
+			var sys = uni.getSystemInfoSync()
+			this.statusBarHeight = sys.statusBarHeight || 20
+			this.navBarHeight = sys.platform === 'android' ? 48 : 44
 		},
 		computed: {
 			displayList() {
@@ -152,6 +166,28 @@
 		flex-direction: column;
 		height: 100vh;
 		background-color: #f5f5f5;
+	}
+
+	.custom-nav {
+		position: relative;
+		z-index: 10;
+		background-color: #fff;
+	}
+
+	.nav-status {
+		width: 100%;
+	}
+
+	.nav-bar {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.nav-title {
+		font-size: 34rpx;
+		font-weight: 600;
+		color: #333;
 	}
 
 	.filter-bar {

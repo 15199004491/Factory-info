@@ -5,7 +5,7 @@
 
 		<view class="header">
 			<text class="title">{{ qrName }}</text>
-			<text class="subtitle">客户扫码直达你发布的房源</text>
+			<text class="subtitle">客户扫码直达您发布的房源</text>
 		</view>
 
 		<view class="qr-card">
@@ -29,7 +29,7 @@
 		<view class="tips-row">
 			<text class="tip-item">保存打印 ·</text>
 			<text class="tip-item">线下张贴 ·</text>
-			<text class="tip-item">扫码仅展示你的房源</text>
+			<text class="tip-item tip-highlight">仅展示您发布的房源</text>
 		</view>
 
 		<view class="action-btns">
@@ -372,6 +372,10 @@
 	.tip-item {
 		font-size: 24rpx;
 		color: #6b9bd1;
+	}
+
+	.tip-highlight {
+		color: #ff9800;
 	}
 
 	.action-btns {
