@@ -5,7 +5,7 @@
 				<image class="user-avatar" :src="userInfo.avatarUrl" mode="aspectFill" :lazy-load="true" @tap="onPreviewAvatar"></image>
 				<view class="user-info">
 					<text class="user-nickname">{{ userInfo.nickName }}</text>
-					<text class="user-desc">欢迎回来，祝您使用愉快</text>
+					<text class="user-desc">{{ vipDesc }}</text>
 				</view>
 				<view class="logout-btn" @tap="onLogout">
 					<text class="logout-text">退出</text>
@@ -25,14 +25,28 @@
 			</block>
 		</view>
 
-		<view class="menu-list">
-			<view class="menu-item" v-for="(item, index) in menuList" :key="index" @tap="onMenuTap(index)">
-				<text class="menu-text">{{ item }}</text>
+		<view class="menu-list" v-for="(group, gi) in menuGroups" :key="gi">
+			<view class="menu-item" v-for="(item, ii) in group" :key="item" @tap="onMenuTap(item)">
+				<view class="menu-left">
+					<text class="menu-text">{{ item }}</text>
+					<text class="menu-badge" v-if="item === '房源管理'">专属小程序码</text>
+				</view>
 				<text class="menu-arrow">›</text>
 			</view>
 		</view>
 
 		<contact-modal :visible="showContact" @close="showContact = false"></contact-modal>
+
+		<vip-pay-modal
+			:visible="showPayModal"
+			:loading="payLoading"
+			:start-date="payStartDate"
+			:end-date="payEndDate"
+			:title="payTitle"
+			:subtitle="paySubtitle"
+			@confirm="onPayConfirm"
+			@cancel="onPayCancel"
+		/>
 
 		<tab-bar :currentIndex="2"></tab-bar>
 	</view>
@@ -42,9 +56,11 @@
 	import tabBar from '@/components/tab-bar/tab-bar.vue'
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import contactModal from '@/components/contact-modal/contact-modal.vue'
+	import vipPayMixin from '@/mixins/vipPayModal.js'
 	import { auth } from '@/utils/auth.js'
 
 	export default {
+		mixins: [vipPayMixin],
 		components: {
 			tabBar,
 			uIcon,
@@ -52,10 +68,32 @@
 		},
 		data() {
 			return {
-				menuList: ['加工厂', '去发布', '已发布', '联系客服'],
+				menuGroups: [
+					['加工厂', '个人收购'],
+					['房源管理'],
+					['联系客服']
+				],
 				isLogin: false,
 				userInfo: null,
 				showContact: false
+			}
+		},
+		computed: {
+			vipRemainingDays() {
+				const expireAt = Number(this.userInfo && this.userInfo.house_vip_expire_at)
+				if (!expireAt) return 0
+				const now = Math.floor(Date.now() / 1000)
+				if (expireAt <= now) return 0
+				return Math.ceil((expireAt - now) / 86400)
+			},
+			isHouseVip() {
+				const expireAt = Number(this.userInfo && this.userInfo.house_vip_expire_at)
+				if (!expireAt) return false
+				return expireAt > Math.floor(Date.now() / 1000)
+			},
+			vipDesc() {
+				if (!this.isLogin || !this.isHouseVip) return '欢迎回来，祝您使用愉快'
+				return `二手房+租房会员有效期剩余${this.vipRemainingDays}天`
 			}
 		},
 		onShow() {
@@ -110,56 +148,26 @@
 					})
 				}
 			},
-			onMenuTap(index) {
-				const item = this.menuList[index]
+			onMenuTap(item) {
 				if (item === '加工厂') {
 					auth.requireAuth(() => {
 						this.checkLoginStatus()
-						uni.navigateTo({
-							url: '/pages/factory/manage'
-						})
+						uni.navigateTo({ url: '/pages/factory/manage' })
 					})
-				} else if (item === '去发布') {
+				} else if (item === '个人收购') {
 					auth.requireAuth(() => {
 						this.checkLoginStatus()
-						uni.showActionSheet({
-							itemList: ['二手房', '租房', '个人收购', '新房'],
-							success: function(res) {
-								if (res.tapIndex === 0) {
-									uni.navigateTo({
-										url: '/pages/publish/second'
-									})
-								} else if (res.tapIndex === 1) {
-									uni.navigateTo({
-										url: '/pages/publish/rent'
-									})
-								} else if (res.tapIndex === 2) {
-									uni.navigateTo({
-										url: '/pages/publish/purchase'
-									})
-								} else if (res.tapIndex === 3) {
-									uni.showToast({
-										title: '暂未开通',
-										icon: 'none'
-									})
-								}
-							}
-						})
+						uni.navigateTo({ url: '/pages/mine/purchase' })
 					})
-				} else if (item === '已发布') {
+				} else if (item === '房源管理') {
 					auth.requireAuth(() => {
 						this.checkLoginStatus()
-						uni.navigateTo({
-							url: '/pages/mine/published'
-						})
+						uni.navigateTo({ url: '/pages/mine/published' })
 					})
-				}  else if (item === '联系客服') {
+				} else if (item === '联系客服') {
 					this.showContact = true
 				} else {
-					uni.showToast({
-						title: item + ' 即将上线',
-						icon: 'none'
-					})
+					uni.showToast({ title: item + ' 即将上线', icon: 'none' })
 				}
 			}
 		}
@@ -196,6 +204,21 @@
 	.menu-text {
 		font-size: 30rpx;
 		color: #333;
+	}
+
+	.menu-left {
+		display: flex;
+		align-items: center;
+	}
+
+	.menu-badge {
+		font-size: 20rpx;
+		color: #3c9cff;
+		background: rgba(60, 156, 255, 0.12);
+		padding: 4rpx 14rpx;
+		border-radius: 20rpx;
+		margin-left: 8rpx;
+		flex-shrink: 0;
 	}
 
 	.menu-arrow {

@@ -435,7 +435,6 @@
 				} catch (e) {
 					console.error('租房提交失败:', e)
 					uni.hideLoading()
-					uni.showToast({ title: (e && e.message) ? '提交失败:' + e.message : '提交失败', icon: 'none' })
 				} finally {
 					this.submitting = false
 				}

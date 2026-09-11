@@ -1,8 +1,9 @@
 import { userApi } from '@/utils/request.js'
 
 export const auth = {
-	async login() {
-		uni.showLoading({ title: '登录中' })
+	async login(options = {}) {
+		const { silent = false } = options
+		if (!silent) uni.showLoading({ title: '登录中' })
 		try {
 			const loginRes = await new Promise((resolve, reject) => {
 				uni.login({
@@ -37,13 +38,13 @@ export const auth = {
 			uni.setStorageSync('user_info', userData)
 			uni.setStorageSync('user_token', userData.session_token)
 
-			uni.showToast({ title: '登录成功', icon: 'success' })
+			if (!silent) uni.showToast({ title: '登录成功', icon: 'success' })
 			return userData
 		} catch (e) {
-			console.error(e)
+			if (!silent) console.error(e)
 			throw e
 		} finally {
-			uni.hideLoading()
+			if (!silent) uni.hideLoading()
 		}
 	},
 
@@ -54,7 +55,7 @@ export const auth = {
 				await userApi.logout(token)
 			}
 		} catch (e) {
-			// 忽略网络错误
+			// ignore network error
 		}
 
 		uni.removeStorageSync('user_info')
@@ -62,18 +63,11 @@ export const auth = {
 		uni.showToast({ title: '已退出登录', icon: 'success' })
 	},
 
-	async getUserInfo() {
+	getUserInfo() {
 		const token = uni.getStorageSync('user_token')
-		if (!token) return null
-		try {
-			const userData = await userApi.getInfo(token)
-			uni.setStorageSync('user_info', userData)
-			return userData
-		} catch (e) {
-			uni.removeStorageSync('user_info')
-			uni.removeStorageSync('user_token')
-			return null
-		}
+		if (!token) return Promise.resolve(null)
+		const userData = uni.getStorageSync('user_info')
+		return Promise.resolve(userData || null)
 	},
 
 	isLoggedIn() {

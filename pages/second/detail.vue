@@ -66,9 +66,9 @@
 			<button class="action-btn share-btn" open-type="share">
 				<text class="btn-label">分享</text>
 			</button>
-			<view class="action-btn more-btn" @tap="onGoMore" v-if="showMoreBtn">
+			<!-- <view class="action-btn more-btn" @tap="onGoMore" v-if="showMoreBtn">
 				<text class="btn-label">更多房源</text>
-			</view>
+			</view> -->
 		</view>
 	</view>
 </template>
@@ -76,7 +76,7 @@
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import imagePlaceholder from '@/components/image-placeholder/image-placeholder.vue'
-	import { secondHouseApi } from '@/utils/request.js'
+	import { secondHouseApi, userApi } from '@/utils/request.js'
 	import { formatCosUrl } from '@/utils/config.js'
 	import { isShareEnterFirstTimeThenConsume } from '@/utils/date.js'
 
@@ -106,7 +106,8 @@
 					longitude: 0,
 					addressText: '',
 					hasCoord: false,
-					description: ''
+					description: '',
+					open_id: ''
 				}
 			}
 		},
@@ -151,25 +152,35 @@
 						longitude: lng,
 						addressText: address,
 						hasCoord: !!(lat && lng && lat !== 0 && lng !== 0),
-						description: data.explain || data.description || ''
+						description: data.explain || data.description || '',
+						open_id: data.open_id || data.openid || ''
 					}
 					this.visitors = data.count || data.visitors || 0
 				} catch (e) {}
 			},
 			onContact() {
-				if (this.house.mobile) {
-					uni.makePhoneCall({
-						phoneNumber: this.house.mobile
-					}).catch(err => {
-						if (err && err.errMsg && /cancel/i.test(err.errMsg)) return
-						if (err && err.errMsg) console.warn('拨号失败:', err.errMsg)
-					})
-				} else {
-					uni.showToast({
-						title: '暂无联系电话',
-						icon: 'none'
-					})
+				if (!this.house.mobile) {
+					uni.showToast({ title: '暂无联系电话', icon: 'none' })
+					return
 				}
+				uni.showModal({
+					title: '温馨提示',
+					content: '拨打电话时，请告知房东是在「加蜂小程序」上看到的',
+					confirmText: '立即拨打',
+					cancelText: '再想想',
+					success: (res) => {
+						if (!res.confirm) return
+						if (this.house.open_id) {
+							userApi.incCallCount(this.house.open_id).catch(() => {})
+						}
+						uni.makePhoneCall({
+							phoneNumber: this.house.mobile
+						}).catch(err => {
+							if (err && err.errMsg && /cancel/i.test(err.errMsg)) return
+							if (err && err.errMsg) console.warn('拨号失败:', err.errMsg)
+						})
+					}
+				})
 			},
 			openLocation() {
 				if (!this.house.hasCoord) {

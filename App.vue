@@ -1,6 +1,7 @@
 <script>
 	import { isFromChatShareScene } from '@/utils/date.js'
 	import { setupUpdateManager } from '@/utils/updateManager.js'
+	import { visitorApi } from '@/utils/request.js'
 
 	function _getEnterOptions() {
 		try {
@@ -32,6 +33,10 @@
 			// #endif
 		},
 		onShow: function() {
+			const hasVisited = uni.getStorageSync('has_visited')
+			const isNew = !hasVisited
+			if (isNew) uni.setStorageSync('has_visited', 1)
+			visitorApi.getCount(isNew).catch(() => {})
 			try {
 				if (isFromChatShareScene()) {
 					const opt = _getEnterOptions()
@@ -48,8 +53,7 @@
 					}
 				}
 			} catch (e) {}
-		},
-		onHide: function() {}
+		}
 	}
 </script>
 

@@ -54,7 +54,10 @@ export const secondHouseApi = {
     getDetail: (Id) => request('/farm/Secondhouse/houseDetail', { Id }),
     addHouse: (data) => request('/farm/Secondhouse/addHouse', { ...data, open_id: getOpenid() }, 'POST'),
     houseSelf: () => request('/farm/Secondhouse/houseSelf', { open_id: getOpenid() }),
+    houseListByOpenid: (open_id, params = {}) => request('/farm/Secondhouse/houseList', { ...params, open_id }),
     deleteHouse: (params) => request('/farm/Secondhouse/deleteHouse', params, 'POST'),
+    contact: (Id) => request('/farm/Secondhouse/contact', { Id, open_id: getOpenid() }, 'POST', { silent: true }),
+    generateHouseQrcode: (name = '房源专属小程序', page = 'pages/share/houses', width = 600) => request('/farm/Secondhouse/generateHouseQrcode', { open_id: getOpenid(), name, page, width }),
 };
 
 export const factoryApi = {
@@ -74,6 +77,7 @@ export const rentApi = {
     rentDetail: (params) => request('/farm/Rent/rentDetail', params),
     rentList: (params) => request('/farm/Rent/rentList', params),
     rentSelf: () => request('/farm/Rent/rentSelf', { open_id: getOpenid() }),
+    rentListByOpenid: (open_id, params = {}) => request('/farm/Rent/rentList', { ...params, open_id }),
     deleteRent: (params) => request('/farm/Rent/deleteRent', params, 'POST'),
 };
 
@@ -89,13 +93,23 @@ export const userApi = {
     login: (d) => request('/farm/Wxuser/login', d, 'POST'),
     logout: (token) => request('/farm/Wxuser/logout', { token }, 'POST'),
     refresh: (token) => request('/farm/Wxuser/refreshToken', { token }, 'POST'),
-    getInfo: (token) => request('/farm/Wxuser/getUserInfo', { token }),
     update: (d) => request('/farm/Wxuser/ringUp', d, 'POST'),
     getPhone: (code) => request('/farm/Wxuser/getuserphonenumber', { code }, 'POST'),
     msgCheck: (msg) => request('/farm/Wxuser/msgSecCheck', { msg }, 'POST', { silent: true }),
     imgSecCheck: (media) => request('/farm/Wxuser/imgSecCheck', media, 'POST'),
+    incCallCount: (openId) => request('/farm/Wxuser/incCallCount', { open_id: openId }, 'POST', { silent: true }),
 };
 
 export const feedbackApi = {
     submit: (params) => request('/farm/Wxuser/addSuggest', { ...params, open_id: getOpenid() }),
+};
+
+export const visitorApi = {
+    getCount: (isNew = false) => request('/farm/Visitor/getCount', { is_new: isNew ? 1 : 0 }, 'POST', { silent: true }),
+};
+
+export const houseLimitApi = {
+    check: () => request('/farm/Wxuser/checkPublishLimit', { open_id: getOpenid() }, 'POST'),
+    pay: (params) => request('/farm/Wechatprofitsharing/createOrder', { open_id: getOpenid(), ...params }, 'POST'),
+    confirmVip: (out_trade_no) => request('/farm/Wechatprofitsharing/confirmVip', { open_id: getOpenid(), out_trade_no }, 'POST'),
 };

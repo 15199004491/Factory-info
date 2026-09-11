@@ -3,8 +3,7 @@
 		<view class="uploader-inner">
 			<view class="preview-box" :class="shape" v-if="currentSrc" @tap="onPreview">
 				<view class="preview-image-wrap">
-					<image v-if="isLocalSrc" class="preview-image" :src="currentSrc" mode="aspectFill" />
-					<image-placeholder v-else class="preview-image" :src="currentSrc" mode="aspectFill" />
+					<image-placeholder class="preview-image" :src="currentSrc" mode="aspectFill" />
 				</view>
 				<view class="remove-btn" @tap.stop="onRemove">
 					<text class="remove-icon">×</text>
@@ -16,12 +15,21 @@
 			</view>
 		</view>
 		<text class="upload-tip" v-if="tip">{{ tip }}</text>
+
+		<canvas
+			v-if="showCanvas"
+			:id="canvasId"
+			type="2d"
+			class="watermark-canvas"
+		></canvas>
 	</view>
 </template>
 
 <script>
 	import imagePlaceholder from '@/components/image-placeholder/image-placeholder.vue'
 	import { formatCosUrl } from '@/utils/config.js'
+	import { previewWithWatermark } from '@/utils/watermark.js'
+
 	export default {
 		name: 'UploaderSingle',
 		components: {
@@ -43,17 +51,9 @@
 		},
 		data() {
 			return {
-				currentSrc: this.value || ''
-			}
-		},
-		computed: {
-			isLocalSrc() {
-				const s = this.currentSrc || ''
-				if (!s) return false
-				if (/^(wxfile:|file:|blob:|wxLocalResource:|http:\/\/tmp\/|https:\/\/tmp\/)/i.test(s)) return true
-				if (s.indexOf('tmp_') === 0 || s.indexOf('/tmp/') === 0 || s.indexOf('tmp/') === 0) return true
-				if (/^https?:\/\//i.test(s)) return false
-				return false
+				currentSrc: this.value || '',
+				showCanvas: false,
+				canvasId: 'usWmCanvas_' + (this._uid || Math.random().toString(36).slice(2))
 			}
 		},
 		watch: {
@@ -118,12 +118,27 @@
 			onPreview() {
 				if (!this.currentSrc) return
 				let previewSrc = this.currentSrc
-				if (!this.isLocalSrc) {
+				const isLocal = /^(wxfile:|file:|blob:|wxLocalResource:|http:\/\/tmp\/|https:\/\/tmp\/)/i.test(this.currentSrc)
+					|| this.currentSrc.indexOf('tmp_') === 0
+					|| this.currentSrc.indexOf('/tmp/') === 0
+					|| this.currentSrc.indexOf('tmp/') === 0
+					|| !/^https?:\/\//i.test(this.currentSrc)
+				if (!isLocal) {
 					previewSrc = formatCosUrl(previewSrc)
 				}
-				uni.previewImage({
-					urls: [previewSrc],
-					current: previewSrc
+
+				this.showCanvas = true
+				uni.showLoading({ title: '加载中...', mask: true })
+				this.$nextTick(() => {
+					previewWithWatermark(this.canvasId, [previewSrc], previewSrc, this).then(({ urls, current }) => {
+						uni.hideLoading()
+						this.showCanvas = false
+						uni.previewImage({ urls, current })
+					}).catch(() => {
+						uni.hideLoading()
+						this.showCanvas = false
+						uni.previewImage({ urls: [previewSrc], current: previewSrc })
+					})
 				})
 			}
 		}
@@ -160,6 +175,7 @@
 		height: 100%;
 		border-radius: 12rpx;
 		overflow: hidden;
+		position: relative;
 	}
 
 	.preview-box.square,
@@ -203,7 +219,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		z-index: 2;
+		z-index: 3;
 		box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
 	}
 
@@ -230,5 +246,13 @@
 		color: #999;
 		margin-top: 16rpx;
 		display: block;
+	}
+
+	.watermark-canvas {
+		position: fixed;
+		left: -9999px;
+		top: -9999px;
+		width: 10px;
+		height: 10px;
 	}
 </style>
