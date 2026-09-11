@@ -165,7 +165,7 @@
 				}
 				uni.showModal({
 					title: '温馨提示',
-					content: '拨打电话时，请告知房东是在「加蜂小程序」上看到的',
+					content: '拨通后说你来自「加蜂小程序」，房东更热情哦~',
 					confirmText: '立即拨打',
 					cancelText: '再想想',
 					success: (res) => {
