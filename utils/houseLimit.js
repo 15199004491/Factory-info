@@ -3,24 +3,10 @@ import { auth } from './auth.js'
 
 export const VIP_CONFIG = {
 	price: 600,
-	priceFen: 60000,
+	priceFen: 600,
 	unit: '季度',
 	durationMonths: 3,
 	productName: '二手房和租房会员（季度）'
-}
-
-function isAllowed(data) {
-	if (data === true || data === 'true' || data === 1 || data === '1') return true
-	if (data === false || data === 'false' || data === 0 || data === '0' || data === null || data === undefined) return false
-	if (typeof data === 'object') {
-		if (data.allowed === false) return false
-		if (data.allowed === true) return true
-		if (data.status === 0) return false
-		if (data.status === 1) return true
-		if (data.pass === false) return false
-		if (data.pass === true) return true
-	}
-	return false
 }
 
 function formatDate(d) {
@@ -30,17 +16,18 @@ function formatDate(d) {
 	return `${y}/${m}/${day}`
 }
 
+const ENABLE_PAY_LIMIT = true
+
 export function checkHouseLimit() {
+	if (!ENABLE_PAY_LIMIT) return Promise.resolve(true)
 	return new Promise((resolve) => {
 		houseLimitApi.check().then((data) => {
-			console.log('[houseLimit] check response:', JSON.stringify(data))
-			if (isAllowed(data)) {
+			if (data && data.can_publish) {
 				resolve(true)
 			} else {
-				resolve(showPayModal())
+				resolve(showPayModal(data))
 			}
-		}).catch((e) => {
-			console.log('[houseLimit] check failed:', JSON.stringify(e))
+		}).catch(() => {
 			resolve(showPayModal())
 		})
 	})
@@ -61,10 +48,10 @@ function requestWxPay(payParams) {
 	})
 }
 
-function showPayModal() {
+function showPayModal(apiData) {
 	return new Promise((resolve) => {
 		const userInfo = uni.getStorageSync('user_info') || {}
-		const hasPurchased = !!userInfo.house_vip_expire_at
+		const hasPurchased = !!(apiData && apiData.has_purchased !== undefined ? apiData.has_purchased : userInfo.house_vip_expire_at)
 		const now = new Date()
 		const end = new Date(now.getFullYear(), now.getMonth() + 3, now.getDate())
 		const startStr = formatDate(now)

@@ -1,6 +1,6 @@
 // 'http://124.221.110.37/public/admin.php' http://localhost/public/admin.php 
 // https://housefactory.cn/public/admin.php
-const BASE_URL = 'http://localhost/public/admin.php'
+const BASE_URL = 'https://housefactory.cn/public/admin.php'
 
 const COS_BUCKET = 'house-factory-1468042561'
 const COS_REGION = 'ap-shanghai'

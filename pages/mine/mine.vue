@@ -73,13 +73,21 @@
 			}
 		},
 		computed: {
+			vipRemainingDays() {
+				const expireAt = Number(this.userInfo && this.userInfo.house_vip_expire_at)
+				if (!expireAt) return 0
+				const now = Math.floor(Date.now() / 1000)
+				if (expireAt <= now) return 0
+				return Math.ceil((expireAt - now) / 86400)
+			},
 			isHouseVip() {
-				const days = Number(this.userInfo && this.userInfo.house_vip_remaining_days)
-				return days > 0
+				const expireAt = Number(this.userInfo && this.userInfo.house_vip_expire_at)
+				if (!expireAt) return false
+				return expireAt > Math.floor(Date.now() / 1000)
 			},
 			vipDesc() {
 				if (!this.isLogin || !this.isHouseVip) return '欢迎回来，祝您使用愉快'
-				return `二手房+租房会员有效期剩余${this.userInfo.house_vip_remaining_days}天`
+				return `二手房+租房会员有效期剩余${this.vipRemainingDays}天`
 			}
 		},
 		onShow() {

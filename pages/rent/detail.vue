@@ -79,7 +79,7 @@
 
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
-	import { rentApi } from '@/utils/request.js'
+	import { rentApi, userApi } from '@/utils/request.js'
 	import { formatCosUrl } from '@/utils/config.js'
 	import { isShareEnterFirstTimeThenConsume } from '@/utils/date.js'
 
@@ -112,7 +112,8 @@
 					latitude: 0,
 					longitude: 0,
 					addressText: '',
-					hasCoord: false
+					hasCoord: false,
+					open_id: ''
 				}
 			}
 		},
@@ -160,13 +161,18 @@
 						latitude: lat,
 						longitude: lng,
 						addressText: address,
-						hasCoord: !!(lat && lng && lat !== 0 && lng !== 0)
+						hasCoord: !!(lat && lng && lat !== 0 && lng !== 0),
+						open_id: data.open_id || data.openid || ''
 					}
 					this.visitors = data.count || data.visitors || 0
 				} catch (e) {}
 			},
 			onContact() {
 				if (this.house.mobile) {
+					rentApi.contact(this.houseId).catch(() => {})
+					if (this.house.open_id) {
+						userApi.incCallCount(this.house.open_id).catch(() => {})
+					}
 					uni.makePhoneCall({
 						phoneNumber: this.house.mobile
 					}).catch(err => {

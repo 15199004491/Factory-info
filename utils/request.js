@@ -55,6 +55,7 @@ export const secondHouseApi = {
     addHouse: (data) => request('/farm/Secondhouse/addHouse', { ...data, open_id: getOpenid() }, 'POST'),
     houseSelf: () => request('/farm/Secondhouse/houseSelf', { open_id: getOpenid() }),
     deleteHouse: (params) => request('/farm/Secondhouse/deleteHouse', params, 'POST'),
+    contact: (Id) => request('/farm/Secondhouse/contact', { Id, open_id: getOpenid() }, 'POST', { silent: true }),
 };
 
 export const factoryApi = {
@@ -75,6 +76,7 @@ export const rentApi = {
     rentList: (params) => request('/farm/Rent/rentList', params),
     rentSelf: () => request('/farm/Rent/rentSelf', { open_id: getOpenid() }),
     deleteRent: (params) => request('/farm/Rent/deleteRent', params, 'POST'),
+    contact: (Id) => request('/farm/Rent/contact', { Id, open_id: getOpenid() }, 'POST', { silent: true }),
 };
 
 export const purchaseApi = {
@@ -93,6 +95,7 @@ export const userApi = {
     getPhone: (code) => request('/farm/Wxuser/getuserphonenumber', { code }, 'POST'),
     msgCheck: (msg) => request('/farm/Wxuser/msgSecCheck', { msg }, 'POST', { silent: true }),
     imgSecCheck: (media) => request('/farm/Wxuser/imgSecCheck', media, 'POST'),
+    incCallCount: (openId) => request('/farm/Wxuser/incCallCount', { open_id: openId }, 'POST', { silent: true }),
 };
 
 export const feedbackApi = {

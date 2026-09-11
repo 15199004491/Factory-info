@@ -76,7 +76,7 @@
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import imagePlaceholder from '@/components/image-placeholder/image-placeholder.vue'
-	import { secondHouseApi } from '@/utils/request.js'
+	import { secondHouseApi, userApi } from '@/utils/request.js'
 	import { formatCosUrl } from '@/utils/config.js'
 	import { isShareEnterFirstTimeThenConsume } from '@/utils/date.js'
 
@@ -106,7 +106,8 @@
 					longitude: 0,
 					addressText: '',
 					hasCoord: false,
-					description: ''
+					description: '',
+					open_id: ''
 				}
 			}
 		},
@@ -151,13 +152,18 @@
 						longitude: lng,
 						addressText: address,
 						hasCoord: !!(lat && lng && lat !== 0 && lng !== 0),
-						description: data.explain || data.description || ''
+						description: data.explain || data.description || '',
+						open_id: data.open_id || data.openid || ''
 					}
 					this.visitors = data.count || data.visitors || 0
 				} catch (e) {}
 			},
 			onContact() {
 				if (this.house.mobile) {
+					secondHouseApi.contact(this.houseId).catch(() => {})
+					if (this.house.open_id) {
+						userApi.incCallCount(this.house.open_id).catch(() => {})
+					}
 					uni.makePhoneCall({
 						phoneNumber: this.house.mobile
 					}).catch(err => {

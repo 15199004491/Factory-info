@@ -20,7 +20,7 @@
 
 			<view class="pay-actions">
 				<view class="pay-btn cancel" @click="handleCancel">
-					<text>暂不升级</text>
+					<text>暂不办理</text>
 				</view>
 				<view class="pay-btn confirm" :class="{ loading }" @click="handleConfirm">
 					<text v-if="!loading">立即支付</text>
