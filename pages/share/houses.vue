@@ -7,7 +7,7 @@
 			</view>
 		</view>
 
-		<view class="filter-bar" :style="{ marginTop: -(navBarHeight + statusBarHeight) + 'px' }">
+		<view class="filter-bar">
 			<view class="filter-tabs">
 				<view class="filter-tab" :class="{ active: filterType === 'second' }" @tap="onFilterType('second')">
 					<text>二手房</text>

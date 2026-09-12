@@ -322,8 +322,8 @@
 	}
 
 	.qr-frame {
-		width: 460rpx;
-		height: 460rpx;
+		width: 560rpx;
+		height: 560rpx;
 		background-color: #fff;
 		border-radius: 16rpx;
 		display: flex;
@@ -349,7 +349,7 @@
 	}
 
 	.qr-action-hint {
-		margin-top: 28rpx;
+		margin-top: 20rpx;
 		padding: 10rpx 0 2rpx;
 	}
 
@@ -386,7 +386,7 @@
 		display: flex;
 		gap: 24rpx;
 		padding: 20rpx 40rpx;
-		padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+		padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
 		background-color: rgba(255, 255, 255, 0.98);
 		backdrop-filter: blur(20rpx);
 		z-index: 10;

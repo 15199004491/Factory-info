@@ -55,7 +55,7 @@
 					</view>
 				</view>
 
-			<view class="scroll-bottom-space"></view>
+			<safe-bottom :height="200"></safe-bottom>
 		</scroll-view>
 
 		<view class="action-bar">
@@ -405,10 +405,6 @@
 		height: 6rpx;
 		border-radius: 3rpx;
 		background: linear-gradient(90deg, #3c9cff, #5ac8fa);
-	}
-
-	.scroll-bottom-space {
-		height: 160rpx;
 	}
 
 	.empty {
