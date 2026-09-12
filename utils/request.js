@@ -53,11 +53,19 @@ export const secondHouseApi = {
     getList: (params) => request('/farm/Secondhouse/houseList', params),
     getDetail: (Id) => request('/farm/Secondhouse/houseDetail', { Id }),
     addHouse: (data) => request('/farm/Secondhouse/addHouse', { ...data, open_id: getOpenid() }, 'POST'),
-    houseSelf: () => request('/farm/Secondhouse/houseSelf', { open_id: getOpenid() }),
     houseListByOpenid: (open_id, params = {}) => request('/farm/Secondhouse/houseList', { ...params, open_id }),
     deleteHouse: (params) => request('/farm/Secondhouse/deleteHouse', params, 'POST'),
     contact: (Id) => request('/farm/Secondhouse/contact', { Id, open_id: getOpenid() }, 'POST', { silent: true }),
     generateHouseQrcode: (name = '房源专属小程序', page = 'pages/share/houses', width = 600) => request('/farm/Secondhouse/generateHouseQrcode', { open_id: getOpenid(), name, page, width }),
+};
+
+export const rentApi = {
+    addRent: (params) => request('/farm/Rent/addRent', { ...params, open_id: getOpenid() }, 'POST'),
+    rentDetail: (params) => request('/farm/Rent/rentDetail', params),
+    rentList: (params) => request('/farm/Rent/rentList', params),
+    rentSelf: () => request('/farm/Rent/rentSelf', { open_id: getOpenid() }),
+    rentListByOpenid: (open_id, params = {}) => request('/farm/Rent/rentList', { ...params, open_id }),
+    deleteRent: (params) => request('/farm/Rent/deleteRent', params, 'POST'),
 };
 
 export const factoryApi = {
@@ -70,15 +78,6 @@ export const factoryApi = {
     verifyFactory: (Id, license, id_card) => request('/farm/Factory/verifyFactory', { Id, license, id_card,open_id: getOpenid() }, 'POST'),
     publishFactory: (d) => request('/farm/Factory/publishFactoryInfo', { ...d, open_id: getOpenid() }, 'POST'),
     generateFactoryQrcode: (Id, name = '', page = 'pages/factory/detail', width = 430) => request('/farm/Factory/generateFactoryQrcode', { Id, name, page, width }),
-};
-
-export const rentApi = {
-    addRent: (params) => request('/farm/Rent/addRent', { ...params, open_id: getOpenid() }, 'POST'),
-    rentDetail: (params) => request('/farm/Rent/rentDetail', params),
-    rentList: (params) => request('/farm/Rent/rentList', params),
-    rentSelf: () => request('/farm/Rent/rentSelf', { open_id: getOpenid() }),
-    rentListByOpenid: (open_id, params = {}) => request('/farm/Rent/rentList', { ...params, open_id }),
-    deleteRent: (params) => request('/farm/Rent/deleteRent', params, 'POST'),
 };
 
 export const purchaseApi = {
