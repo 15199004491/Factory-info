@@ -86,11 +86,6 @@
 				return wrap(this.allSecond, 'second', '二手房').concat(wrap(this.allRent, 'rent', '租房'))
 			}
 		},
-		watch: {
-			filterType(val) {
-				this.ensureLoad(val)
-			}
-		},
 		onLoad(options) {
 			if (options && options.scene) {
 				this.openId = decodeURIComponent(options.scene)
@@ -98,26 +93,25 @@
 				this.openId = decodeURIComponent(options.open_id)
 			}
 			if (this.openId) {
-				this.ensureLoad(this.filterType)
+				this.loadAll()
 			}
 		},
 		methods: {
-			ensureLoad(type) {
-				if (!this.openId || this.loaded[type] || this.loading) return
-				this.loadType(type)
-			},
-			async loadType(type) {
+			async loadAll() {
 				this.loading = true
 				try {
-					var data = null
-					if (type === 'second') {
-						data = await secondHouseApi.houseListByOpenid(this.openId, { page: 1, limit: 100 })
-						this.allSecond = this.formatSecond(data)
-					} else if (type === 'rent') {
-						data = await rentApi.rentListByOpenid(this.openId, { page: 1, limit: 100 })
-						this.allRent = this.formatRent(data)
+					var [secondData, rentData] = await Promise.all([
+						secondHouseApi.houseListByOpenid(this.openId, { page: 1, limit: 100 }).catch(() => null),
+						rentApi.rentListByOpenid(this.openId, { page: 1, limit: 100 }).catch(() => null)
+					])
+					if (secondData) {
+						this.allSecond = this.formatSecond(secondData)
+						this.loaded.second = true
 					}
-					this.loaded[type] = true
+					if (rentData) {
+						this.allRent = this.formatRent(rentData)
+						this.loaded.rent = true
+					}
 				} catch (e) {
 				} finally {
 					this.loading = false

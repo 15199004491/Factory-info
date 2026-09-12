@@ -112,3 +112,8 @@ export const houseLimitApi = {
     pay: (params) => request('/farm/Wechatprofitsharing/createOrder', { open_id: getOpenid(), ...params }, 'POST'),
     confirmVip: (out_trade_no) => request('/farm/Wechatprofitsharing/confirmVip', { open_id: getOpenid(), out_trade_no }, 'POST'),
 };
+
+export const reserveApi = {
+    create: (params) => request('/farm/Reserve/addReserve', { open_id: getOpenid(), ...params }, 'POST'),
+    list: (params) => request('/farm/Reserve/reserveList', { open_id: getOpenid(), ...params }),
+};

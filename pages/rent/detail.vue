@@ -64,21 +64,23 @@
 		</view>
 
 		<view class="bottom-bar">
+			<!-- <view class="action-btn reserve-btn" @tap="onReserve">
+				<text class="btn-label">预约看房</text>
+			</view> -->
 			<view class="action-btn contact-btn" @tap="onContact">
-				<text class="btn-label">联系房东</text>
+				<text class="btn-label">联系电话</text>
 			</view>
 			<button class="action-btn share-btn" open-type="share">
 				<text class="btn-label">分享</text>
 			</button>
-			<!-- <view class="action-btn more-btn" @tap="onGoMore" v-if="showMoreBtn">
-				<text class="btn-label">更多房源</text>
-			</view> -->
 		</view>
+		<reserve-sheet ref="reserveSheet" :visible="showReserveSheet" @update:visible="v => showReserveSheet = v" :house-id="houseId" house-type="rent" />
 	</view>
 </template>
 
 <script>
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
+	import reserveSheet from '@/components/reserve-sheet/reserve-sheet.vue'
 	import { rentApi, userApi } from '@/utils/request.js'
 	import { formatCosUrl } from '@/utils/config.js'
 	import { isShareEnterFirstTimeThenConsume } from '@/utils/date.js'
@@ -86,12 +88,14 @@
 	export default {
 		components: {
 			uIcon,
+			reserveSheet,
 			imagePlaceholder: () => import('@/components/image-placeholder/image-placeholder.vue')
 		},
 		data() {
 			return {
 				houseId: 0,
 				showMoreBtn: false,
+				showReserveSheet: false,
 				visitors: 0,
 				house: {
 					id: 0,
@@ -167,6 +171,9 @@
 					this.visitors = data.count || data.visitors || 0
 				} catch (e) {}
 			},
+			onReserve() {
+				this.showReserveSheet = true
+			},
 			onContact() {
 				if (!this.house.mobile) {
 					uni.showToast({ title: '暂无联系电话', icon: 'none' })
@@ -174,7 +181,7 @@
 				}
 				uni.showModal({
 					title: '温馨提示',
-					content: '拨通后说你来自「加蜂小程序」，房东更热情哦~',
+					content: '拨通后说你来自「加蜂小程序」，对方更热情哦~',
 					confirmText: '立即拨打',
 					cancelText: '再想想',
 					success: (res) => {
@@ -449,6 +456,15 @@
 	}
 
 	.contact-btn {
+		background: #3c9cff;
+		border: none;
+	}
+
+	.contact-btn .btn-label {
+		color: #fff;
+	}
+
+	.reserve-btn {
 		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
 	}
 

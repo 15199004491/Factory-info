@@ -225,11 +225,11 @@
 				try {
 					var data = null
 					if (tab === 'second') {
-						data = await secondHouseApi.getList()
+						data = await secondHouseApi.houseListByOpenid(getOpenid(), { page: 1, limit: 100 })
 						var list = this.formatSecondList(data)
 						this.appendList(list, 'second')
 					} else if (tab === 'rent') {
-						data = await rentApi.rentList()
+						data = await rentApi.rentListByOpenid(getOpenid(), { page: 1, limit: 100 })
 						var list = this.formatRentList(data)
 						this.appendList(list, 'rent')
 					}
