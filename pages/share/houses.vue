@@ -3,7 +3,7 @@
 		<view class="custom-nav">
 			<view class="nav-status" :style="{ height: statusBarHeight + 'px' }"></view>
 			<view class="nav-bar" :style="{ height: navBarHeight + 'px' }">
-				<text class="nav-title">专属房源</text>
+				<text class="nav-title">扫码找房</text>
 			</view>
 		</view>
 
@@ -47,15 +47,22 @@
 
 			<view class="list-bottom-space"></view>
 		</view>
+
+		<view class="fab-btn" :class="{ disabled: publishLoading }" @tap="onPublish">
+			<u-icon name="plus" size="24" color="#fff"></u-icon>
+		</view>
 	</view>
 </template>
 
 <script>
 	import imagePlaceholder from '@/components/image-placeholder/image-placeholder.vue'
-	import { secondHouseApi, rentApi } from '@/utils/request.js'
+	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
+	import { secondHouseApi, rentApi, FULL_LIST_LIMIT } from '@/utils/request.js'
+	import { auth } from '@/utils/auth.js'
+	import { checkHouseLimit } from '@/utils/houseLimit.js'
 
 	export default {
-		components: { imagePlaceholder },
+		components: { imagePlaceholder, uIcon },
 		data() {
 			return {
 				statusBarHeight: 20,
@@ -65,7 +72,8 @@
 				allRent: [],
 				filterType: 'second',
 				loaded: { second: false, rent: false },
-				loading: false
+				loading: false,
+				publishLoading: false,
 			}
 		},
 		created() {
@@ -87,11 +95,14 @@
 			}
 		},
 		onLoad(options) {
+			console.log('options---',options)
 			if (options && options.scene) {
 				this.openId = decodeURIComponent(options.scene)
 			} else if (options && options.open_id) {
 				this.openId = decodeURIComponent(options.open_id)
 			}
+			const name = options && options.name ? decodeURIComponent(options.name) : '扫码找房'
+			uni.setNavigationBarTitle({ title: name })
 			if (this.openId) {
 				this.loadAll()
 			}
@@ -99,10 +110,11 @@
 		methods: {
 			async loadAll() {
 				this.loading = true
+				uni.showLoading({ title: '加载中...', mask: true })
 				try {
 					var [secondData, rentData] = await Promise.all([
-						secondHouseApi.houseListByOpenid(this.openId, { page: 1, limit: 100 }).catch(() => null),
-						rentApi.rentListByOpenid(this.openId, { page: 1, limit: 100 }).catch(() => null)
+						secondHouseApi.houseListByOpenid(this.openId, { page: 1, limit: FULL_LIST_LIMIT }).catch(() => null),
+						rentApi.rentListByOpenid(this.openId, { page: 1, limit: FULL_LIST_LIMIT }).catch(() => null)
 					])
 					if (secondData) {
 						this.allSecond = this.formatSecond(secondData)
@@ -113,7 +125,9 @@
 						this.loaded.rent = true
 					}
 				} catch (e) {
+					uni.showToast({ title: '加载失败，请重试', icon: 'none', duration: 2000 })
 				} finally {
+					uni.hideLoading()
 					this.loading = false
 				}
 			},
@@ -149,6 +163,26 @@
 					? '/pages/second/detail?id=' + item.id
 					: '/pages/rent/detail?id=' + item.id
 				uni.navigateTo({ url: url })
+			},
+			onPublish() {
+				if (this.publishLoading) return
+				this.publishLoading = true
+				var self = this
+				auth.requireAuth(async () => {
+					try {
+						var allowed = await checkHouseLimit()
+						if (!allowed) return
+						var url = (self.filterType === 'second'
+							? '/pages/publish/second'
+							: '/pages/publish/rent')
+						+ (self.openId ? ('?source_open_id=' + encodeURIComponent(self.openId)) : '')
+						uni.navigateTo({ url: url })
+					} finally {
+						setTimeout(function() { self.publishLoading = false }, 500)
+					}
+				}, () => {
+					self.publishLoading = false
+				})
 			}
 		}
 	}
@@ -330,5 +364,25 @@
 	.no-more-text {
 		font-size: 24rpx;
 		color: #bbb;
+	}
+
+	.fab-btn {
+		position: fixed;
+		right: 40rpx;
+		bottom: calc(60rpx + env(safe-area-inset-bottom));
+		width: 100rpx;
+		height: 100rpx;
+		border-radius: 50%;
+		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 8rpx 24rpx rgba(60, 156, 255, 0.4);
+		z-index: 100;
+	}
+
+	.fab-btn.disabled {
+		opacity: 0.4;
+		pointer-events: none;
 	}
 </style>

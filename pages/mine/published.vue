@@ -9,23 +9,31 @@
 				<text>租房</text>
 				<text class="tab-count" v-if="rentCount > 0">({{ rentCount }})</text>
 			</view>
+			<view class="tab-item" :class="{ active: activeTab === 'exclusive' }" @tap="activeTab = 'exclusive'">
+				<text>房源登记</text>
+				<text class="tab-count" v-if="exclusiveCount > 0">({{ exclusiveCount }})</text>
+			</view>
 		</view>
 
 		<scroll-view class="scroll-area" scroll-y>
 			<view class="list-container">
-					<view class="empty" v-if="filteredList.length === 0 && loadedTabs[activeTab]">
+					<view class="empty" v-if="filteredList.length === 0 && isTabLoaded(activeTab)">
 						<text class="empty-icon">📭</text>
-						<text class="empty-text">暂无发布的信息</text>
-						<view class="empty-add-btn" @tap="onAdd">
+						<text class="empty-text">{{ activeTab === 'exclusive' ? '还没有用户登记房源' : '暂无发布的信息' }}</text>
+						<view class="empty-add-btn" v-if="activeTab !== 'exclusive'" @tap="onAdd">
 							<text class="empty-add-text">立即发布</text>
+						</view>
+						<view class="empty-add-btn" v-if="activeTab === 'exclusive'" @tap="onQrcode">
+							<text class="empty-add-text">生成专属码</text>
 						</view>
 					</view>
 
-					<view class="list-item" v-for="(item, index) in filteredList" :key="item.id" @tap="onViewDetail(item)">
+					<view class="list-item" :class="{ 'item-unview': isExclusiveItem(item) && item.sourceState === 0 }" v-for="(item, index) in filteredList" :key="item.id + '-exclusive'" @tap="onViewDetail(item)">
 						<view class="item-main">
 							<view class="item-header">
 								<text class="item-title">{{ item.title }}</text>
 								<text class="item-type-tag" :class="getTypeClass(item.type)">{{ getTypeLabel(item.type) }}</text>
+								<text class="item-type-tag tag-source" v-if="isExclusiveItem(item)">房源登记</text>
 							</view>
 
 							<view class="item-tags" v-if="item.type === 'rent'">
@@ -40,7 +48,7 @@
 								<text class="item-time">{{ item.createTime }}</text>
 							</view>
 						</view>
-						<view class="item-actions">
+						<view class="item-actions" v-if="!isExclusiveItem(item)">
 							<view class="action-btn" @tap.stop="onEdit(item)">
 								<text class="action-text">编辑</text>
 							</view>
@@ -48,9 +56,14 @@
 								<text class="action-text">删除</text>
 							</view>
 						</view>
+						<view class="item-actions" v-if="isExclusiveItem(item)">
+							<text class="item-type-tag tag-view" :class="item.sourceState === 0 ? 'tag-unview' : 'tag-viewed'">
+								{{ item.sourceState === 0 ? '未查看' : '已查看' }}
+							</text>
+						</view>
 					</view>
 
-					<view class="no-more" v-if="filteredList.length > 0 && loadedTabs[activeTab]">
+					<view class="no-more" v-if="filteredList.length > 0 && isTabLoaded(activeTab)">
 						<text class="no-more-text">没有更多消息了</text>
 					</view>
 				</view>
@@ -60,16 +73,16 @@
 
 		<view class="action-bar">
 			<view class="bar-tip-wrap">
-				<text class="bar-tip">专属小程序码扫码后</text>
+				<text class="bar-tip">扫码找房</text>
 				<text class="bar-tip bar-tip-highlight">仅展示您发布的房源</text>
 				<text class="bar-tip">，适合线下张贴，可预览查看</text>
 			</view>
 			<view class="bar-row">
-				<view class="bar-btn bar-btn-outline-gray" @tap="onPreview">
-					<text class="bar-btn-text">预览</text>
-				</view>
+				<!-- <view class="bar-btn bar-btn-outline-gray" @tap="onPreview">
+					<text class="bar-btn-text">扫码预览</text>
+				</view> -->
 				<view class="bar-btn bar-btn-outline" @tap="onQrcode">
-					<text class="bar-btn-text">专属码</text>
+					<text class="bar-btn-text">扫码找房</text>
 				</view>
 				<button class="bar-btn bar-btn-share bar-btn-orange" open-type="share">
 					<text class="bar-btn-text">分享</text>
@@ -106,7 +119,7 @@
 </template>
 
 <script>
-	import { secondHouseApi, rentApi, userApi, getOpenid } from '@/utils/request.js'
+	import { secondHouseApi, rentApi, userApi, getOpenid, FULL_LIST_LIMIT } from '@/utils/request.js'
 	import { formatDate } from '@/utils/date.js'
 	import { checkHouseLimit } from '@/utils/houseLimit.js'
 
@@ -116,7 +129,8 @@
 				filterType: '',
 				activeTab: 'second',
 				allList: [],
-				loadedTabs: { second: false, rent: false },
+				exclusiveItems: [],
+				loadedTabs: { second: false, rent: false, exclusive: false },
 				qrcodeModal: {
 					show: false,
 					name: '房源专属小程序',
@@ -132,16 +146,23 @@
 			rentList() {
 				return this.allList.filter(i => i.type === 'rent')
 			},
+			exclusiveList() {
+				return this.exclusiveItems
+			},
 			secondCount() {
 				return this.secondList.length
 			},
 			rentCount() {
 				return this.rentList.length
 			},
+			exclusiveCount() {
+				return this.exclusiveList.length
+			},
 			totalCount() {
 				return this.allList.length
 			},
 			filteredList() {
+				if (this.activeTab === 'exclusive') return this.exclusiveList
 				return this.allList.filter(i => i.type === this.activeTab)
 			}
 		},
@@ -157,9 +178,10 @@
 			}
 		},
 		onShow() {
-			this.loadedTabs = { second: false, rent: false }
+			this.loadedTabs = { second: false, rent: false, exclusive: false }
 			this.loadTab('second')
 			this.loadTab('rent')
+			this.loadTab('exclusive')
 		},
 		onShareAppMessage() {
 			var openId = getOpenid()
@@ -169,6 +191,13 @@
 			}
 		},
 		methods: {
+			isTabLoaded(tab) {
+				if (tab === 'exclusive') return this.loadedTabs.exclusive
+				return !!this.loadedTabs[tab]
+			},
+			isExclusiveItem(item) {
+				return this.activeTab === 'exclusive'
+			},
 			onPreview() {
 				var openId = getOpenid()
 				if (!openId) {
@@ -212,6 +241,10 @@
 				})
 			},
 			async onAdd() {
+				if (this.activeTab === 'exclusive') {
+					uni.navigateTo({ url: '/pages/mine/qrcode' })
+					return
+				}
 				const allowed = await checkHouseLimit()
 				if (!allowed) return
 				if (this.activeTab === 'second') {
@@ -221,19 +254,36 @@
 				}
 			},
 			async loadTab(tab) {
-				if (!tab || this.loadedTabs[tab]) return
+				if (!tab) return
+				if (tab === 'exclusive') {
+					this.loadExclusive()
+					return
+				}
+				if (this.loadedTabs[tab]) return
 				try {
 					var data = null
 					if (tab === 'second') {
-						data = await secondHouseApi.houseListByOpenid(getOpenid(), { page: 1, limit: 100 })
+						data = await secondHouseApi.houseListByOpenid(getOpenid(), { page: 1, limit: FULL_LIST_LIMIT })
 						var list = this.formatSecondList(data)
 						this.appendList(list, 'second')
 					} else if (tab === 'rent') {
-						data = await rentApi.rentListByOpenid(getOpenid(), { page: 1, limit: 100 })
+						data = await rentApi.rentListByOpenid(getOpenid(), { page: 1, limit: FULL_LIST_LIMIT })
 						var list = this.formatRentList(data)
 						this.appendList(list, 'rent')
 					}
 					this.loadedTabs[tab] = true
+				} catch (e) {}
+			},
+			async loadExclusive() {
+				var openId = getOpenid()
+				try {
+					if (!this.loadedTabs.exclusive) {
+						var data = await secondHouseApi.exclusiveList(openId, { page: 1, limit: FULL_LIST_LIMIT }).catch(() => null)
+						var secondList = (data && data.second_house) ? data.second_house : []
+						var rentList = (data && data.rent) ? data.rent : []
+						this.exclusiveItems = this.formatSecondList(secondList).concat(this.formatRentList(rentList))
+						this.loadedTabs.exclusive = true
+					}
 				} catch (e) {}
 			},
 			appendList(list, type) {
@@ -255,7 +305,9 @@
 					decoration: item.decoration || '',
 					price: item.price,
 					description: item.explain || item.description || '',
-					createTime: formatDate(item.update_time || item.create_time || item.createTime || 0)
+					createTime: formatDate(item.update_time || item.create_time || item.createTime || 0),
+					sourceState: parseInt(item.source_state || 0),
+					sourceOpenId: item.source_open_id || ''
 				}))
 			},
 			formatRentList(data) {
@@ -273,7 +325,9 @@
 					price: item.price,
 					tagType: item.tag_type || item.tagType || 'entire',
 					description: item.description || item.explain || '',
-					createTime: formatDate(item.update_time || item.create_time || item.createTime || 0)
+					createTime: formatDate(item.update_time || item.create_time || item.createTime || 0),
+					sourceState: parseInt(item.source_state || 0),
+					sourceOpenId: item.source_open_id || ''
 				}))
 			},
 			getTypeLabel(type) {
@@ -292,6 +346,12 @@
 			onViewDetail(item) {
 				var url = '/pages/second/detail?id=' + item.id
 				if (item.type === 'rent') url = '/pages/rent/detail?id=' + item.id
+				if (item.sourceOpenId && item.sourceState === 0) {
+					var houseTab = item.type === 'rent' ? 2 : 1
+					secondHouseApi.processExclusive(item.sourceOpenId, houseTab).then(() => {
+						item.sourceState = 1
+					}).catch(() => {})
+				}
 				uni.navigateTo({ url: url })
 			},
 			onEdit(item) {
@@ -301,6 +361,7 @@
 			},
 			onDelete(item, index) {
 				var self = this
+				var isExclusive = this.isExclusiveItem(item)
 				uni.showModal({
 					title: '提示',
 					content: '确定删除"' + item.title + '"吗？',
@@ -312,12 +373,20 @@
 								} else if (item.type === 'second') {
 									await secondHouseApi.deleteHouse({ Id: item.id })
 								}
-								self.loadedTabs[item.type] = false
-								self.loadTab(item.type)
 								uni.showToast({ title: '删除成功', icon: 'success' })
+								if (isExclusive) {
+									self.exclusiveItems = self.exclusiveItems.filter(function(i) { return i.id !== item.id })
+								} else {
+									self.loadedTabs[item.type] = false
+									self.loadTab(item.type)
+								}
 							} catch (e) {
 								uni.showToast({ title: '删除成功', icon: 'success' })
-								self.allList.splice(index, 1)
+								if (isExclusive) {
+									self.exclusiveItems.splice(index, 1)
+								} else {
+									self.allList.splice(index, 1)
+								}
 							}
 						}
 					}
@@ -360,6 +429,11 @@
 		padding: 24rpx;
 		margin-bottom: 20rpx;
 		box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+	}
+
+	.list-item.item-unview {
+		border: 2rpx solid #52c41a;
+		box-shadow: 0 2rpx 12rpx rgba(82, 196, 26, 0.12);
 	}
 
 	.tab-item {
@@ -476,6 +550,11 @@
 		background-color: rgba(67, 233, 123, 0.15);
 	}
 
+	.tag-source {
+		color: #ff9800;
+		background-color: rgba(255, 152, 0, 0.15);
+	}
+
 	.item-tags {
 		margin-bottom: 8rpx;
 	}
@@ -560,6 +639,20 @@
 
 	.btn-delete .action-text {
 		color: #ff4d4f;
+	}
+
+	.tag-view {
+		margin-left: 0;
+	}
+
+	.tag-unview {
+		background-color: #fff7e6;
+		color: #fa8c16;
+	}
+
+	.tag-viewed {
+		background-color: #f6ffed;
+		color: #52c41a;
 	}
 
 	.no-more {

@@ -1,5 +1,7 @@
 import { BASE_URL } from './config.js'
 
+export const FULL_LIST_LIMIT = 200
+
 
 
 export function getOpenid() {
@@ -54,6 +56,8 @@ export const secondHouseApi = {
     getDetail: (Id) => request('/farm/Secondhouse/houseDetail', { Id }),
     addHouse: (data) => request('/farm/Secondhouse/addHouse', { ...data, open_id: getOpenid() }, 'POST'),
     houseListByOpenid: (open_id, params = {}) => request('/farm/Secondhouse/houseList', { ...params, open_id }),
+    exclusiveList: (open_id, params = {}) => request('/farm/Secondhouse/exclusiveHouseList', { ...params, source_open_id: open_id }),
+    processExclusive: (source_open_id, house_tab) => request('/farm/Secondhouse/processExclusiveHouse', { source_open_id, house_tab }, 'POST'),
     deleteHouse: (params) => request('/farm/Secondhouse/deleteHouse', params, 'POST'),
     contact: (Id) => request('/farm/Secondhouse/contact', { Id, open_id: getOpenid() }, 'POST', { silent: true }),
     generateHouseQrcode: (name = '房源专属小程序', page = 'pages/share/houses', width = 600) => request('/farm/Secondhouse/generateHouseQrcode', { open_id: getOpenid(), name, page, width }),

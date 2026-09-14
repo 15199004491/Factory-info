@@ -164,7 +164,8 @@
 				pickerOptions: [],
 				pickerTempIndex: 0,
 				editingId: null,
-				typeOptions: ['1室1厅', '1室2厅', '2室1厅', '2室2厅', '2室3厅', '3室1厅', '3室2厅', '3室3厅', '4室2厅', '4室3厅', '5室2厅', '5室3厅'],
+				sourceOpenId: '',
+				typeOptions: ['1室1厅','2室1厅','2室2厅','3室1厅','3室2厅','4室2厅','5室2厅', '5室3厅'],
 				floorOptions: [],
 				imageChanged: false,
 				formLoadKey: 0,
@@ -199,6 +200,9 @@
 			if (options && options.action === 'edit') {
 				this.editingId = parseInt(options.id)
 				this.loadDetail()
+			}
+			if (options && options.source_open_id) {
+				this.sourceOpenId = decodeURIComponent(options.source_open_id)
 			}
 		},
 		methods: {
@@ -341,62 +345,63 @@
 			},
 			async onSubmit() {
 				if (this.submitting) return
-				if (!this.form.title) {
-					uni.showToast({ title: '请填写标题', icon: 'none' })
-					return
-				}
-				if (!this.form.name) {
-					uni.showToast({ title: '请填写小区名称', icon: 'none' })
-					return
-				}
-				if (!this.form.area) {
-					uni.showToast({ title: '请选择地区', icon: 'none' })
-					return
-				}
-				if (!this.form.shape) {
-					uni.showToast({ title: '请选择户型', icon: 'none' })
-					return
-				}
-				if (!this.form.acreage) {
-					uni.showToast({ title: '请填写面积', icon: 'none' })
-					return
-				}
-				if (!this.form.floor) {
-					uni.showToast({ title: '请选择楼层', icon: 'none' })
-					return
-				}
-				if (!this.form.price) {
-					uni.showToast({ title: '请填写售价', icon: 'none' })
-					return
-				}
-				if (!this.form.mobile) {
-					uni.showToast({ title: '请填写联系电话', icon: 'none' })
-					return
-				}
-				const refImage = (this.$refs.uploaderSecond && this.$refs.uploaderSecond.currentSrc) || ''
-				if (refImage && !this.form.second_image) {
-					this.form.second_image = refImage
-				}
-
-				const validations = [
-					{ ref: this.$refs.titleInput, label: '标题' },
-					{ ref: this.$refs.nameInput, label: '小区名称' },
-					{ ref: this.$refs.explainInput, label: '房源描述' }
-				]
-				const results = await Promise.all(validations.map(v => {
-					if (!v.ref || !v.ref.validate) return Promise.resolve({ valid: true, label: v.label })
-					return v.ref.validate().then(valid => ({ valid, label: v.label }))
-				}))
-				const failed = results.filter(r => !r.valid)
-				if (failed.length > 0) {
-					uni.showToast({ title: failed.map(f => f.label).join('、') + ' 含敏感词汇', icon: 'none' })
-					return
-				}
-
 				this.submitting = true
-				uni.showLoading({ title: '提交中...', mask: true })
-
+				uni.showLoading({ title: '校验中...', mask: true })
 				try {
+					if (!this.form.title) {
+						uni.showToast({ title: '请填写标题', icon: 'none' })
+						return
+					}
+					if (!this.form.name) {
+						uni.showToast({ title: '请填写小区名称', icon: 'none' })
+						return
+					}
+					if (!this.form.area) {
+						uni.showToast({ title: '请选择地区', icon: 'none' })
+						return
+					}
+					if (!this.form.shape) {
+						uni.showToast({ title: '请选择户型', icon: 'none' })
+						return
+					}
+					if (!this.form.acreage) {
+						uni.showToast({ title: '请填写面积', icon: 'none' })
+						return
+					}
+					if (!this.form.floor) {
+						uni.showToast({ title: '请选择楼层', icon: 'none' })
+						return
+					}
+					if (!this.form.price) {
+						uni.showToast({ title: '请填写售价', icon: 'none' })
+						return
+					}
+					if (!this.form.mobile) {
+						uni.showToast({ title: '请填写联系电话', icon: 'none' })
+						return
+					}
+					const refImage = (this.$refs.uploaderSecond && this.$refs.uploaderSecond.currentSrc) || ''
+					if (refImage && !this.form.second_image) {
+						this.form.second_image = refImage
+					}
+
+					const validations = [
+						{ ref: this.$refs.titleInput, label: '标题' },
+						{ ref: this.$refs.nameInput, label: '小区名称' },
+						{ ref: this.$refs.explainInput, label: '房源描述' }
+					]
+					const results = await Promise.all(validations.map(v => {
+						if (!v.ref || !v.ref.validate) return Promise.resolve({ valid: true, label: v.label })
+						return v.ref.validate().then(valid => ({ valid, label: v.label }))
+					}))
+					const failed = results.filter(r => !r.valid)
+					if (failed.length > 0) {
+						uni.showToast({ title: failed.map(f => f.label).join('、') + ' 含敏感词汇', icon: 'none' })
+						return
+					}
+
+					uni.showLoading({ title: '提交中...', mask: true })
+
 					let secondImage = this.form.second_image || ''
 					if (secondImage && this.imageChanged) {
 						const uploaded = await uploadImages([secondImage], { dir: 'second-house' })
@@ -415,18 +420,31 @@
 						second_image: secondImage,
 						explain: this.form.explain,
 						area: this.form.area,
-						location: this.form.location
+						location: this.form.location,
+						source_open_id: this.sourceOpenId || undefined
 					}
 					await secondHouseApi.addHouse(postData)
 					uni.hideLoading()
-					uni.showToast({ title: this.editingId ? '修改成功' : '发布成功', icon: 'success' })
-					setTimeout(() => {
-						uni.navigateBack()
-					}, 1000)
+					if (this.sourceOpenId && !this.editingId) {
+						uni.showModal({
+							title: '提示',
+							content: '房源已提交成功，后台审核通过后将展示在列表中，请勿重复提交',
+							showCancel: false,
+							confirmText: '我知道了',
+							success: () => {
+								uni.navigateBack()
+							}
+						})
+					} else {
+						uni.showToast({ title: this.editingId ? '修改成功' : '发布成功', icon: 'success' })
+						setTimeout(() => {
+							uni.navigateBack()
+						}, 1000)
+					}
 				} catch (e) {
 					console.error('二手房提交失败:', e)
-					uni.hideLoading()
 				} finally {
+					uni.hideLoading()
 					this.submitting = false
 				}
 			}

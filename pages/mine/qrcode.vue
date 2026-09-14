@@ -37,7 +37,7 @@
 				<text class="act-btn-text">{{ isSaving ? '保存中...' : '保存到本地' }}</text>
 			</view>
 			<view class="act-btn share-btn" @tap="onPreviewLocal">
-				<text class="act-btn-text">本地预览</text>
+				<text class="act-btn-text">扫码预览</text>
 			</view>
 		</view>
 	</view>
@@ -52,7 +52,7 @@
 			return {
 				qrImage: '',
 				qrPath: 'pages/share/houses',
-				qrName: '你的专属小程序码',
+				qrName: '你的扫码找房',
 				isSaving: false
 			}
 		},
