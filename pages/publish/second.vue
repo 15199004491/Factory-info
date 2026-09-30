@@ -268,7 +268,7 @@
 				const address = this.form.location.address || ''
 				const hasLocation = address && latitude && longitude && latitude !== 0 && longitude !== 0
 
-				const doChoose = () => {
+				const doChoose = (lat, lng) => {
 					const opts = {
 						success: (res) => {
 							this.form.location.address = res.address
@@ -279,9 +279,9 @@
 							uni.showToast({ title: '选择位置失败', icon: 'none' })
 						}
 					}
-					if (latitude && longitude && latitude !== 0 && longitude !== 0) {
-						opts.latitude = latitude
-						opts.longitude = longitude
+					if (lat && lng && lat !== 0 && lng !== 0) {
+						opts.latitude = lat
+						opts.longitude = lng
 					}
 					uni.chooseLocation(opts)
 				}
@@ -299,12 +299,23 @@
 									scale: 16
 								})
 							} else if (res.tapIndex === 1) {
-								doChoose()
+								doChoose(latitude, longitude)
 							}
 						}
 					})
 				} else {
-					doChoose()
+					uni.showLoading({ title: '获取位置中...', mask: true })
+					uni.getLocation({
+						type: 'gcj02',
+						success: (res) => {
+							uni.hideLoading()
+							doChoose(res.latitude, res.longitude)
+						},
+						fail: () => {
+							uni.hideLoading()
+							doChoose(0, 0)
+						}
+					})
 				}
 			},
 			openPicker(shape) {

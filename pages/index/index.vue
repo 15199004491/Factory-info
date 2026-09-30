@@ -1,12 +1,12 @@
 <template>
 	<view class="page">
 		<view class="module-entry">
-			<view class="entry-card" @tap="onEntryTap('new')">
+			<!-- <view class="entry-card" @tap="onEntryTap('new')">
 				<view class="entry-icon new-icon">
 					<text class="icon-text">新</text>
 				</view>
 				<text class="entry-label">新房</text>
-			</view>
+			</view> -->
 
 			<view class="entry-divider"></view>
 
