@@ -177,6 +177,7 @@
 				pay_typeOptions: ['押0付一', '押一付一', '押一付三', '季付', '半年付', '年付'],
 				pickerOptions: [],
 				editingId: null,
+				sourceOpenId: '',
 				imageChanged: false,
 				submitting: false,
 				formLoadKey: 0,
@@ -212,6 +213,9 @@
 			if (options && options.action === 'edit') {
 				this.editingId = parseInt(options.id)
 				this.loadDetail()
+			}
+			if (options && options.source_open_id) {
+				this.sourceOpenId = decodeURIComponent(options.source_open_id)
 			}
 		},
 		methods: {
@@ -276,7 +280,7 @@
 				const address = this.form.location.address || ''
 				const hasLocation = address && latitude && longitude && latitude !== 0 && longitude !== 0
 
-				const doChoose = () => {
+				const doChoose = (lat, lng) => {
 					const opts = {
 						success: (res) => {
 							this.form.location.address = res.address
@@ -287,9 +291,9 @@
 							uni.showToast({ title: '选择位置失败', icon: 'none' })
 						}
 					}
-					if (latitude && longitude && latitude !== 0 && longitude !== 0) {
-						opts.latitude = latitude
-						opts.longitude = longitude
+					if (lat && lng && lat !== 0 && lng !== 0) {
+						opts.latitude = lat
+						opts.longitude = lng
 					}
 					uni.chooseLocation(opts)
 				}
@@ -307,12 +311,23 @@
 									scale: 16
 								})
 							} else if (res.tapIndex === 1) {
-								doChoose()
+								doChoose(latitude, longitude)
 							}
 						}
 					})
 				} else {
-					doChoose()
+					uni.showLoading({ title: '获取位置中...', mask: true })
+					uni.getLocation({
+						type: 'gcj02',
+						success: (res) => {
+							uni.hideLoading()
+							doChoose(res.latitude, res.longitude)
+						},
+						fail: () => {
+							uni.hideLoading()
+							doChoose(0, 0)
+						}
+					})
 				}
 			},
 			openPicker(type) {
@@ -353,58 +368,59 @@
 			},
 			async onSubmit() {
 				if (this.submitting) return
-				if (!this.form.title) {
-					uni.showToast({ title: '请填写标题', icon: 'none' })
-					return
-				}
-				if (!this.form.name) {
-					uni.showToast({ title: '请填写小区名称', icon: 'none' })
-					return
-				}
-				if (!this.form.area) {
-					uni.showToast({ title: '请选择地区', icon: 'none' })
-					return
-				}
-				if (!this.form.acreage) {
-					uni.showToast({ title: '请填写面积', icon: 'none' })
-					return
-				}
-				if (!this.form.floor) {
-					uni.showToast({ title: '请选择楼层', icon: 'none' })
-					return
-				}
-				if (!this.form.pay_type) {
-					uni.showToast({ title: '请选择付款方式', icon: 'none' })
-					return
-				}
-				if (!this.form.price) {
-					uni.showToast({ title: '请填写月租', icon: 'none' })
-					return
-				}
-				const refImage = (this.$refs.uploaderRent && this.$refs.uploaderRent.currentSrc) || ''
-				if (refImage && !this.form.rent_image) {
-					this.form.rent_image = refImage
-				}
-
-				const validations = [
-					{ ref: this.$refs.titleInput, label: '标题' },
-					{ ref: this.$refs.nameInput, label: '小区名称' },
-					{ ref: this.$refs.explainInput, label: '房源描述' }
-				]
-				const results = await Promise.all(validations.map(v => {
-					if (!v.ref || !v.ref.validate) return Promise.resolve({ valid: true, label: v.label })
-					return v.ref.validate().then(valid => ({ valid, label: v.label }))
-				}))
-				const failed = results.filter(r => !r.valid)
-				if (failed.length > 0) {
-					uni.showToast({ title: failed.map(f => f.label).join('、') + ' 含敏感词汇', icon: 'none' })
-					return
-				}
-
 				this.submitting = true
-				uni.showLoading({ title: '提交中...', mask: true })
-
+				uni.showLoading({ title: '校验中...', mask: true })
 				try {
+					if (!this.form.title) {
+						uni.showToast({ title: '请填写标题', icon: 'none' })
+						return
+					}
+					if (!this.form.name) {
+						uni.showToast({ title: '请填写小区名称', icon: 'none' })
+						return
+					}
+					if (!this.form.area) {
+						uni.showToast({ title: '请选择地区', icon: 'none' })
+						return
+					}
+					if (!this.form.acreage) {
+						uni.showToast({ title: '请填写面积', icon: 'none' })
+						return
+					}
+					if (!this.form.floor) {
+						uni.showToast({ title: '请选择楼层', icon: 'none' })
+						return
+					}
+					if (!this.form.pay_type) {
+						uni.showToast({ title: '请选择付款方式', icon: 'none' })
+						return
+					}
+					if (!this.form.price) {
+						uni.showToast({ title: '请填写月租', icon: 'none' })
+						return
+					}
+					const refImage = (this.$refs.uploaderRent && this.$refs.uploaderRent.currentSrc) || ''
+					if (refImage && !this.form.rent_image) {
+						this.form.rent_image = refImage
+					}
+
+					const validations = [
+						{ ref: this.$refs.titleInput, label: '标题' },
+						{ ref: this.$refs.nameInput, label: '小区名称' },
+						{ ref: this.$refs.explainInput, label: '房源描述' }
+					]
+					const results = await Promise.all(validations.map(v => {
+						if (!v.ref || !v.ref.validate) return Promise.resolve({ valid: true, label: v.label })
+						return v.ref.validate().then(valid => ({ valid, label: v.label }))
+					}))
+					const failed = results.filter(r => !r.valid)
+					if (failed.length > 0) {
+						uni.showToast({ title: failed.map(f => f.label).join('、') + ' 含敏感词汇', icon: 'none' })
+						return
+					}
+
+					uni.showLoading({ title: '提交中...', mask: true })
+
 					let rentImage = this.form.rent_image || ''
 					if (rentImage && this.imageChanged) {
 						const uploaded = await uploadImages([rentImage], { dir: 'rent-house' })
@@ -424,18 +440,31 @@
 						tag_type: this.form.tag_type,
 						rent_image: rentImage,
 						explain: this.form.explain,
-						location: this.form.location
+						location: this.form.location,
+						source_open_id: this.sourceOpenId || undefined
 					}
 					await rentApi.addRent(postData)
 					uni.hideLoading()
-					uni.showToast({ title: this.editingId ? '修改成功' : '发布成功', icon: 'success' })
-					setTimeout(() => {
-						uni.navigateBack()
-					}, 1000)
+					if (this.sourceOpenId && !this.editingId) {
+						uni.showModal({
+							title: '提示',
+							content: '房源已提交成功，后台审核通过后将展示在列表中，请勿重复提交',
+							showCancel: false,
+							confirmText: '我知道了',
+							success: () => {
+								uni.navigateBack()
+							}
+						})
+					} else {
+						uni.showToast({ title: this.editingId ? '修改成功' : '发布成功', icon: 'success' })
+						setTimeout(() => {
+							uni.navigateBack()
+						}, 1000)
+					}
 				} catch (e) {
 					console.error('租房提交失败:', e)
-					uni.hideLoading()
 				} finally {
+					uni.hideLoading()
 					this.submitting = false
 				}
 			}

@@ -1,5 +1,5 @@
 <template>
-	<view class="safe-bottom" :style="{ height: height + 'rpx' }"></view>
+	<view class="safe-bottom" :style="{ height: 'calc(' + height + 'rpx + env(safe-area-inset-bottom))' }"></view>
 </template>
 
 <script>

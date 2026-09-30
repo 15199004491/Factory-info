@@ -5,7 +5,7 @@
 
 		<view class="header">
 			<text class="title">{{ qrName }}</text>
-			<text class="subtitle">客户扫码直达你发布的房源</text>
+			<text class="subtitle">客户扫码直达您发布的房源</text>
 		</view>
 
 		<view class="qr-card">
@@ -29,7 +29,7 @@
 		<view class="tips-row">
 			<text class="tip-item">保存打印 ·</text>
 			<text class="tip-item">线下张贴 ·</text>
-			<text class="tip-item">扫码仅展示你的房源</text>
+			<text class="tip-item tip-highlight">仅展示您发布的房源</text>
 		</view>
 
 		<view class="action-btns">
@@ -37,7 +37,7 @@
 				<text class="act-btn-text">{{ isSaving ? '保存中...' : '保存到本地' }}</text>
 			</view>
 			<view class="act-btn share-btn" @tap="onPreviewLocal">
-				<text class="act-btn-text">本地预览</text>
+				<text class="act-btn-text">扫码预览</text>
 			</view>
 		</view>
 	</view>
@@ -52,7 +52,7 @@
 			return {
 				qrImage: '',
 				qrPath: 'pages/share/houses',
-				qrName: '你的专属小程序码',
+				qrName: '你的扫码找房',
 				isSaving: false
 			}
 		},
@@ -322,8 +322,8 @@
 	}
 
 	.qr-frame {
-		width: 460rpx;
-		height: 460rpx;
+		width: 560rpx;
+		height: 560rpx;
 		background-color: #fff;
 		border-radius: 16rpx;
 		display: flex;
@@ -349,7 +349,7 @@
 	}
 
 	.qr-action-hint {
-		margin-top: 28rpx;
+		margin-top: 20rpx;
 		padding: 10rpx 0 2rpx;
 	}
 
@@ -374,6 +374,10 @@
 		color: #6b9bd1;
 	}
 
+	.tip-highlight {
+		color: #ff9800;
+	}
+
 	.action-btns {
 		position: fixed;
 		left: 0;
@@ -382,7 +386,7 @@
 		display: flex;
 		gap: 24rpx;
 		padding: 20rpx 40rpx;
-		padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+		padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
 		background-color: rgba(255, 255, 255, 0.98);
 		backdrop-filter: blur(20rpx);
 		z-index: 10;

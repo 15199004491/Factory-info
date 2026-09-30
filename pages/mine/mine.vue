@@ -26,10 +26,10 @@
 		</view>
 
 		<view class="menu-list" v-for="(group, gi) in menuGroups" :key="gi">
-			<view class="menu-item" v-for="(item, ii) in group" :key="item" @tap="onMenuTap(item)">
+			<view class="menu-item" v-for="(item) in group" :key="item" @tap="onMenuTap(item)">
 				<view class="menu-left">
 					<text class="menu-text">{{ item }}</text>
-					<text class="menu-badge" v-if="item === '房源管理'">专属小程序码</text>
+					<text class="menu-badge" v-if="item === '房源管理'">扫码找房</text>
 				</view>
 				<text class="menu-arrow">›</text>
 			</view>

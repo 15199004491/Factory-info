@@ -82,15 +82,17 @@
 		</scroll-view>
 
 		<view class="bottom-bar">
-			<view class="action-btn poster-btn" @tap="onShowPoster">
-				<text class="btn-label">海报</text>
+			<view class="action-btn-wrap">
+				<view class="action-btn poster-btn" @tap="onShowPoster">
+					<text class="btn-label">海报</text>
+				</view>
 			</view>
 			<button class="action-btn share-btn" open-type="share">
 				<text class="btn-label">分享</text>
 			</button>
-			<view class="action-btn home-btn" v-if="showHomeBtn" @tap="onGoHome">
+			<!-- <view class="action-btn home-btn" v-if="showHomeBtn" @tap="onGoHome">
 				<text class="btn-label">更多收购商</text>
-			</view>
+			</view> -->
 		</view>
 
 		<view class="poster-modal" v-if="showPoster" @tap="showPoster = false">
@@ -115,11 +117,11 @@
 								<canvas v-else type="2d" id="qrCanvas" class="poster-qr-canvas" :style="{ width: qrCanvasSize + 'px', height: qrCanvasSize + 'px' }"></canvas>
 							</view>
 							<view class="poster-slogan">
-								<text class="poster-slogan-main">微信扫一扫 查看最新报价</text>
+								<text class="poster-slogan-main">微信扫一扫 价格实时更新</text>
 							</view>
 						</view>
 					</view>
-					<text class="poster-tip-text" @tap.stop>扫码后直接进入当前页，让更多农户看到收购价</text>
+					<text class="poster-tip-text" @tap.stop>线下张贴‌ ‌● 专属报价码 ‌● 更多农户找到你</text>
 					<view class="poster-actions" @tap.stop>
 						<view class="poster-save-btn" :class="{ disabled: isSavingPoster }" @tap="onSavePoster">
 							<text class="poster-save-text">{{ isSavingPoster ? '保存中...' : '保存海报' }}</text>
@@ -558,7 +560,7 @@
 
 								ctx.fillStyle = '#333333'
 								ctx.font = '13px sans-serif'
-								const slogan = '微信扫一扫 查看最新报价'
+								const slogan = '微信扫一扫 价格实时更新'
 								const sloganW = ctx.measureText(slogan).width
 								ctx.fillText(slogan, (posterW - sloganW) / 2, y + 16)
 
@@ -966,6 +968,16 @@
 
 	.poster-btn {
 		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
+	}
+
+	.action-btn-wrap {
+		flex: 1;
+		position: relative;
+	}
+
+	.action-btn-wrap .action-btn {
+		margin: 0 12rpx;
+		width: calc(100% - 24rpx);
 	}
 
 	.share-btn {

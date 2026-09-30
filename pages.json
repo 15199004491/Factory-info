@@ -83,7 +83,8 @@
 		{
 			"path": "pages/mine/published",
 			"style": {
-				"navigationBarTitleText": "房源管理"
+				"navigationBarTitleText": "房源管理",
+				"enableShareAppMessage": true
 			}
 		},
 		{
@@ -155,12 +156,13 @@
 		{
 			"path": "pages/mine/qrcode",
 			"style": {
-				"navigationBarTitleText": "专属小程序码"
+				"navigationBarTitleText": "扫码找房"
 			}
 		},
 		{
 			"path": "pages/share/houses",
 			"style": {
+				"navigationStyle": "custom",
 				"navigationBarTitleText": "房源列表",
 				"enableShareAppMessage": true
 			}

@@ -3,61 +3,93 @@
 		<view class="tab-bar" v-if="!filterType">
 			<view class="tab-item" :class="{ active: activeTab === 'second' }" @tap="activeTab = 'second'">
 				<text>二手房</text>
+				<text class="tab-count" v-if="secondCount > 0">({{ secondCount }})</text>
 			</view>
 			<view class="tab-item" :class="{ active: activeTab === 'rent' }" @tap="activeTab = 'rent'">
 				<text>租房</text>
+				<text class="tab-count" v-if="rentCount > 0">({{ rentCount }})</text>
+			</view>
+			<view class="tab-item" :class="{ active: activeTab === 'exclusive' }" @tap="activeTab = 'exclusive'">
+				<text>房源登记</text>
+				<text class="tab-count" v-if="exclusiveCount > 0">({{ exclusiveCount }})</text>
 			</view>
 		</view>
 
 		<scroll-view class="scroll-area" scroll-y>
 			<view class="list-container">
-				<view class="empty" v-if="filteredList.length === 0 && loadedTabs[activeTab]">
-					<text class="empty-text">暂无发布的信息</text>
-				</view>
-
-				<view class="list-item" v-for="(item, index) in filteredList" :key="item.id" @tap="onViewDetail(item)">
-					<view class="item-main">
-						<view class="item-header">
-							<text class="item-title">{{ item.title }}</text>
-							<text class="item-type-tag" :class="getTypeClass(item.type)">{{ getTypeLabel(item.type) }}</text>
+					<view class="empty" v-if="filteredList.length === 0 && isTabLoaded(activeTab)">
+						<text class="empty-icon">📭</text>
+						<text class="empty-text">{{ activeTab === 'exclusive' ? '还没有用户登记房源' : '暂无发布的信息' }}</text>
+						<view class="empty-add-btn" v-if="activeTab !== 'exclusive'" @tap="onAdd">
+							<text class="empty-add-text">立即发布</text>
 						</view>
-
-						<view class="item-tags" v-if="item.type === 'rent'">
-							<text class="item-sub-tag" :class="item.tagType === 'shared' ? 'tag-shared' : 'tag-entire'">{{ item.tagType === 'shared' ? '合租' : '整租' }}</text>
-						</view>
-
-						<text class="item-desc">{{ item.community }} · {{ item.houseType }} · {{ item.area }}</text>
-						<text class="item-region" v-if="item.region">地点：{{ item.region }}</text>
-
-						<view class="item-footer">
-							<text class="item-price">{{ getPriceText(item) }}</text>
-							<text class="item-time">{{ item.createTime }}</text>
+						<view class="empty-add-btn" v-if="activeTab === 'exclusive'" @tap="onQrcode">
+							<text class="empty-add-text">生成专属码</text>
 						</view>
 					</view>
-					<view class="item-actions">
-						<view class="action-btn" @tap.stop="onEdit(item)">
-							<text class="action-text">编辑</text>
+
+					<view class="list-item" :class="{ 'item-unview': isExclusiveItem(item) && item.sourceState === 0 }" v-for="(item, index) in filteredList" :key="item.id + '-exclusive'" @tap="onViewDetail(item)">
+						<view class="item-main">
+							<view class="item-header">
+								<text class="item-title">{{ item.title }}</text>
+								<text class="item-type-tag" :class="getTypeClass(item.type)">{{ getTypeLabel(item.type) }}</text>
+								<text class="item-type-tag tag-source" v-if="isExclusiveItem(item)">房源登记</text>
+							</view>
+
+							<view class="item-tags" v-if="item.type === 'rent'">
+								<text class="item-sub-tag" :class="item.tagType === 'shared' ? 'tag-shared' : 'tag-entire'">{{ item.tagType === 'shared' ? '合租' : '整租' }}</text>
+							</view>
+
+							<text class="item-desc">{{ item.community }} · {{ item.houseType }} · {{ item.area }}</text>
+							<text class="item-region" v-if="item.region">地点：{{ item.region }}</text>
+
+							<view class="item-footer">
+								<text class="item-price">{{ getPriceText(item) }}</text>
+								<text class="item-time">{{ item.createTime }}</text>
+							</view>
 						</view>
-						<view class="action-btn btn-delete" @tap.stop="onDelete(item, index)">
-							<text class="action-text">删除</text>
+						<view class="item-actions" v-if="!isExclusiveItem(item)">
+							<view class="action-btn" @tap.stop="onEdit(item)">
+								<text class="action-text">编辑</text>
+							</view>
+							<view class="action-btn btn-delete" @tap.stop="onDelete(item, index)">
+								<text class="action-text">删除</text>
+							</view>
 						</view>
+						<view class="item-actions" v-if="isExclusiveItem(item)">
+							<text class="item-type-tag tag-view" :class="item.sourceState === 0 ? 'tag-unview' : 'tag-viewed'">
+								{{ item.sourceState === 0 ? '未查看' : '已查看' }}
+							</text>
+						</view>
+					</view>
+
+					<view class="no-more" v-if="filteredList.length > 0 && isTabLoaded(activeTab)">
+						<text class="no-more-text">没有更多消息了</text>
 					</view>
 				</view>
 
-				<view class="no-more" v-if="filteredList.length > 0 && loadedTabs[activeTab]">
-					<text class="no-more-text">没有更多消息了</text>
-				</view>
-			</view>
-
-			<view class="scroll-bottom-space"></view>
+			<safe-bottom :height="200"></safe-bottom>
 		</scroll-view>
 
 		<view class="action-bar">
-			<view class="bar-btn bar-btn-qrcode" @tap="onQrcode">
-				<text class="bar-btn-text">专属小程序码</text>
+			<view class="bar-tip-wrap">
+				<text class="bar-tip">扫码找房</text>
+				<text class="bar-tip bar-tip-highlight">仅展示您发布的房源</text>
+				<text class="bar-tip">，适合线下张贴，可预览查看</text>
 			</view>
-			<view class="bar-btn bar-btn-add" @tap="onAdd">
-				<text class="bar-btn-text">新增</text>
+			<view class="bar-row">
+				<!-- <view class="bar-btn bar-btn-outline-gray" @tap="onPreview">
+					<text class="bar-btn-text">扫码预览</text>
+				</view> -->
+				<view class="bar-btn bar-btn-outline" @tap="onQrcode">
+					<text class="bar-btn-text">扫码找房</text>
+				</view>
+				<button class="bar-btn bar-btn-share bar-btn-orange" open-type="share">
+					<text class="bar-btn-text">分享</text>
+				</button>
+				<view class="bar-btn bar-btn-primary" @tap="onAdd">
+					<text class="bar-btn-text">新增</text>
+				</view>
 			</view>
 		</view>
 
@@ -87,7 +119,7 @@
 </template>
 
 <script>
-	import { secondHouseApi, rentApi, userApi } from '@/utils/request.js'
+	import { secondHouseApi, rentApi, userApi, getOpenid, FULL_LIST_LIMIT } from '@/utils/request.js'
 	import { formatDate } from '@/utils/date.js'
 	import { checkHouseLimit } from '@/utils/houseLimit.js'
 
@@ -97,7 +129,8 @@
 				filterType: '',
 				activeTab: 'second',
 				allList: [],
-				loadedTabs: { second: false, rent: false },
+				exclusiveItems: [],
+				loadedTabs: { second: false, rent: false, exclusive: false },
 				qrcodeModal: {
 					show: false,
 					name: '房源专属小程序',
@@ -107,7 +140,29 @@
 			}
 		},
 		computed: {
+			secondList() {
+				return this.allList.filter(i => i.type === 'second')
+			},
+			rentList() {
+				return this.allList.filter(i => i.type === 'rent')
+			},
+			exclusiveList() {
+				return this.exclusiveItems
+			},
+			secondCount() {
+				return this.secondList.length
+			},
+			rentCount() {
+				return this.rentList.length
+			},
+			exclusiveCount() {
+				return this.exclusiveList.length
+			},
+			totalCount() {
+				return this.allList.length
+			},
 			filteredList() {
+				if (this.activeTab === 'exclusive') return this.exclusiveList
 				return this.allList.filter(i => i.type === this.activeTab)
 			}
 		},
@@ -123,10 +178,36 @@
 			}
 		},
 		onShow() {
-			this.loadedTabs[this.activeTab] = false
-			this.loadTab(this.activeTab)
+			this.loadedTabs = { second: false, rent: false, exclusive: false }
+			this.loadTab('second')
+			this.loadTab('rent')
+			this.loadTab('exclusive')
+		},
+		onShareAppMessage() {
+			var openId = getOpenid()
+			return {
+				title: '我发布的房源，快来看看吧！',
+				path: '/pages/share/houses?open_id=' + encodeURIComponent(openId)
+			}
 		},
 		methods: {
+			isTabLoaded(tab) {
+				if (tab === 'exclusive') return this.loadedTabs.exclusive
+				return !!this.loadedTabs[tab]
+			},
+			isExclusiveItem(item) {
+				return this.activeTab === 'exclusive'
+			},
+			onPreview() {
+				var openId = getOpenid()
+				if (!openId) {
+					uni.showToast({ title: '请先登录', icon: 'none' })
+					return
+				}
+				uni.navigateTo({
+					url: '/pages/share/houses?open_id=' + encodeURIComponent(openId)
+				})
+			},
 			onQrcode() {
 				this.qrcodeModal.show = true
 				this.qrcodeModal.name = '房源专属小程序'
@@ -160,6 +241,10 @@
 				})
 			},
 			async onAdd() {
+				if (this.activeTab === 'exclusive') {
+					uni.navigateTo({ url: '/pages/mine/qrcode' })
+					return
+				}
 				const allowed = await checkHouseLimit()
 				if (!allowed) return
 				if (this.activeTab === 'second') {
@@ -169,19 +254,36 @@
 				}
 			},
 			async loadTab(tab) {
-				if (!tab || this.loadedTabs[tab]) return
+				if (!tab) return
+				if (tab === 'exclusive') {
+					this.loadExclusive()
+					return
+				}
+				if (this.loadedTabs[tab]) return
 				try {
 					var data = null
 					if (tab === 'second') {
-						data = await secondHouseApi.houseSelf()
+						data = await secondHouseApi.houseListByOpenid(getOpenid(), { page: 1, limit: FULL_LIST_LIMIT })
 						var list = this.formatSecondList(data)
 						this.appendList(list, 'second')
 					} else if (tab === 'rent') {
-						data = await rentApi.rentSelf()
+						data = await rentApi.rentListByOpenid(getOpenid(), { page: 1, limit: FULL_LIST_LIMIT })
 						var list = this.formatRentList(data)
 						this.appendList(list, 'rent')
 					}
 					this.loadedTabs[tab] = true
+				} catch (e) {}
+			},
+			async loadExclusive() {
+				var openId = getOpenid()
+				try {
+					if (!this.loadedTabs.exclusive) {
+						var data = await secondHouseApi.exclusiveList(openId, { page: 1, limit: FULL_LIST_LIMIT }).catch(() => null)
+						var secondList = (data && data.second_house) ? data.second_house : []
+						var rentList = (data && data.rent) ? data.rent : []
+						this.exclusiveItems = this.formatSecondList(secondList).concat(this.formatRentList(rentList))
+						this.loadedTabs.exclusive = true
+					}
 				} catch (e) {}
 			},
 			appendList(list, type) {
@@ -203,7 +305,9 @@
 					decoration: item.decoration || '',
 					price: item.price,
 					description: item.explain || item.description || '',
-					createTime: formatDate(item.update_time || item.create_time || item.createTime || 0)
+					createTime: formatDate(item.update_time || item.create_time || item.createTime || 0),
+					sourceState: parseInt(item.source_state || 0),
+					sourceOpenId: item.source_open_id || ''
 				}))
 			},
 			formatRentList(data) {
@@ -221,7 +325,9 @@
 					price: item.price,
 					tagType: item.tag_type || item.tagType || 'entire',
 					description: item.description || item.explain || '',
-					createTime: formatDate(item.update_time || item.create_time || item.createTime || 0)
+					createTime: formatDate(item.update_time || item.create_time || item.createTime || 0),
+					sourceState: parseInt(item.source_state || 0),
+					sourceOpenId: item.source_open_id || ''
 				}))
 			},
 			getTypeLabel(type) {
@@ -240,6 +346,12 @@
 			onViewDetail(item) {
 				var url = '/pages/second/detail?id=' + item.id
 				if (item.type === 'rent') url = '/pages/rent/detail?id=' + item.id
+				if (item.sourceOpenId && item.sourceState === 0) {
+					var houseTab = item.type === 'rent' ? 2 : 1
+					secondHouseApi.processExclusive(item.sourceOpenId, houseTab).then(() => {
+						item.sourceState = 1
+					}).catch(() => {})
+				}
 				uni.navigateTo({ url: url })
 			},
 			onEdit(item) {
@@ -249,6 +361,7 @@
 			},
 			onDelete(item, index) {
 				var self = this
+				var isExclusive = this.isExclusiveItem(item)
 				uni.showModal({
 					title: '提示',
 					content: '确定删除"' + item.title + '"吗？',
@@ -260,12 +373,20 @@
 								} else if (item.type === 'second') {
 									await secondHouseApi.deleteHouse({ Id: item.id })
 								}
-								self.loadedTabs[item.type] = false
-								self.loadTab(item.type)
 								uni.showToast({ title: '删除成功', icon: 'success' })
+								if (isExclusive) {
+									self.exclusiveItems = self.exclusiveItems.filter(function(i) { return i.id !== item.id })
+								} else {
+									self.loadedTabs[item.type] = false
+									self.loadTab(item.type)
+								}
 							} catch (e) {
 								uni.showToast({ title: '删除成功', icon: 'success' })
-								self.allList.splice(index, 1)
+								if (isExclusive) {
+									self.exclusiveItems.splice(index, 1)
+								} else {
+									self.allList.splice(index, 1)
+								}
 							}
 						}
 					}
@@ -283,28 +404,47 @@
 		background-color: #f5f5f5;
 	}
 
-	.tab-bar {
-		display: flex;
-		background-color: #fff;
-		padding: 0 24rpx;
-		border-bottom: 1rpx solid #f0f0f0;
-		flex-shrink: 0;
-	}
-
 	.scroll-area {
 		flex: 1;
 		height: 0;
 	}
 
-	.scroll-bottom-space {
-		height: 180rpx;
+	.tab-bar {
+		display: flex;
+		background-color: #fff;
+		padding: 0 24rpx;
+		margin: 24rpx 24rpx 20rpx;
+		border-radius: 16rpx;
+		box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+		flex-shrink: 0;
+	}
+
+	.list-container {
+		padding: 0 24rpx;
+	}
+
+	.list-item {
+		background-color: #fff;
+		border-radius: 16rpx;
+		padding: 24rpx;
+		margin-bottom: 20rpx;
+		box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+	}
+
+	.list-item.item-unview {
+		border: 2rpx solid #52c41a;
+		box-shadow: 0 2rpx 12rpx rgba(82, 196, 26, 0.12);
 	}
 
 	.tab-item {
 		flex: 1;
 		text-align: center;
-		padding: 28rpx 0;
+		padding: 24rpx 0;
 		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6rpx;
 	}
 
 	.tab-item text {
@@ -313,10 +453,20 @@
 		transition: all 0.2s;
 	}
 
-	.tab-item.active text {
+	.tab-item.active text:first-child {
 		color: #333;
 		font-weight: 600;
 		font-size: 30rpx;
+	}
+
+	.tab-count {
+		font-size: 24rpx !important;
+		color: #bbb !important;
+		font-weight: normal !important;
+	}
+
+	.tab-item.active .tab-count {
+		color: #3c9cff !important;
 	}
 
 	.tab-item.active::after {
@@ -331,72 +481,35 @@
 		background: linear-gradient(90deg, #3c9cff, #5ac8fa);
 	}
 
-	.action-bar {
-		position: fixed;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		display: flex;
-		gap: 16rpx;
-		background-color: #fff;
-		padding: 20rpx 24rpx;
-		padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
-		box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
-	}
-
-	.bar-btn {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 20rpx 0;
-		border-radius: 12rpx;
-	}
-
-	.bar-btn-qrcode {
-		background: #fff;
-		border: 2rpx solid #3c9cff;
-	}
-
-	.bar-btn-qrcode .bar-btn-text {
-		color: #3c9cff;
-	}
-
-	.bar-btn-add {
-		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
-	}
-
-	.bar-btn-add .bar-btn-text {
-		color: #fff;
-	}
-
-	.bar-btn-text {
-		font-size: 28rpx;
-		font-weight: 500;
-	}
-
-	.list-container {
-		padding: 20rpx 24rpx;
-	}
-
 	.empty {
 		display: flex;
+		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-		padding: 200rpx 0;
+		padding: 160rpx 0;
+	}
+
+	.empty-icon {
+		font-size: 80rpx;
+		margin-bottom: 24rpx;
 	}
 
 	.empty-text {
 		font-size: 28rpx;
 		color: #999;
+		margin-bottom: 32rpx;
 	}
 
-	.list-item {
-		background-color: #fff;
-		border-radius: 16rpx;
-		padding: 24rpx;
-		margin-bottom: 20rpx;
-		box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+	.empty-add-btn {
+		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
+		padding: 20rpx 60rpx;
+		border-radius: 40rpx;
+	}
+
+	.empty-add-text {
+		font-size: 28rpx;
+		color: #fff;
+		font-weight: 500;
 	}
 
 	.item-main {
@@ -435,6 +548,11 @@
 	.type-rent {
 		color: #43e97b;
 		background-color: rgba(67, 233, 123, 0.15);
+	}
+
+	.tag-source {
+		color: #ff9800;
+		background-color: rgba(255, 152, 0, 0.15);
 	}
 
 	.item-tags {
@@ -505,6 +623,12 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		line-height: 1;
+		margin: 0;
+	}
+
+	.action-btn::after {
+		border: none;
 	}
 
 	.action-text {
@@ -517,6 +641,20 @@
 		color: #ff4d4f;
 	}
 
+	.tag-view {
+		margin-left: 0;
+	}
+
+	.tag-unview {
+		background-color: #fff7e6;
+		color: #fa8c16;
+	}
+
+	.tag-viewed {
+		background-color: #f6ffed;
+		color: #52c41a;
+	}
+
 	.no-more {
 		display: flex;
 		justify-content: center;
@@ -527,6 +665,93 @@
 	.no-more-text {
 		font-size: 24rpx;
 		color: #bbb;
+	}
+
+	.action-bar {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: #fff;
+		padding: 24rpx 24rpx;
+		padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+		box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
+		display: flex;
+		flex-direction: column;
+		gap: 14rpx;
+	}
+
+	.bar-tip-wrap {
+		white-space: nowrap;
+		overflow: hidden;
+	}
+
+	.bar-tip {
+		font-size: 22rpx;
+		color: #aaa;
+		line-height: 1.5;
+	}
+
+	.bar-tip-highlight {
+		color: #ff9800;
+	}
+
+	.bar-row {
+		display: flex;
+		gap: 16rpx;
+	}
+
+	.bar-btn {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background-color: #f5f7fa;
+		border-radius: 12rpx;
+		padding: 18rpx 0;
+		border: none;
+		line-height: 1;
+		margin: 0;
+	}
+
+	.bar-btn-share::after {
+		border: none;
+	}
+
+	.bar-btn-text {
+		font-size: 28rpx;
+		font-weight: 500;
+		color: #555;
+	}
+
+	.bar-btn-outline-gray {
+		background-color: #fff;
+		border: 1rpx solid #ddd;
+	}
+
+	.bar-btn-outline {
+		background-color: #fff;
+		border: 1rpx solid #3c9cff;
+	}
+
+	.bar-btn-outline .bar-btn-text {
+		color: #3c9cff;
+	}
+
+	.bar-btn-orange {
+		background: linear-gradient(135deg, #ff9800, #ffb74d);
+	}
+
+	.bar-btn-orange .bar-btn-text {
+		color: #fff;
+	}
+
+	.bar-btn-primary {
+		background: linear-gradient(135deg, #3c9cff, #5ac8fa);
+	}
+
+	.bar-btn-primary .bar-btn-text {
+		color: #fff;
 	}
 
 	.modal-mask {
