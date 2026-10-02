@@ -4,8 +4,8 @@
 		<view class="bg-decor bg-decor-2"></view>
 
 		<view class="header">
-			<text class="title">{{ qrName }}</text>
-			<text class="subtitle">客户扫码直达您发布的房源</text>
+			<text class="title">您的专属小程序码</text>
+			<text class="subtitle">客户扫码只能查看您发布的房源</text>
 		</view>
 
 		<view class="qr-card">
@@ -37,7 +37,7 @@
 				<text class="act-btn-text">{{ isSaving ? '保存中...' : '保存到本地' }}</text>
 			</view>
 			<view class="act-btn share-btn" @tap="onPreviewLocal">
-				<text class="act-btn-text">扫码预览</text>
+				<text class="act-btn-text">预览</text>
 			</view>
 		</view>
 	</view>
@@ -52,7 +52,7 @@
 			return {
 				qrImage: '',
 				qrPath: 'pages/share/houses',
-				qrName: '你的扫码找房',
+				qrName: '扫码找房',
 				isSaving: false
 			}
 		},

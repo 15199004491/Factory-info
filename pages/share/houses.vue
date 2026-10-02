@@ -1,12 +1,5 @@
 <template>
 	<view class="page">
-		<view class="custom-nav">
-			<view class="nav-status" :style="{ height: statusBarHeight + 'px' }"></view>
-			<view class="nav-bar" :style="{ height: navBarHeight + 'px' }">
-				<text class="nav-title">扫码找房</text>
-			</view>
-		</view>
-
 		<view class="filter-bar">
 			<view class="filter-tabs">
 				<view class="filter-tab" :class="{ active: filterType === 'second' }" @tap="onFilterType('second')">
@@ -48,6 +41,10 @@
 			<view class="list-bottom-space"></view>
 		</view>
 
+		<button class="share-fab" open-type="share">
+			<text class="share-fab-text">分享</text>
+		</button>
+
 		<view class="fab-btn" :class="{ disabled: publishLoading }" @tap="onPublish">
 			<u-icon name="plus" size="24" color="#fff"></u-icon>
 		</view>
@@ -65,8 +62,6 @@
 		components: { imagePlaceholder, uIcon },
 		data() {
 			return {
-				statusBarHeight: 20,
-				navBarHeight: 44,
 				openId: '',
 				allSecond: [],
 				allRent: [],
@@ -75,11 +70,6 @@
 				loading: false,
 				publishLoading: false,
 			}
-		},
-		created() {
-			var sys = uni.getSystemInfoSync()
-			this.statusBarHeight = sys.statusBarHeight || 20
-			this.navBarHeight = sys.platform === 'android' ? 48 : 44
 		},
 		computed: {
 			displayList() {
@@ -103,8 +93,18 @@
 			}
 			const name = options && options.name ? decodeURIComponent(options.name) : '扫码找房'
 			uni.setNavigationBarTitle({ title: name })
+			if (typeof uni.showHomeButton === 'function') {
+				uni.showHomeButton()
+			}
 			if (this.openId) {
 				this.loadAll()
+			}
+		},
+		onShareAppMessage() {
+			var openId = this.openId || ''
+			return {
+				title: '我发布的房源，快来看看吧！',
+				path: '/pages/share/houses?open_id=' + encodeURIComponent(openId)
 			}
 		},
 		methods: {
@@ -194,28 +194,6 @@
 		flex-direction: column;
 		height: 100vh;
 		background-color: #f5f5f5;
-	}
-
-	.custom-nav {
-		position: relative;
-		z-index: 10;
-		background-color: #fff;
-	}
-
-	.nav-status {
-		width: 100%;
-	}
-
-	.nav-bar {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.nav-title {
-		font-size: 34rpx;
-		font-weight: 600;
-		color: #333;
 	}
 
 	.filter-bar {
@@ -384,5 +362,33 @@
 	.fab-btn.disabled {
 		opacity: 0.4;
 		pointer-events: none;
+	}
+
+	.share-fab {
+		position: fixed;
+		right: 30rpx;
+		bottom: calc(190rpx + env(safe-area-inset-bottom));
+		width: 110rpx;
+		height: 110rpx;
+		border-radius: 50%;
+		background: linear-gradient(135deg, #ff9800, #ffb74d);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 8rpx 24rpx rgba(255, 152, 0, 0.4);
+		border: none;
+		padding: 0;
+		margin: 0;
+		z-index: 998;
+	}
+
+	.share-fab::after {
+		border: none;
+	}
+
+	.share-fab-text {
+		font-size: 28rpx;
+		color: #fff;
+		font-weight: 600;
 	}
 </style>

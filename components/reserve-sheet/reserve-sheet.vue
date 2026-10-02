@@ -161,7 +161,7 @@
 					}
 					await reserveApi.create(params)
 					uni.hideLoading()
-					uni.showToast({ title: '预约成功,房东将尽快联系您', icon: 'success', duration: 2000 })
+					uni.showToast({ title: '预约成功', icon: 'success', duration: 2000 })
 					this.reserveForm = { datetime: '', dateStr: '', hour: '', mobile: '' }
 					this.close()
 					this.$emit('success', params)

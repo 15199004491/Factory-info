@@ -2,6 +2,7 @@
 	import { isFromChatShareScene } from '@/utils/date.js'
 	import { setupUpdateManager } from '@/utils/updateManager.js'
 	import { visitorApi } from '@/utils/request.js'
+	import { auth } from '@/utils/auth.js'
 
 	function _getEnterOptions() {
 		try {
@@ -22,6 +23,9 @@
 		},
 		onLaunch: function() {
 			setupUpdateManager()
+			if (!auth.isLoggedIn()) {
+				auth.login({ silent: true }).catch(() => {})
+			}
 			// #ifdef MP-WEIXIN
 			uni.loadFontFace({
 				global: true,
@@ -43,9 +47,7 @@
 					const path = (opt && opt.path) ? String(opt.path) : ''
 					const detailPagePatterns = [
 						'pages/second/detail',
-						'pages/rent/detail',
-						'pages/purchase/detail',
-						'pages/factory/detail'
+						'pages/rent/detail'
 					]
 					const isDetailPage = detailPagePatterns.some(p => path.indexOf(p) !== -1)
 					if (isDetailPage) {

@@ -181,6 +181,17 @@ function formatCosUrl(src, opts) {
 	return base
 }
 
+function maskPhoneInText(text) {
+	if (!text || typeof text !== 'string') return text
+	return text
+		.replace(/1[3-9]\d{9}/g, function(m) {
+			return m.slice(0, 3) + '****' + m.slice(7)
+		})
+		.replace(/(0\d{2,3}-?)(\d{7,8})/g, function(m, area, num) {
+			return area + '*'.repeat(Math.max(0, num.length - 4)) + num.slice(-4)
+		})
+}
+
 export {
 	BASE_URL,
 	COS_BUCKET,
@@ -189,7 +200,8 @@ export {
 	COS_SECRET_ID,
 	COS_SECRET_KEY,
 	getCosSignature,
-	formatCosUrl
+	formatCosUrl,
+	maskPhoneInText
 }
 
 export default {
@@ -200,5 +212,6 @@ export default {
 	COS_SECRET_ID,
 	COS_SECRET_KEY,
 	getCosSignature,
-	formatCosUrl
+	formatCosUrl,
+	maskPhoneInText
 }

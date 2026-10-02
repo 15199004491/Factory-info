@@ -64,11 +64,11 @@
 		</view>
 
 		<view class="bottom-bar">
-			<!-- <view class="action-btn reserve-btn" @tap="onReserve">
-				<text class="btn-label">预约看房</text>
-			</view> -->
 			<view class="action-btn contact-btn" @tap="onContact">
 				<text class="btn-label">联系电话</text>
+			</view>
+			<view class="action-btn reserve-btn" v-if="false" @tap="onReserve">
+				<text class="btn-label">预约看房</text>
 			</view>
 			<button class="action-btn share-btn" open-type="share">
 				<text class="btn-label">分享</text>
@@ -82,7 +82,7 @@
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import reserveSheet from '@/components/reserve-sheet/reserve-sheet.vue'
 	import { rentApi, userApi } from '@/utils/request.js'
-	import { formatCosUrl } from '@/utils/config.js'
+	import { formatCosUrl, maskPhoneInText } from '@/utils/config.js'
 	import { isShareEnterFirstTimeThenConsume } from '@/utils/date.js'
 
 	export default {
@@ -147,27 +147,27 @@
 					const lng = Number(loc ? loc.longitude : (data.longitude || 0))
 					const address = loc ? (loc.address || '') : ''
 					this.house = {
-						id: data.Id || data.id,
-						title: data.title,
-						desc: `${data.acreage || ''}㎡ · ${data.floor || ''}`,
-						price: data.price,
-						tag: data.tag_type === 'shared' ? '合租' : '整租',
-						tagType: data.tag_type || 'entire',
-						image: data.rent_image || data.rentImage || data.image || data.img || '',
-						acreage: (data.acreage || '') + '㎡',
-						shape: data.shape || '',
-						floor: data.floor || '',
-						payment: data.pay_type || '',
-						name: data.name || data.community || '',
-						area: data.area_name || data.area || data.region || '',
-						explain: data.explain || data.description || '',
-						mobile: data.mobile || '',
-						latitude: lat,
-						longitude: lng,
-						addressText: address,
-						hasCoord: !!(lat && lng && lat !== 0 && lng !== 0),
-						open_id: data.open_id || data.openid || ''
-					}
+					id: data.Id || data.id,
+					title: maskPhoneInText(data.title),
+					desc: `${data.acreage || ''}㎡ · ${data.floor || ''}`,
+					price: data.price,
+					tag: data.tag_type === 'shared' ? '合租' : '整租',
+					tagType: data.tag_type || 'entire',
+					image: data.rent_image || data.rentImage || data.image || data.img || '',
+					acreage: (data.acreage || '') + '㎡',
+					shape: data.shape || '',
+					floor: data.floor || '',
+					payment: data.pay_type || '',
+					name: maskPhoneInText(data.name || data.community || ''),
+					area: maskPhoneInText(data.area_name || data.area || data.region || ''),
+					explain: maskPhoneInText(data.explain || data.description || ''),
+					mobile: data.mobile || '',
+					latitude: lat,
+					longitude: lng,
+					addressText: maskPhoneInText(address),
+					hasCoord: !!(lat && lng && lat !== 0 && lng !== 0),
+					open_id: data.open_id || data.openid || ''
+				}
 					this.visitors = data.count || data.visitors || 0
 				} catch (e) {}
 			},
@@ -230,7 +230,7 @@
 				}
 			},
 			onGoMore() {
-				uni.switchTab({
+				uni.reLaunch({
 					url: '/pages/index/index'
 				})
 			}
@@ -453,15 +453,16 @@
 		border-radius: 16rpx;
 		border: none;
 		line-height: 1;
+		font-size: 30rpx;
 	}
 
 	.contact-btn {
-		background: #3c9cff;
-		border: none;
+		background: #fff;
+		border: 2rpx solid #3c9cff;
 	}
 
 	.contact-btn .btn-label {
-		color: #fff;
+		color: #3c9cff;
 	}
 
 	.reserve-btn {

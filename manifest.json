@@ -57,7 +57,7 @@
         "usingComponents" : true,
         "permission" : {
             "scope.userLocation" : {
-                "desc" : "用于选择加工厂地址位置"
+                "desc" : "用于选择房源位置"
             }
         },
         "requiredPrivateInfos" : [

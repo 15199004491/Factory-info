@@ -23,15 +23,6 @@
 					<text class="contact-action-text wechat-text">复制</text>
 				</view>
 			</view>
-			<view class="contact-row">
-				<view class="contact-left">
-					<text class="contact-label">抖音号</text>
-					<text class="contact-value">66241976648（有演示步骤）</text>
-				</view>
-				<view class="contact-copy-btn" @click="onCopyDouyin">
-					<text class="contact-action-text douyin-text">复制</text>
-				</view>
-			</view>
 		</view>
 	</view>
 </template>
@@ -64,14 +55,6 @@
 					data: 'w18073057410',
 					success: () => {
 						uni.showToast({ title: '微信号已复制', icon: 'success' })
-					}
-				})
-			},
-			onCopyDouyin() {
-				uni.setClipboardData({
-					data: '66241976648',
-					success: () => {
-						uni.showToast({ title: '抖音号已复制', icon: 'success' })
 					}
 				})
 			}
@@ -173,9 +156,5 @@
 
 	.wechat-text {
 		color: #3c9cff;
-	}
-
-	.douyin-text {
-		color: #722ed1;
 	}
 </style>

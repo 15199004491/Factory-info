@@ -7,7 +7,6 @@
 			"^region-picker": "@/components/region-picker/region-picker.vue",
 			"^image-placeholder": "@/components/image-placeholder/image-placeholder.vue",
 			"^safe-bottom": "@/components/safe-bottom/safe-bottom.vue",
-			"^tab-bar": "@/components/tab-bar/tab-bar.vue",
 			"^uploader-single": "@/components/uploader-single/uploader-single.vue",
 			"^sensitive-input": "@/components/sensitive-input/sensitive-input.vue",
 			"^sensitive-textarea": "@/components/sensitive-textarea/sensitive-textarea.vue"
@@ -17,25 +16,26 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "住房"
+				"navigationBarTitleText": "首页",
+				"enableShareAppMessage": true
 			}
 		},
 		{
-			"path": "pages/hall/hall",
+			"path": "pages/reserve/list",
 			"style": {
-				"navigationBarTitleText": "收购大厅"
+				"navigationBarTitleText": "预约信息"
 			}
 		},
 		{
-			"path": "pages/factory/factory",
+			"path": "pages/mine/register",
 			"style": {
-				"navigationBarTitleText": "加工厂收购"
+				"navigationBarTitleText": "客户房源"
 			}
 		},
 		{
-			"path": "pages/purchase/purchase",
+			"path": "pages/mine/mine",
 			"style": {
-				"navigationBarTitleText": "个人收购"
+				"navigationBarTitleText": "我的"
 			}
 		},
 		{
@@ -81,88 +81,20 @@
 			}
 		},
 		{
-			"path": "pages/mine/published",
-			"style": {
-				"navigationBarTitleText": "房源管理",
-				"enableShareAppMessage": true
-			}
-		},
-		{
-			"path": "pages/mine/purchase",
-			"style": {
-				"navigationBarTitleText": "我的个人收购"
-			}
-		},
-		{
-			"path": "pages/factory/detail",
-			"style": {
-				"navigationBarTitleText": "加工厂详情"
-			}
-		},
-		{
-			"path": "pages/factory/register",
-			"style": {
-				"navigationBarTitleText": "加工厂入驻"
-			}
-		},
-		{
-			"path": "pages/factory/manage",
-			"style": {
-				"navigationBarTitleText": "加工厂管理"
-			}
-		},
-		{
-			"path": "pages/factory/price",
-			"style": {
-				"navigationBarTitleText": "发布信息"
-			}
-		},
-		{
-			"path": "pages/factory/certify",
-			"style": {
-				"navigationBarTitleText": "加工厂认证"
-			}
-		},
-		{
-			"path": "pages/factory/renew",
-			"style": {
-				"navigationBarTitleText": "加工厂续费"
-			}
-		},
-		{
-			"path": "pages/factory/guide",
-			"style": {
-				"navigationBarTitleText": "操作指引"
-			}
-		},
-		{
-			"path": "pages/mine/mine",
-			"style": {
-				"navigationBarTitleText": "我的"
-			}
-		},
-		{
-			"path": "pages/purchase/detail",
-			"style": {
-				"navigationBarTitleText": "收购详情"
-			}
-		},
-		{
-			"path": "pages/publish/purchase",
-			"style": {
-				"navigationBarTitleText": "发布收购"
-			}
-		},
-		{
 			"path": "pages/mine/qrcode",
 			"style": {
 				"navigationBarTitleText": "扫码找房"
 			}
 		},
 		{
+			"path": "pages/mine/manage",
+			"style": {
+				"navigationBarTitleText": "房源管理"
+			}
+		},
+		{
 			"path": "pages/share/houses",
 			"style": {
-				"navigationStyle": "custom",
 				"navigationBarTitleText": "房源列表",
 				"enableShareAppMessage": true
 			}
@@ -173,27 +105,6 @@
 		"navigationBarTitleText": "uni-app",
 		"navigationBarBackgroundColor": "#F8F8F8",
 		"backgroundColor": "#F8F8F8"
-	},
-	"tabBar": {
-		"custom": true,
-		"color": "#999999",
-		"selectedColor": "#3c9cff",
-		"backgroundColor": "#ffffff",
-		"borderStyle": "black",
-		"list": [
-			{
-				"pagePath": "pages/hall/hall",
-				"text": "收购大厅"
-			},
-			{
-				"pagePath": "pages/index/index",
-				"text": "住房"
-			},
-			{
-				"pagePath": "pages/mine/mine",
-				"text": "我的"
-			}
-		]
 	},
 	"uniIdRouter": {}
 }

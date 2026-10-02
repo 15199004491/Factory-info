@@ -63,9 +63,9 @@
 			<view class="action-btn contact-btn" @tap="onContact">
 				<text class="btn-label">联系电话</text>
 			</view>
-			<!-- <view class="action-btn reserve-btn" @tap="onReserve">
+			<view class="action-btn reserve-btn" v-if="false" @tap="onReserve">
 				<text class="btn-label">预约看房</text>
-			</view> -->
+			</view>
 			<button class="action-btn share-btn" open-type="share">
 				<text class="btn-label">分享</text>
 			</button>
@@ -80,7 +80,7 @@
 	import imagePlaceholder from '@/components/image-placeholder/image-placeholder.vue'
 	import reserveSheet from '@/components/reserve-sheet/reserve-sheet.vue'
 	import { secondHouseApi, userApi } from '@/utils/request.js'
-	import { formatCosUrl } from '@/utils/config.js'
+	import { formatCosUrl, maskPhoneInText } from '@/utils/config.js'
 	import { isShareEnterFirstTimeThenConsume } from '@/utils/date.js'
 
 	export default {
@@ -142,24 +142,24 @@
 					const lng = Number(loc ? loc.longitude : (data.longitude || 0))
 					const address = loc ? (loc.address || '') : ''
 					this.house = {
-						id: data.id,
-						title: data.title,
-						desc: `${data.acreage || ''}㎡ · ${data.shape || ''}`,
-						price: data.price,
-						second_image: data.second_image,
-						houseType: data.shape || '',
-						area: (data.acreage || '') + '㎡',
-						floor: data.floor || '',
-						mobile: data.mobile || '',
-						name: data.name || '',
-						region: data.area || data.region || '',
-						latitude: lat,
-						longitude: lng,
-						addressText: address,
-						hasCoord: !!(lat && lng && lat !== 0 && lng !== 0),
-						description: data.explain || data.description || '',
-						open_id: data.open_id || data.openid || ''
-					}
+					id: data.id,
+					title: maskPhoneInText(data.title),
+					desc: `${data.acreage || ''}㎡ · ${data.shape || ''}`,
+					price: data.price,
+					second_image: data.second_image,
+					houseType: data.shape || '',
+					area: (data.acreage || '') + '㎡',
+					floor: data.floor || '',
+					mobile: data.mobile || '',
+					name: maskPhoneInText(data.name || ''),
+					region: maskPhoneInText(data.area || data.region || ''),
+					latitude: lat,
+					longitude: lng,
+					addressText: maskPhoneInText(address),
+					hasCoord: !!(lat && lng && lat !== 0 && lng !== 0),
+					description: maskPhoneInText(data.explain || data.description || ''),
+					open_id: data.open_id || data.openid || ''
+				}
 					this.visitors = data.count || data.visitors || 0
 				} catch (e) {}
 			},
@@ -222,7 +222,7 @@
 				}
 			},
 			onGoMore() {
-				uni.switchTab({
+				uni.reLaunch({
 					url: '/pages/index/index'
 				})
 			}
@@ -417,15 +417,16 @@
 		border-radius: 16rpx;
 		border: none;
 		line-height: 1;
+		font-size: 30rpx;
 	}
 
 	.contact-btn {
-		background: #3c9cff;
-		border: none;
+		background: #fff;
+		border: 2rpx solid #3c9cff;
 	}
 
 	.contact-btn .btn-label {
-		color: #fff;
+		color: #3c9cff;
 	}
 
 	.reserve-btn {

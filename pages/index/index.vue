@@ -1,451 +1,285 @@
 <template>
-	<view class="page">
-		<view class="module-entry">
-			<!-- <view class="entry-card" @tap="onEntryTap('new')">
-				<view class="entry-icon new-icon">
-					<text class="icon-text">新</text>
+	<view class="content">
+		<view class="user-card">
+			<block v-if="isLogin && userInfo">
+				<image class="user-avatar" :src="userInfo.avatarUrl" mode="aspectFill" :lazy-load="true" @tap="onPreviewAvatar"></image>
+				<view class="user-info">
+					<text class="user-nickname">{{ userInfo.nickName }}</text>
+					<text class="user-desc">{{ vipDesc }}</text>
 				</view>
-				<text class="entry-label">新房</text>
-			</view> -->
-
-			<view class="entry-divider"></view>
-
-			<view class="entry-card" @tap="onEntryTap('second')">
-				<view class="entry-icon second-icon">
-					<text class="icon-text">房</text>
+			</block>
+			<block v-else>
+				<view class="user-avatar default-avatar">
+					<u-icon name="account" :size="50" color="#fff"></u-icon>
 				</view>
-				<text class="entry-label">二手房</text>
-			</view>
-
-			<view class="entry-divider"></view>
-
-			<view class="entry-card" @tap="onEntryTap('rent')">
-				<view class="entry-icon rent-icon">
-					<text class="icon-text">租</text>
+				<view class="user-info">
+					<text class="user-nickname">未登录</text>
+					<text class="user-desc">欢迎登录生活信息平台</text>
 				</view>
-				<text class="entry-label">租房</text>
+				<view class="login-btn" @tap="onWechatLogin">
+					<text class="login-btn-text">微信登录</text>
+				</view>
+			</block>
+		</view>
+
+		<view class="menu-list" v-for="(group, gi) in menuGroups" :key="gi">
+			<view class="menu-item" v-for="(item) in group" :key="item" @tap="onMenuTap(item)">
+				<view class="menu-left">
+					<text class="menu-text">{{ item }}</text>
+					<text class="menu-badge" v-if="item === '专属小程序码'">扫码找房</text>
+				</view>
+				<text class="menu-arrow">›</text>
 			</view>
 		</view>
 
-		<view class="house-section-card">
-			<view class="section-title">
-				<text class="section-title-text">二手房推荐</text>
-			</view>
+		<contact-modal :visible="showContact" @close="showContact = false"></contact-modal>
 
-			<scroll-view
-				class="scroll-area"
-				scroll-y
-			>
-				<view class="house-grid">
-					<view class="house-card" v-for="(item, index) in houseList" :key="item.id || index" @tap="onHouseTap(item)">
-						<view class="house-image-wrap">
-							<image-placeholder :src="item.second_image" mode="aspectFill" />
-						</view>
-						<view class="house-info">
-							<text class="house-title">{{ item.title }}</text>
-							<text class="house-desc">{{ item.desc }}</text>
-							<text class="house-price">{{ item.price }}</text>
-						</view>
-					</view>
-				</view>
+		<feedback-modal :visible="showFeedback" @close="showFeedback = false"></feedback-modal>
 
-				<view class="empty" v-if="houseList.length === 0">
-					<text class="empty-text">暂无二手房源</text>
-				</view>
-
-				<view class="scroll-bottom-space"></view>
-			</scroll-view>
-		</view>
-
-		<view class="new-house-mask" v-if="newHouseTipVisible" @click="closeNewHouseTip"></view>
-		<view class="new-house-card" v-if="newHouseTipVisible" @click.stop>
-			<view class="new-house-icon">
-				<text class="new-house-icon-text">🏗️</text>
-			</view>
-			<view class="new-house-title">
-				<text>新房业务开发中</text>
-			</view>
-			<view class="new-house-desc">
-				<text>新房模块正在建设中，如有合作请联系客服</text>
-			</view>
-			<view class="new-house-actions">
-				<view class="new-house-cancel" @click="closeNewHouseTip">
-					<text class="new-house-cancel-text">知道了</text>
-				</view>
-				<view class="new-house-contact" @click="onContactService">
-					<text class="new-house-contact-text">联系客服</text>
-				</view>
-			</view>
-		</view>
-
-		<contact-modal :visible="contactVisible" @close="contactVisible = false"></contact-modal>
-
-		<tab-bar :currentIndex="1"></tab-bar>
+		<vip-pay-modal
+			:visible="showPayModal"
+			:loading="payLoading"
+			:start-date="payStartDate"
+			:end-date="payEndDate"
+			:title="payTitle"
+			:subtitle="paySubtitle"
+			@confirm="onPayConfirm"
+			@cancel="onPayCancel"
+		/>
 	</view>
 </template>
 
 <script>
-	import tabBar from '@/components/tab-bar/tab-bar.vue'
-	import imagePlaceholder from '@/components/image-placeholder/image-placeholder.vue'
+	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
 	import contactModal from '@/components/contact-modal/contact-modal.vue'
-	import { secondHouseApi } from '@/utils/request.js'
+	import feedbackModal from '@/components/feedback-modal/feedback-modal.vue'
+	import vipPayMixin from '@/mixins/vipPayModal.js'
+	import { auth } from '@/utils/auth.js'
 
 	export default {
+		mixins: [vipPayMixin],
 		components: {
-			tabBar,
-			imagePlaceholder,
-			contactModal
+			uIcon,
+			contactModal,
+			feedbackModal
 		},
 		data() {
 			return {
-				houseList: [],
-				newHouseTipVisible: false,
-				contactVisible: false
+				menuGroups: [
+				['房源管理', '房源预览'],
+				['专属小程序码'],
+				['客户房源'],
+				['联系客服', '意见箱']
+			],
+				isLogin: false,
+			userInfo: null,
+			showContact: false,
+			showFeedback: false
+		}
+		},
+		computed: {
+			vipRemainingDays() {
+				const expireAt = Number(this.userInfo && this.userInfo.house_vip_expire_at)
+				if (!expireAt) return 0
+				const now = Math.floor(Date.now() / 1000)
+				if (expireAt <= now) return 0
+				return Math.ceil((expireAt - now) / 86400)
+			},
+			isHouseVip() {
+				const expireAt = Number(this.userInfo && this.userInfo.house_vip_expire_at)
+				if (!expireAt) return false
+				return expireAt > Math.floor(Date.now() / 1000)
+			},
+			vipDesc() {
+				if (!this.isLogin || !this.isHouseVip) return '欢迎回来，祝您使用愉快'
+				return `二手房+租房会员有效期剩余${this.vipRemainingDays}天`
 			}
 		},
 		onShow() {
-			this.loadList()
+			this.checkLoginStatus()
 		},
 		methods: {
-			async loadList() {
+			async checkLoginStatus() {
+				const userData = await auth.getUserInfo()
+				if (userData) {
+					this.isLogin = true
+					this.userInfo = {
+						nickName: userData.nick_name || '用户',
+						avatarUrl: userData.avatar_url || '',
+						...userData
+					}
+				} else {
+					this.isLogin = false
+					this.userInfo = null
+				}
+			},
+			async onWechatLogin() {
 				try {
-					const data = await secondHouseApi.getList({
-						keyword: '',
-						region: '',
-						page: 1,
-						limit: 6
-					})
-					this.houseList = this.formatList(data.list || [])
+					const userData = await auth.login()
+					this.isLogin = true
+					this.userInfo = {
+						...userData,
+						nickName: userData.nickname || userData.nickName || userData.nick_name || '用户',
+						avatarUrl: userData.avatar_url || userData.avatar || userData.avatarUrl || ''
+					}
 				} catch (e) {
-					this.houseList = []
+					console.error('登录失败', e)
 				}
 			},
-			formatList(list) {
-				return (list || []).map(item => ({
-					id: item.Id,
-					title: item.title,
-					desc: `${item.name || ''}· ${item.shape || ''}· ${item.acreage || ''}㎡ `,
-					price: item.price + '万',
-					second_image: item.second_image
-				}))
-			},
-			onEntryTap(type) {
-				if (type === 'new') {
-					this.newHouseTipVisible = true
-					return
-				}
-				if (type === 'second') {
-					uni.navigateTo({
-						url: '/pages/second/list'
-					})
-					return
-				}
-				if (type === 'rent') {
-					uni.navigateTo({
-						url: '/pages/rent/list'
+			onPreviewAvatar() {
+				if (this.userInfo && this.userInfo.avatarUrl) {
+					uni.previewImage({
+						urls: [this.userInfo.avatarUrl],
+						current: this.userInfo.avatarUrl
 					})
 				}
 			},
-			onHouseTap(item) {
-				uni.navigateTo({
-					url: '/pages/second/detail?id=' + item.id
-				})
-			},
-			closeNewHouseTip() {
-				this.newHouseTipVisible = false
-			},
-			onContactService() {
-				this.newHouseTipVisible = false
-				this.$nextTick(() => {
-					this.contactVisible = true
-				})
+			onMenuTap(item) {
+				if (item === '房源管理') {
+					auth.requireAuth(() => {
+						this.checkLoginStatus()
+						uni.navigateTo({ url: '/pages/mine/manage' })
+					})
+				} else if (item === '房源预览') {
+					auth.requireAuth(() => {
+						this.checkLoginStatus()
+						uni.navigateTo({ url: '/pages/second/list' })
+					})
+				} else if (item === '专属小程序码') {
+					auth.requireAuth(() => {
+						this.checkLoginStatus()
+						uni.navigateTo({ url: '/pages/mine/qrcode' })
+					})
+				} else if (item === '客户房源') {
+					auth.requireAuth(() => {
+						this.checkLoginStatus()
+						uni.navigateTo({ url: '/pages/mine/register' })
+					})
+				} else if (item === '联系客服') {
+					this.showContact = true
+				} else if (item === '意见箱') {
+					this.showFeedback = true
+				} else {
+					uni.showToast({ title: item + ' 即将上线', icon: 'none' })
+				}
 			}
 		}
 	}
 </script>
 
 <style>
-	.page {
-		display: flex;
-		flex-direction: column;
-		height: 100vh;
-		background-color: #f5f5f5;
+	.content {
+		padding: 24rpx;
+		padding-bottom: env(safe-area-inset-bottom);
+		min-height: 100vh;
+		background-color: #f8f8f8;
 	}
 
-	.module-entry {
-		display: flex;
-		align-items: center;
-		margin: 30rpx 30rpx 0;
-		padding: 30rpx 0;
-		background-color: #ffffff;
-		border-radius: 20rpx;
-		box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
-		flex-shrink: 0;
-	}
-
-	.house-section-card {
-		display: flex;
-		flex-direction: column;
-		flex: 1;
-		min-height: 0;
-		margin: 20rpx 24rpx 0;
-		background-color: #ffffff;
-		border-radius: 20rpx;
-		box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
-		overflow: hidden;
-	}
-
-	.section-title {
-		padding: 30rpx 30rpx 20rpx;
-		display: flex;
-		align-items: center;
-		flex-shrink: 0;
-	}
-
-	.section-title-text {
-		font-size: 28rpx;
-		font-weight: normal;
-		color: #333333;
-	}
-
-	.scroll-area {
-		flex: 1;
-		height: 0;
-	}
-
-	.scroll-bottom-space {
-		height: calc(120rpx + env(safe-area-inset-bottom));
-	}
-
-	.entry-card {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		padding: 20rpx 0;
-		transition: opacity 0.2s ease;
-	}
-
-	.entry-card:active {
-		opacity: 0.7;
-	}
-
-	.entry-divider {
-		width: 1rpx;
-		height: 60rpx;
-		background-color: #f2f2f2;
-	}
-
-	.entry-icon {
-		width: 88rpx;
-		height: 88rpx;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin-bottom: 16rpx;
-	}
-
-	.new-icon {
-		background-color: #ffe8e0;
-	}
-
-	.second-icon {
-		background-color: #e0edff;
-	}
-
-	.rent-icon {
-		background-color: #dff5ea;
-	}
-
-	.icon-text {
-		font-size: 38rpx;
-		font-weight: bold;
-	}
-
-	.new-icon .icon-text {
-		color: #ff6b6b;
-	}
-
-	.second-icon .icon-text {
-		color: #2f80ed;
-	}
-
-	.rent-icon .icon-text {
-		color: #10b981;
-	}
-
-	.entry-label {
-		font-size: 26rpx;
-		color: #555555;
-		font-weight: 500;
-	}
-
-
-	.house-grid {
-		display: flex;
-		flex-wrap: wrap;
-		padding: 0 24rpx;
-		justify-content: space-between;
-	}
-
-	.house-card {
-		width: calc((100% - 24rpx) / 2);
-		background-color: #ffffff;
+	.menu-list {
+		background-color: #fff;
 		border-radius: 16rpx;
 		overflow: hidden;
-		margin-bottom: 24rpx;
-		box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+		margin-top: 24rpx;
 	}
 
-	.house-image-wrap {
-		width: 100%;
-		height: 240rpx;
-		overflow: hidden;
+	.menu-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 30rpx;
+		border-bottom: 1rpx solid #f0f0f0;
 	}
 
+	.menu-item:last-child {
+		border-bottom: none;
+	}
 
+	.menu-text {
+		font-size: 30rpx;
+		color: #333;
+	}
 
-	.house-info {
-		padding: 20rpx;
+	.menu-left {
+		display: flex;
+		align-items: center;
+	}
+
+	.menu-badge {
+		font-size: 20rpx;
+		color: #3c9cff;
+		background: rgba(60, 156, 255, 0.12);
+		padding: 4rpx 14rpx;
+		border-radius: 20rpx;
+		margin-left: 8rpx;
+		flex-shrink: 0;
+	}
+
+	.menu-arrow {
+		font-size: 40rpx;
+		color: #ccc;
+		font-weight: 300;
+	}
+
+	.user-card {
+		background: linear-gradient(135deg, #3c9cff 0%, #56ccf2 100%);
+		border-radius: 20rpx;
+		padding: 40rpx 30rpx;
+		display: flex;
+		align-items: center;
+		box-shadow: 0 8rpx 24rpx rgba(60, 156, 255, 0.25);
+	}
+
+	.user-avatar {
+		width: 120rpx;
+		height: 120rpx;
+		border-radius: 50%;
+		border: 4rpx solid rgba(255, 255, 255, 0.6);
+		flex-shrink: 0;
+		background-color: rgba(255, 255, 255, 0.3);
+	}
+
+	.default-avatar {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.user-info {
+		flex: 1;
+		margin-left: 24rpx;
 		display: flex;
 		flex-direction: column;
+		justify-content: center;
 	}
 
-	.house-title {
-		font-size: 28rpx;
+	.user-nickname {
+		font-size: 36rpx;
 		font-weight: 600;
-		color: #333333;
+		color: #fff;
 		margin-bottom: 8rpx;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
-	.house-desc {
+	.user-desc {
 		font-size: 24rpx;
-		color: #999999;
-		margin-bottom: 12rpx;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		color: rgba(255, 255, 255, 0.85);
 	}
 
-	.house-price {
-		font-size: 32rpx;
-		font-weight: bold;
-		color: #ff6b35;
-	}
-
-	.empty {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		padding: 100rpx 0;
-	}
-
-	.empty-text {
-		font-size: 28rpx;
-		color: #999999;
-	}
-
-	.new-house-mask {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-color: rgba(0, 0, 0, 0.5);
-		z-index: 9996;
-	}
-
-	.new-house-card {
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: 620rpx;
-		background-color: #ffffff;
-		border-radius: 28rpx;
-		padding: 60rpx 40rpx 40rpx;
-		box-sizing: border-box;
-		z-index: 9997;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-	}
-
-	.new-house-icon {
-		width: 120rpx;
-		height: 120rpx;
-		border-radius: 50%;
-		background: linear-gradient(135deg, #ffe8e0, #ffd9cc);
+	.login-btn {
+		flex-shrink: 0;
+		padding: 12rpx 24rpx;
+		background-color: rgba(255, 255, 255, 0.2);
+		border-radius: 999rpx;
+		border: 1rpx solid rgba(255, 255, 255, 0.4);
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		margin-bottom: 28rpx;
 	}
 
-	.new-house-icon-text {
-		font-size: 64rpx;
-	}
-
-	.new-house-title {
-		font-size: 36rpx;
-		font-weight: 600;
-		color: #333333;
-		margin-bottom: 16rpx;
-	}
-
-	.new-house-desc {
-		font-size: 26rpx;
-		color: #666666;
-		text-align: center;
-		line-height: 1.6;
-		margin-bottom: 40rpx;
-		padding: 0 20rpx;
-	}
-
-	.new-house-actions {
-		width: 100%;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	.new-house-cancel {
-		flex: 1;
-		height: 84rpx;
-		border: 1rpx solid #e5e7eb;
-		background-color: #f7f8fa;
-		border-radius: 42rpx;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin-right: 20rpx;
-	}
-
-	.new-house-cancel-text {
-		font-size: 28rpx;
-		color: #666666;
-		font-weight: 500;
-	}
-
-	.new-house-contact {
-		flex: 1.3;
-		height: 84rpx;
-		background: linear-gradient(135deg, #3c9cff, #56ccf2);
-		box-shadow: 0 6rpx 16rpx rgba(60, 156, 255, 0.3);
-		border-radius: 42rpx;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.new-house-contact-text {
-		font-size: 28rpx;
-		color: #ffffff;
-		font-weight: 500;
+	.login-btn-text {
+		font-size: 24rpx;
+		color: #fff;
+		margin-left: 8rpx;
 	}
 </style>

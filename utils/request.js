@@ -60,7 +60,7 @@ export const secondHouseApi = {
     processExclusive: (source_open_id, house_tab) => request('/farm/Secondhouse/processExclusiveHouse', { source_open_id, house_tab }, 'POST'),
     deleteHouse: (params) => request('/farm/Secondhouse/deleteHouse', params, 'POST'),
     contact: (Id) => request('/farm/Secondhouse/contact', { Id, open_id: getOpenid() }, 'POST', { silent: true }),
-    generateHouseQrcode: (name = '房源专属小程序', page = 'pages/share/houses', width = 600) => request('/farm/Secondhouse/generateHouseQrcode', { open_id: getOpenid(), name, page, width }),
+    generateHouseQrcode: (name = '扫码找房', page = 'pages/share/houses', width = 600) => request('/farm/Secondhouse/generateHouseQrcode', { open_id: getOpenid(), name, page, width }),
 };
 
 export const rentApi = {
@@ -70,26 +70,6 @@ export const rentApi = {
     rentSelf: () => request('/farm/Rent/rentSelf', { open_id: getOpenid() }),
     rentListByOpenid: (open_id, params = {}) => request('/farm/Rent/rentList', { ...params, open_id }),
     deleteRent: (params) => request('/farm/Rent/deleteRent', params, 'POST'),
-};
-
-export const factoryApi = {
-    getList: (p) => request('/farm/Factory/factoryList', p),
-    getSelf: () => request('/farm/Factory/factorySelf', { open_id: getOpenid() }),
-    getDetail: (Id) => request('/farm/Factory/factoryDetail', { Id }),
-    addFactory: (d) => request('/farm/Factory/addFactory', { ...d, open_id: getOpenid() }, 'POST'),
-    editFactory: (d) => request('/farm/Factory/editFactory', { ...d, open_id: getOpenid() }, 'POST'),
-    deleteFactory: (Id) => request('/farm/Factory/deleteFactory', { Id, open_id: getOpenid() }, 'POST'),
-    verifyFactory: (Id, license, id_card) => request('/farm/Factory/verifyFactory', { Id, license, id_card,open_id: getOpenid() }, 'POST'),
-    publishFactory: (d) => request('/farm/Factory/publishFactoryInfo', { ...d, open_id: getOpenid() }, 'POST'),
-    generateFactoryQrcode: (Id, name = '', page = 'pages/factory/detail', width = 430) => request('/farm/Factory/generateFactoryQrcode', { Id, name, page, width }),
-};
-
-export const purchaseApi = {
-    addPurchase: (params) => request('/farm/Purchase/addPurchase', { ...params, open_id: getOpenid() }, 'POST'),
-    purchaseDetail: (params) => request('/farm/Purchase/purchaseDetail', params),
-    purchaseList: (params) => request('/farm/Purchase/purchaseList', params),
-    purchaseSelf: () => request('/farm/Purchase/purchaseSelf', { open_id: getOpenid() }),
-    deletePurchase: (params) => request('/farm/Purchase/deletePurchase', params, 'POST'),
 };
 
 export const userApi = {
