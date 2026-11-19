@@ -54,7 +54,7 @@
 <script>
 	import imagePlaceholder from '@/components/image-placeholder/image-placeholder.vue'
 	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
-	import { secondHouseApi, rentApi, FULL_LIST_LIMIT } from '@/utils/request.js'
+	import { secondHouseApi, rentApi, getOpenid, FULL_LIST_LIMIT } from '@/utils/request.js'
 	import { auth } from '@/utils/auth.js'
 	import { checkHouseLimit } from '@/utils/houseLimit.js'
 
@@ -91,11 +91,17 @@
 			} else if (options && options.open_id) {
 				this.openId = decodeURIComponent(options.open_id)
 			}
+			if (!this.openId) {
+				this.openId = getOpenid()
+			}
 			const name = options && options.name ? decodeURIComponent(options.name) : '扫码找房'
 			uni.setNavigationBarTitle({ title: name })
 			if (typeof uni.showHomeButton === 'function') {
 				uni.showHomeButton()
 			}
+		},
+		onShow() {
+			this.loaded = { second: false, rent: false }
 			if (this.openId) {
 				this.loadAll()
 			}

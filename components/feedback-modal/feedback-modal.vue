@@ -1,42 +1,28 @@
 <template>
-	<view v-if="visible">
-		<view class="feedback-mask" @click="handleClose"></view>
-		<view class="feedback-card" @click="noop">
-			<view class="feedback-title">
-				<text>意见箱</text>
-			</view>
-
-			<view class="feedback-item">
-				<text class="feedback-label">反馈内容</text>
-				<view class="feedback-textarea-box">
-					<sensitive-textarea
-						ref="contentRef"
-						v-model="content"
-						:maxlength="200"
-						placeholder="请描述您遇到的问题或建议，我们会认真对待每一条反馈"
-						:auto-height="true"
-						:fixed="true"
-					></sensitive-textarea>
+	<view class="feedback-mask" v-if="visible" @tap="closeFeedback">
+		<view class="feedback-sheet" :class="{ 'feedback-sheet-show': visible }" @tap.stop>
+			<view class="fb-header">
+				<text class="fb-title">意见反馈</text>
+				<view class="fb-close" @tap="closeFeedback">
+					<u-icon name="close" size="16" color="#999"></u-icon>
 				</view>
 			</view>
-
-			<view class="feedback-item">
-				<text class="feedback-label">联系方式（选填）</text>
-				<view class="feedback-input-box">
-					<sensitive-input
-						v-model="contact"
-						:maxlength="50"
-						placeholder="手机号 / 微信号，方便我们联系您"
-					></sensitive-input>
-				</view>
+			<view class="fb-body">
+				<sensitive-textarea
+					ref="feedbackInput"
+					:value="feedbackContent"
+					@input="feedbackContent = $event"
+					:maxlength="200"
+					placeholder="请输入您的意见或建,让我们做得更好"
+					placeholder-class="fb-placeholder"
+					input-class="form-textarea-gray fb-textarea-box"
+					:auto-height="false"
+					:show-count="false"
+				/>
 			</view>
-
-			<view class="feedback-actions">
-				<view class="feedback-btn btn-cancel" @click="handleClose">
-					<text class="feedback-btn-text">取消</text>
-				</view>
-				<view class="feedback-btn btn-submit" :class="{ disabled: submitting }" @click="handleSubmit">
-					<text class="feedback-btn-text">{{ submitting ? '提交中...' : '提交' }}</text>
+			<view class="fb-footer">
+				<view class="fb-submit" :class="{ disabled: !canSubmitFeedback || submittingFeedback }" @tap="submitFeedback">
+					<text class="fb-submit-text">{{ submittingFeedback ? '提交中...' : '提交反馈' }}</text>
 				</view>
 			</view>
 		</view>
@@ -44,10 +30,14 @@
 </template>
 
 <script>
-	import { feedbackApi as fbApi } from '@/utils/request.js'
+	import uIcon from 'uview-plus/components/u-icon/u-icon.vue'
+	import { feedbackApi } from '@/utils/request.js'
 
 	export default {
 		name: 'feedback-modal',
+		components: {
+			uIcon
+		},
 		props: {
 			visible: {
 				type: Boolean,
@@ -56,55 +46,68 @@
 		},
 		data() {
 			return {
-				content: '',
-				contact: '',
-				submitting: false
+				feedbackContent: '',
+				submittingFeedback: false
+			}
+		},
+		computed: {
+			canSubmitFeedback() {
+				const s = (this.feedbackContent || '').trim()
+				return s.length >= 5 && s.length <= 200
 			}
 		},
 		watch: {
 			visible(val) {
-				if (!val) {
-					this.content = ''
-					this.contact = ''
-					this.submitting = false
+				if (val) {
+					this.feedbackContent = ''
+					this.submittingFeedback = false
 				}
 			}
 		},
 		methods: {
-			noop() {},
-			handleClose() {
+			closeFeedback() {
+				if (this.submittingFeedback) return
 				this.$emit('close')
 			},
-			async handleSubmit() {
-				if (this.submitting) return
-				const content = (this.content || '').trim()
-				if (!content) {
-					uni.showToast({ title: '请输入反馈内容', icon: 'none' })
+			async submitFeedback() {
+				if (!this.canSubmitFeedback) {
+					uni.showToast({ title: '请输入至少5个字的反馈内容', icon: 'none' })
 					return
 				}
-				const contentRef = this.$refs.contentRef
-				if (contentRef && typeof contentRef.validate === 'function') {
-					const valid = await contentRef.validate()
-					if (!valid) return
+				if (this.submittingFeedback) return
+
+				const feedbackInput = this.$refs.feedbackInput
+				if (feedbackInput && feedbackInput.validate) {
+					const valid = await feedbackInput.validate()
+					if (!valid) {
+						uni.showToast({ title: '反馈内容含敏感词汇', icon: 'none' })
+						return
+					}
 				}
-				this.submitting = true
+
+				this.submittingFeedback = true
+				uni.showLoading({ title: '提交中...', mask: true })
 				try {
-					await fbApi.submit({
-						content: content,
-						contact: (this.contact || '').trim()
-					})
-					uni.showToast({ title: '提交成功，感谢您的反馈', icon: 'success' })
+					await feedbackApi.submit({ content: this.feedbackContent.trim() })
+					uni.hideLoading()
+					uni.showToast({ title: '感谢您的反馈！', icon: 'success' })
+					this.feedbackContent = ''
 					this.$emit('close')
 				} catch (e) {
+					uni.hideLoading()
+					const msg = (e && (e.msg || e.message)) || '提交失败，请稍后重试'
+					uni.showToast({ title: msg, icon: 'none' })
 				} finally {
-					this.submitting = false
+					this.submittingFeedback = false
 				}
 			}
 		}
 	}
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
+	@import '@/common/form.scss';
+
 	.feedback-mask {
 		position: fixed;
 		top: 0;
@@ -112,91 +115,86 @@
 		right: 0;
 		bottom: 0;
 		background-color: rgba(0, 0, 0, 0.5);
-		z-index: 9998;
-	}
-
-	.feedback-card {
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: 640rpx;
-		background-color: #fff;
-		border-radius: 24rpx;
-		padding: 40rpx 32rpx 32rpx;
-		box-sizing: border-box;
-		z-index: 9999;
-	}
-
-	.feedback-title {
-		text-align: center;
-		font-size: 34rpx;
-		font-weight: 600;
-		color: #333;
-		margin-bottom: 36rpx;
-	}
-
-	.feedback-item {
-		margin-bottom: 28rpx;
-	}
-
-	.feedback-label {
-		display: block;
-		font-size: 26rpx;
-		color: #666;
-		margin-bottom: 14rpx;
-		font-weight: 500;
-	}
-
-	.feedback-textarea-box {
-		min-height: 200rpx;
-		box-sizing: border-box;
-	}
-
-	.feedback-input-box {
-		height: 76rpx;
-		box-sizing: border-box;
-	}
-
-	.feedback-actions {
-		display: flex;
-		gap: 20rpx;
-		margin-top: 36rpx;
-	}
-
-	.feedback-btn {
-		flex: 1;
-		height: 80rpx;
-		border-radius: 12rpx;
+		z-index: 99;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
 
-	.btn-cancel {
-		background-color: #f5f7fa;
-		border: 2rpx solid #e5e5e5;
+	.feedback-sheet {
+		position: relative;
+		width: 620rpx;
+		background-color: #fff;
+		border-radius: 24rpx;
+		z-index: 100;
+		opacity: 0;
+		transform: scale(0.9);
+		transition: all 0.25s ease;
+		overflow: hidden;
 	}
 
-	.btn-cancel .feedback-btn-text {
-		color: #666;
+	.feedback-sheet-show {
+		opacity: 1;
+		transform: scale(1);
 	}
 
-	.btn-submit {
-		background: linear-gradient(135deg, #3c9cff, #56ccf2);
-		box-shadow: 0 4rpx 12rpx rgba(60, 156, 255, 0.3);
+	.fb-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 32rpx 32rpx 20rpx;
+		border-bottom: 1rpx solid #f0f0f0;
 	}
 
-	.btn-submit .feedback-btn-text {
-		color: #fff;
+	.fb-title {
+		font-size: 32rpx;
+		font-weight: 600;
+		color: #333;
 	}
 
-	.btn-submit.disabled {
-		opacity: 0.6;
+	.fb-close {
+		padding: 8rpx;
 	}
 
-	.feedback-btn-text {
-		font-size: 28rpx;
+	.fb-body {
+		padding: 28rpx 32rpx 8rpx;
+	}
+
+	.fb-body .form-textarea-gray {
+		height: 460rpx;
+	}
+
+	.fb-body .fb-textarea-box textarea {
+		height: 460rpx !important;
+		min-height: 460rpx !important;
+	}
+
+	.fb-placeholder {
+		color: #c0c4cc;
+	}
+
+	.fb-footer {
+		padding: 20rpx 32rpx 32rpx;
+	}
+
+	.fb-submit {
+		background: linear-gradient(135deg, #3c9cff 0%, #1890ff 100%);
+		border-radius: 44rpx;
+		padding: 26rpx 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 6rpx 18rpx rgba(60, 156, 255, 0.35);
+	}
+
+	.fb-submit.disabled {
+		background: #b7c4d8;
+		box-shadow: none;
+	}
+
+	.fb-submit-text {
+		font-size: 30rpx;
 		font-weight: 500;
+		color: #fff;
 	}
 </style>

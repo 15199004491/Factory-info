@@ -98,15 +98,9 @@
 				return this.allList.filter(i => i.type === this.activeTab)
 			}
 		},
-		watch: {
-			activeTab(val) {
-				this.loadTab(val)
-			}
-		},
 		onShow() {
 			this.loadedTabs = { second: false, rent: false }
-			this.loadTab('second')
-			this.loadTab('rent')
+			this.loadAll()
 		},
 		methods: {
 			isTabLoaded(tab) {
@@ -121,26 +115,25 @@
 					uni.navigateTo({ url: '/pages/publish/rent' })
 				}
 			},
-			async loadTab(tab) {
-				if (!tab) return
-				if (this.loadedTabs[tab]) return
+			async loadAll() {
 				try {
-					var data = null
-					if (tab === 'second') {
-						data = await secondHouseApi.houseListByOpenid(getOpenid(), { page: 1, limit: FULL_LIST_LIMIT })
-						var list = this.formatSecondList(data)
-						this.appendList(list, 'second')
-					} else if (tab === 'rent') {
-						data = await rentApi.rentListByOpenid(getOpenid(), { page: 1, limit: FULL_LIST_LIMIT })
-						var list = this.formatRentList(data)
-						this.appendList(list, 'rent')
+					const openId = getOpenid()
+					const [secondData, rentData] = await Promise.all([
+						secondHouseApi.houseListByOpenid(openId, { page: 1, limit: FULL_LIST_LIMIT }).catch(() => null),
+						rentApi.rentListByOpenid(openId, { page: 1, limit: FULL_LIST_LIMIT }).catch(() => null)
+					])
+					let list = []
+					if (secondData) {
+						list = list.concat(this.formatSecondList(secondData))
 					}
-					this.loadedTabs[tab] = true
-				} catch (e) {}
-			},
-			appendList(list, type) {
-				var others = this.allList.filter(i => i.type !== type)
-				this.allList = others.concat(list)
+					if (rentData) {
+						list = list.concat(this.formatRentList(rentData))
+					}
+					this.allList = list
+					this.loadedTabs = { second: true, rent: true }
+				} catch (e) {
+					console.error('加载房源列表失败:', e)
+				}
 			},
 			formatSecondList(data) {
 				var list = Array.isArray(data) ? data : (data && data.list ? data.list : [])
@@ -215,8 +208,8 @@
 									await secondHouseApi.deleteHouse({ Id: item.id })
 								}
 								uni.showToast({ title: '删除成功', icon: 'success' })
-								self.loadedTabs[item.type] = false
-								self.loadTab(item.type)
+								self.loadedTabs = { second: false, rent: false }
+								self.loadAll()
 							} catch (e) {
 								uni.showToast({ title: '删除成功', icon: 'success' })
 								self.allList.splice(index, 1)

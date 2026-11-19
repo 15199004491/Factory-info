@@ -143,7 +143,7 @@
 				} else if (item === '房源预览') {
 					auth.requireAuth(() => {
 						this.checkLoginStatus()
-						uni.navigateTo({ url: '/pages/second/list' })
+						uni.navigateTo({ url: '/pages/share/houses' })
 					})
 				} else if (item === '专属小程序码') {
 					auth.requireAuth(() => {

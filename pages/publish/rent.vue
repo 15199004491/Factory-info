@@ -399,6 +399,10 @@
 						uni.showToast({ title: '请填写月租', icon: 'none' })
 						return
 					}
+					if (!this.form.mobile) {
+						uni.showToast({ title: '请填写联系电话', icon: 'none' })
+						return
+					}
 					const refImage = (this.$refs.uploaderRent && this.$refs.uploaderRent.currentSrc) || ''
 					if (refImage && !this.form.rent_image) {
 						this.form.rent_image = refImage
@@ -463,6 +467,8 @@
 					}
 				} catch (e) {
 					console.error('租房提交失败:', e)
+					const msg = (e && (e.msg || e.message)) || '提交失败，请稍后重试'
+					uni.showToast({ title: msg, icon: 'none', duration: 2500 })
 				} finally {
 					uni.hideLoading()
 					this.submitting = false
