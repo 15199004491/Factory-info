@@ -140,7 +140,7 @@
 					<text class="sheet-confirm-text">确定</text>
 				</view>
 			</view>
-			<picker-view class="filter-picker" :value="pickerValue" @change="onPickerChange" indicator-style="height: 80rpx; border-top: 1rpx solid #eee; border-bottom: 1rpx solid #eee;">
+			<picker-view v-if="pickerOptions.length" class="filter-picker" :value="pickerValue" @change="onPickerChange" indicator-style="height: 80rpx; border-top: 1rpx solid #eee; border-bottom: 1rpx solid #eee;">
 				<picker-view-column>
 					<view class="picker-item" v-for="(opt, i) in pickerOptions" :key="i">
 						{{ opt }}
